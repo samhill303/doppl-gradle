@@ -24,6 +24,7 @@ plugins {
     id "com.madvay.tools.build.gitbuildinfo" version "0.1.2-alpha"
 }
 apply plugin: 'groovy'
+apply plugin: 'maven'
 
 dependencies {
     compile gradleApi()
@@ -40,7 +41,7 @@ group = 'com.github.j2objccontrib.j2objcgradle'
 // A suffix of -SNAPSHOT means this is not an official release of the
 // system, but built from an intermediate source tree.  Instructions:
 // https://github.com/j2objc-contrib/j2objc-gradle/blob/master/CONTRIBUTING.md#publishing-and-versioning
-version = '0.6.1-alpha-SNAPSHOT'
+version = '0.7.2-alpha-SNAPSHOT'
 
 test {
     testLogging {
@@ -77,7 +78,18 @@ project.tasks.all {
     }
 }
 
+configurations {
+    includeInJar
+}
+
+install {
+    repositories.mavenInstaller {
+        pom.version = project.version
+        pom.artifactId = 'j2objc-touchlab'
+    }
+}
+
 buildStamp {
-    repoBaseUrl "https://github.com/j2objc-contrib/j2objc-gradle/tree/"
+    repoBaseUrl "https://github.com/touchlab/j2objc-gradle/tree/"
     packageName "com.github.j2objccontrib.j2objcgradle"
 }

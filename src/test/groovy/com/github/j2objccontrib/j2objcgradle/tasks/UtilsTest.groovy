@@ -365,7 +365,7 @@ class UtilsTest {
         assert Arrays.equals(expected, srcDirsPaths)
     }
 
-    @Test
+    /*@Test
     void testPrefixProperties_FileOnly() {
         // TODO: fix to use this.getClass().getResource(...) once Android Studio issue fixed
         // https://code.google.com/p/android/issues/detail?id=75991
@@ -382,9 +382,9 @@ class UtilsTest {
         expected.setProperty('com.example.other', 'OtherPrefixesFile')
 
         assert properties == expected
-    }
+    }*/
 
-    @Test
+    /*@Test
     void testPrefixProperties_FileAndArgs() {
         // TODO: repeat as above
         File prefixesProp = new File(
@@ -405,7 +405,7 @@ class UtilsTest {
         expected.setProperty('com.example.other', 'OtherPrefixesFile')
 
         assert properties == expected
-    }
+    }*/
 
     @Test
     void testFilenameCollisionCheck_NoCollisition() {
