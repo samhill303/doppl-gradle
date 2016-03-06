@@ -257,6 +257,14 @@ class TranslateTask extends DefaultTask {
                 project.files(getTranslateSourcepaths()),
                 project.files(getGeneratedSourceDirs())
         ])
+        StringBuilder sb = new StringBuilder()
+        for (FileCollection collection: sourcepathDirs.sources ) {
+            for (File file : collection.files) {
+                sb.append(file.getPath()).append(' ')
+            }
+        }
+        logger.warn("#######sourcepathDirs: "+ sb.toString())
+
         doTranslate(sourcepathDirs, srcGenMainDir, translateArgs, mainSrcFilesChanged, "mainSrcFilesArgFile")
 
         // Translate test code. Tests are never built with --build-closure; otherwise

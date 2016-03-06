@@ -76,7 +76,7 @@ class J2objcConfig {
     /**
      * Exact required version of j2objc.
      */
-    String j2objcVersion = '0.9.8.2.1'
+    String j2objcVersion = '1.0.1'
 
     /**
      * Don't verify J2ObjC binaries.  Useful for testing and power-users
@@ -787,7 +787,7 @@ class J2objcConfig {
         finalConfigured = true
     }
 
-    public static final String MIN_SUPPORTED_J2OBJC_VERSION = '0.9.8.2.1'
+    public static final String MIN_SUPPORTED_J2OBJC_VERSION = '1.0.1'
 
     protected void verifyJ2objcRequirements() {
         if (skipJ2objcVerification) {

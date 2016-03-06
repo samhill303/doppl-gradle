@@ -56,6 +56,11 @@ class DependencyConverter {
             'org.hamcrest:hamcrest-core',
             'com.google.protobuf:protobuf-java']
 
+    static final List<String> DOPPEL_HARDCODED = [
+            'org.apache.commons:commons-lang3',
+            'com.google.dagger:dagger'
+    ]
+
     DependencyConverter(Project project, J2objcConfig j2objcConfig) {
         this.project = project
         this.j2objcConfig = j2objcConfig
@@ -113,19 +118,28 @@ class DependencyConverter {
     protected void visitExternalModuleDependency(ExternalModuleDependency dep, boolean isTest) {
         project.logger.debug("j2objc dependency converter: External module dep: $dep")
         // If the dep is already in the j2objc dist, ignore it.
-        if (J2OBJC_DEFAULT_LIBS.contains("${dep.group}:${dep.name}".toString())) {
+        def depResolveString = "${dep.group}:${dep.name}".toString()
+        if(DOPPEL_HARDCODED.contains(depResolveString))
+        {
+            project.logger.debug("-- Added DOPPEL_HARDCODED: $dep")
+            project.configurations.getByName(isTest ? 'j2objcTestLinkage' : 'j2objcLinkage').dependencies.add(dep.copy())
+        }
+        else if (J2OBJC_DEFAULT_LIBS.contains(depResolveString))
+        {
             // TODO: A more correct method might be converting these into our own
             // form of SelfResolvingDependency that specifies which j2objc dist lib
             // to use.
             project.logger.debug("-- Skipped J2OBJC_DEFAULT_LIB: $dep")
-            return
         }
-        failOnBuildClosureForTests(dep, isTest)
-        project.logger.debug("-- Copied as source: $dep")
-        String group = dep.group == null ? '' : dep.group
-        String version = dep.version == null ? '' : dep.version
-        // TODO: Make this less fragile.  What if sources don't exist for this artifact?
-        project.dependencies.add('j2objcTranslationClosure', "${group}:${dep.name}:${version}:sources")
+        else
+        {
+            failOnBuildClosureForTests(dep, isTest)
+            project.logger.debug("-- Copied as source: $dep")
+            String group = dep.group == null ? '' : dep.group
+            String version = dep.version == null ? '' : dep.version
+            // TODO: Make this less fragile.  What if sources don't exist for this artifact?
+            project.dependencies.add('j2objcTranslationClosure', "${group}:${dep.name}:${version}:sources")
+        }
     }
 
     protected void visitGenericDependency(Dependency dep, boolean isTest) {

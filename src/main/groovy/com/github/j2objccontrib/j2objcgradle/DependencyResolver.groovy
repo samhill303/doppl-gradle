@@ -142,7 +142,30 @@ class DependencyResolver {
         } else if (dep instanceof SelfResolvingDependency) {
             visitLinkSelfResolvingDependency((SelfResolvingDependency) dep, isTest)
         } else {
-            visitLinkGenericDependency(dep, isTest)
+            def depResolveString = "${dep.group}:${dep.name}".toString()
+            if(DependencyConverter.DOPPEL_HARDCODED.contains(depResolveString))
+            {
+                project.configurations.getByName("compile").resolve().each {
+                    if(it.getName().contains(dep.name)){
+                        j2objcConfig.translateClasspaths += it.getPath().toString()
+                    }
+                }
+                /*dep.resolve().each { file ->
+                    if(file.getName().endsWith(".jar")){
+                        j2objcConfig.translateClasspaths += file.getPath().toString()
+                    }
+                }*/
+                /*project.configurations.getByName("compile").resolvedConfiguration.resolvedArtifacts.each {
+
+                }
+                project.configurations.getByName("compile").files.each {
+                    String jarName = it.getName();
+                    throw new UnsupportedOperationException(jarName)
+                }*/
+            }
+            else {
+                visitLinkGenericDependency(dep, isTest)
+            }
         }
     }
 
