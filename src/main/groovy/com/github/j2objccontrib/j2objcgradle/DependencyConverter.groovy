@@ -58,6 +58,7 @@ class DependencyConverter {
 
     static final List<String> DOPPEL_HARDCODED = [
             'org.apache.commons:commons-lang3',
+            'com.google.code.gson:gson',
             'com.google.dagger:dagger'
     ]
 
