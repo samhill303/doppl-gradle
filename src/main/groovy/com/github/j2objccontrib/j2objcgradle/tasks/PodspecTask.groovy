@@ -100,6 +100,7 @@ class PodspecTask extends DefaultTask {
         // TODO: allow custom list of libraries
         // podspec paths must be relative to podspec file, which is in buildDir
         String resourceIncludePath = Utils.relativizeNonParent(getDestPodspecDirFile(), getDestSrcMainResourcesDirFile())
+        String objcIncludePath = Utils.relativizeNonParent(getDestPodspecDirFile(), getDestSrcMainObjDirFile())
         // iOS packed libraries are shared with watchOS
         String libDirIosDebug = Utils.relativizeNonParent(getDestPodspecDirFile(), new File(getDestLibDirFile(), 'iosDebug'))
         String libDirIosRelease = Utils.relativizeNonParent(getDestPodspecDirFile(), new File(getDestLibDirFile(), 'iosRelease'))
@@ -111,12 +112,12 @@ class PodspecTask extends DefaultTask {
         validateNumericVersion(getMinVersionWatchos(), 'minVersionWatchos')
 
         String podspecContentsDebug =
-                genPodspec(getPodNameDebug(), headerIncludePath, resourceIncludePath,
+                genPodspec(getPodNameDebug(), headerIncludePath, resourceIncludePath, objcIncludePath,
                         libDirIosDebug, libDirOsxDebug, libDirIosDebug,
                         getMinVersionIos(), getMinVersionOsx(), getMinVersionWatchos(),
                         getLibName(), getJ2objcHome())
         String podspecContentsRelease =
-                genPodspec(getPodNameRelease(), headerIncludePath, resourceIncludePath,
+                genPodspec(getPodNameRelease(), headerIncludePath, resourceIncludePath, objcIncludePath,
                         libDirIosRelease, libDirOsxRelease, libDirIosRelease,
                         getMinVersionIos(), getMinVersionOsx(), getMinVersionWatchos(),
                         getLibName(), getJ2objcHome())
@@ -130,7 +131,7 @@ class PodspecTask extends DefaultTask {
 
     // Podspec references are relative to project.buildDir
     @VisibleForTesting
-    static String genPodspec(String podname, String publicHeadersDir, String resourceDir,
+    static String genPodspec(String podname, String publicHeadersDir, String resourceDir, String objcIncludePath,
                              String libDirIos, String libDirOsx, String libDirWatchos,
                              String minVersionIos, String minVersionOsx, String minVersionWatchos,
                              String libName, String j2objcHome) {
@@ -160,26 +161,31 @@ class PodspecTask extends DefaultTask {
                "  spec.requires_arc = true\n" +
                "  spec.libraries = " +  // continuation of same line
                "'ObjC', 'guava', 'javax_inject', 'jre_emul', 'jsr305', 'z', 'icucore'\n" +
-               "  spec.ios.vendored_libraries = '$libDirIos/lib${libName}.a'\n" +
-               "  spec.osx.vendored_libraries = '$libDirOsx/lib${libName}.a'\n" +
-               "  spec.watchos.vendored_libraries = '$libDirWatchos/lib${libName}.a'\n" +
-               "  spec.xcconfig = {\n" +
-               "    'HEADER_SEARCH_PATHS' => '$j2objcHome/include $publicHeadersDir'\n" +
-               "  }\n" +
-               "  spec.ios.xcconfig = {\n" +
-               "    'LIBRARY_SEARCH_PATHS' => '$j2objcHome/lib'\n" +
-               "  }\n" +
-               "  spec.osx.xcconfig = {\n" +
-               "    'LIBRARY_SEARCH_PATHS' => '$j2objcHome/lib/macosx'\n" +
-               "  }\n" +
-               "  spec.watchos.xcconfig = {\n" +
-               "    'LIBRARY_SEARCH_PATHS' => '$j2objcHome/lib'\n" +
-               "  }\n" +
-                // http://guides.cocoapods.org/syntax/podspec.html#deployment_target
-               "  spec.ios.deployment_target = '$minVersionIos'\n" +
-               "  spec.osx.deployment_target = '$minVersionOsx'\n" +
-               "  spec.watchos.deployment_target = '$minVersionWatchos'\n" +
-               "  spec.osx.frameworks = 'ExceptionHandling'\n" +
+               "  spec.source_files  = 'ios', '$objcIncludePath/**/*.{h,m}'\n" +
+               "  # s.exclude_files = 'Classes/Exclude'\n" +
+               "\n" +
+               "  spec.public_header_files = '$objcIncludePath/**/*.h'\n" +
+               "  spec.header_mappings_dir = '$objcIncludePath'\n" +
+//               "  spec.ios.vendored_libraries = '$libDirIos/lib${libName}.a'\n" +
+//               "  spec.osx.vendored_libraries = '$libDirOsx/lib${libName}.a'\n" +
+//               "  spec.watchos.vendored_libraries = '$libDirWatchos/lib${libName}.a'\n" +
+//               "  spec.xcconfig = {\n" +
+//               "    'HEADER_SEARCH_PATHS' => '$j2objcHome/include $publicHeadersDir'\n" +
+//               "  }\n" +
+//               "  spec.ios.xcconfig = {\n" +
+//               "    'LIBRARY_SEARCH_PATHS' => '$j2objcHome/lib'\n" +
+//               "  }\n" +
+//               "  spec.osx.xcconfig = {\n" +
+//               "    'LIBRARY_SEARCH_PATHS' => '$j2objcHome/lib/macosx'\n" +
+//               "  }\n" +
+//               "  spec.watchos.xcconfig = {\n" +
+//               "    'LIBRARY_SEARCH_PATHS' => '$j2objcHome/lib'\n" +
+//               "  }\n" +
+//                // http://guides.cocoapods.org/syntax/podspec.html#deployment_target
+//               "  spec.ios.deployment_target = '$minVersionIos'\n" +
+//               "  spec.osx.deployment_target = '$minVersionOsx'\n" +
+//               "  spec.watchos.deployment_target = '$minVersionWatchos'\n" +
+//               "  spec.osx.frameworks = 'ExceptionHandling'\n" +
                "end\n"
     }
 

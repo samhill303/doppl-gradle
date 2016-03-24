@@ -20,6 +20,7 @@ import com.github.j2objccontrib.j2objcgradle.J2objcConfig
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
+import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileCollection
@@ -60,6 +61,7 @@ class TranslateTask extends DefaultTask {
             allFiles = allFiles.matching(J2objcConfig.from(project).translatePattern)
         }
         FileCollection ret = allFiles.plus(Utils.javaTrees(project, getGeneratedSourceDirs()))
+        allFiles.plus(project.fileTree(dir: "${project.buildDir}/generated/source/apt/main"))
         ret = Utils.mapSourceFiles(project, ret, getTranslateSourceMapping())
         return ret
     }
@@ -72,6 +74,7 @@ class TranslateTask extends DefaultTask {
             allFiles = allFiles.matching(J2objcConfig.from(project).translatePattern)
         }
         FileCollection ret = allFiles
+        allFiles.plus(project.fileTree(dir: "${project.buildDir}/generated/source/apt/test"))
         ret = Utils.mapSourceFiles(project, ret, getTranslateSourceMapping())
         return ret
     }
@@ -365,6 +368,7 @@ class TranslateTask extends DefaultTask {
 
                 // Arguments
                 args "-d", srcDir
+                args "-use-arc", ''
                 args "-sourcepath", sourcepathArg
                 args "-classpath", classpathArg
                 translateArgs.each { String translateArg ->

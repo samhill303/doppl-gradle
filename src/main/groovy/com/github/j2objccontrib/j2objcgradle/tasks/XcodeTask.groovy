@@ -95,6 +95,9 @@ class XcodeTask extends DefaultTask {
     @Input
     List<String> getXcodeReleaseConfigurations2() { return J2objcConfig.from(project).xcodeReleaseConfigurations }
 
+    @Input
+    List<String> getPodDependencies() { return J2objcConfig.from(project).podDependency }
+
 
     @OutputFile
     File getPodfileFile() {
@@ -222,7 +225,13 @@ class XcodeTask extends DefaultTask {
                 getXcodeTargetsIos(), getXcodeTargetsOsx(), getXcodeTargetsWatchos(),
                 getMinVersionIos(), getMinVersionOsx(), getMinVersionWatchos())
 
-        writeUpdatedPodfileIfNeeded(podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile)
+        logger.error("balls\nYou are a shitheel, whoever wrote this")
+
+        List<String> dependencies = getPodDependencies()
+        for (String s : dependencies) {
+            logger.error("asdf: "+ s)
+        }
+        writeUpdatedPodfileIfNeeded(podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile, dependencies)
 
         // install the pod
         ByteArrayOutputStream stdout = new ByteArrayOutputStream()
@@ -530,13 +539,13 @@ class XcodeTask extends DefaultTask {
             List<PodspecDetails> podspecDetailsList,
             XcodeTargetDetails xcodeTargetDetails,
             boolean xcodeTargetsManualConfig,
-            File podfile) {
+            File podfile, List<String> podDependencies) {
 
         List<String> oldPodfileLines = podfile.readLines()
         List<String> newPodfileLines = new ArrayList<String>(oldPodfileLines)
 
         newPodfileLines = updatePodfile(
-                newPodfileLines, podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile)
+                newPodfileLines, podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile, podDependencies)
 
         // Write file only if it's changed
         if (!oldPodfileLines.equals(newPodfileLines)) {
@@ -550,7 +559,8 @@ class XcodeTask extends DefaultTask {
             List<PodspecDetails> podspecDetailsList,
             XcodeTargetDetails xcodeTargetDetails,
             boolean xcodeTargetsManualConfig,
-            File podfile) {
+            File podfile,
+            List<String> podDependencies) {
 
         List<String> newPodfileLines
 
@@ -603,7 +613,7 @@ class XcodeTask extends DefaultTask {
         }
 
         // update pod methods
-        newPodfileLines = updatePodMethods(newPodfileLines, podspecDetailsList, podfile)
+        newPodfileLines = updatePodMethods(newPodfileLines, podspecDetailsList, podfile, podDependencies)
 
         return newPodfileLines
     }
@@ -629,13 +639,13 @@ class XcodeTask extends DefaultTask {
 
     @VisibleForTesting
     static List<String> updatePodMethods(
-            List<String> podfileLines, List<PodspecDetails> podspecDetailsList, File podfile) {
+            List<String> podfileLines, List<PodspecDetails> podspecDetailsList, File podfile, List<String> podDependencies) {
 
         // create new methods
         List<String> insertLines = new ArrayList<>()
         insertLines.add(podMethodsStart)
         podspecDetailsList.each { PodspecDetails podspecDetails ->
-            insertLines.addAll(podMethodLines(podspecDetails, podfile))
+            insertLines.addAll(podMethodLines(podspecDetails, podfile, podDependencies))
         }
         insertLines.add(podMethodsEnd)
 
@@ -658,7 +668,7 @@ class XcodeTask extends DefaultTask {
 
     @VisibleForTesting
     static List<String> podMethodLines(
-            PodspecDetails podspecDetails, File podfile) {
+            PodspecDetails podspecDetails, File podfile, List<String> podDependencies) {
 
         // Inputs:
         //   podNameMethod:     j2objc_PROJECT
@@ -689,6 +699,14 @@ class XcodeTask extends DefaultTask {
             String configs = Utils.toQuotedList(podspecDetails.xcodeReleaseConfigurations)
             podMethodLines.add("    pod '$podspecReleaseName', :configuration => [$configs], :path => '$pathRelease'".toString())
         }
+
+        for (String pd : podDependencies) {
+            def parts = pd.split(',')
+            def left = parts[0]
+            def right = parts[1]
+            podMethodLines.add("    pod '$left', :path => '$right'".toString())
+        }
+
         podMethodLines.add("end")
         return podMethodLines
     }

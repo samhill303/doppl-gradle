@@ -59,6 +59,9 @@ class DependencyConverter {
     static final List<String> DOPPEL_HARDCODED = [
             'org.apache.commons:commons-lang3',
             'com.google.code.gson:gson',
+            'com.squareup.retrofit:retrofit',
+            'com.google.android:android',
+            'co.touchlab.squeaky:squeaky-core',
             'com.google.dagger:dagger'
     ]
 

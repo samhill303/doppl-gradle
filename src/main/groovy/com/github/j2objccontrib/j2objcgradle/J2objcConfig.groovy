@@ -146,7 +146,7 @@ class J2objcConfig {
     // However, we cannot actually access sourceSets.main.output.classesDir here, because
     // the Java plugin convention may not be applied at this time.
     // TODO: Add a test counterpart for this.
-    List<String> generatedSourceDirs = ['build/classes/main']
+    List<String> generatedSourceDirs = ['build/classes/main', 'build/generated/source/apt/main']
     /**
      * Add generated source files directories, e.g. from dagger annotations.
      *
@@ -193,6 +193,9 @@ class J2objcConfig {
      * http://j2objc.org/docs/j2objc.html
      */
     List<String> translateArgs = new ArrayList<>()
+
+    List<String> podDependency = new ArrayList<>()
+
     /**
      * Add command line arguments for j2objc translate.
      * <p/>
@@ -203,6 +206,12 @@ class J2objcConfig {
      */
     void translateArgs(String... translateArgs) {
         appendArgs(this.translateArgs, 'translateArgs', true, translateArgs)
+    }
+
+    void podDependency(String... dep) {
+        for (String s : dep) {
+            this.podDependency.add(s)
+        }
     }
 
     /**
@@ -927,8 +936,10 @@ class J2objcConfig {
                 // First pattern matches all native-compilation tasks.
                 // Second pattern matches plugin-specific tasks beyond translation.
                 if ((name =~ /^.*((J|j)2objc(Executable|StaticLibrary|SharedLibrary|Objc))$/).matches() ||
-                    (name =~ /^j2objc(Assemble|PackLibraries|Test)(Debug|Release)$/).matches() ||
-                    (name =~ /^j2objc(Podspec|Xcode)$/).matches()) {
+                    (name =~ /^j2objc(Assemble|PackLibraries|Test)(Debug|Release)$/).matches()
+//                        ||
+//                    (name =~ /^j2objc(Podspec|Xcode)$/).matches()
+                ) {
                     task.enabled = false
                 }
             }
