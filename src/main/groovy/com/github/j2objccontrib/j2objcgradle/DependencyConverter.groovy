@@ -62,6 +62,8 @@ class DependencyConverter {
             'com.squareup.retrofit:retrofit',
             'com.google.android:android',
             'co.touchlab.squeaky:squeaky-core',
+            'de.greenrobot:eventbus',
+            'co.touchlab:magicthreads',
             'com.google.dagger:dagger'
     ]
 
