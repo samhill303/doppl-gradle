@@ -46,6 +46,7 @@ class TranslateTask extends DefaultTask {
     // As an InputFile, if the content changes, the task will re-run in non-incremental mode.
 
     public static final String INCLUDE_START = "#include \""
+    public static final String IMPORT_START = "#import \""
 
     @InputFile
     File getJ2objcJar() {
@@ -395,24 +396,8 @@ class TranslateTask extends DefaultTask {
             })
 
             def generatedFiles = project.fileTree(dir: srcDir, includes: ['**/*.h', '**/*.m'])
-            def basePath = srcDir.getPath()
 
-            generatedFiles.each {File inFile ->
-
-                try {
-                    String transformPath = inFile.getPath().substring(basePath.length())
-                    String outputPath = findTransformedFilePath(transformPath, project)
-
-                    def moveTo = new File(srcDir, outputPath)
-                    inFile.renameTo(moveTo)
-                } catch (Exception e) {
-                    logger.error("Move failed", e)
-                }
-            }
-
-            def movedFiles = project.fileTree(dir: srcDir, includes: ['*.h', '*.m'])
-            modifyInclude(movedFiles, project)
-
+            remapHeaderLinks(generatedFiles.asList().toArray(new File[generatedFiles.size()]), srcDir, project)
 
         } catch (Exception exception) {  // NOSONAR
             // TODO: match on common failures and provide useful help
@@ -420,12 +405,113 @@ class TranslateTask extends DefaultTask {
         }
     }
 
-    static void modifyInclude(ConfigurableFileTree movedFiles, Project project) {
-        movedFiles.each { File inFile ->
-            modifyIncludeForFile(inFile, project)
+    static void remapHeaderLinks(File[] generatedFiles, File srcDir, Project project) {
+        def basePath = srcDir.getPath()
+        Map<String, String> pathToTranslatedFileMap = new HashMap<>()
+
+        generatedFiles.each { File inFile ->
+
+            try {
+                String transformPath = inFile.getPath().substring(basePath.length())
+                String outputPath = findTransformedFilePath(transformPath, project)
+
+                if (transformPath.startsWith("/"))
+                    transformPath = transformPath.substring(1)
+
+                pathToTranslatedFileMap.put(transformPath, outputPath)
+
+            } catch (Exception e) {
+                e.printStackTrace()
+//                logger.error("Move failed", e)
+            }
+        }
+
+        generatedFiles.each { File inFile ->
+
+            try {
+                def parentPath = inFile.getParentFile().getPath().substring(basePath.length())
+                if (parentPath.startsWith("/"))
+                    parentPath = parentPath.substring(1)
+
+                if(inFile.getPath().endsWith("IOSClass.h"))
+                    println "Just a break"
+
+                BufferedReader br = new BufferedReader(new FileReader(inFile))
+                def tempFile = new File(inFile.getParentFile(), inFile.getName() + ".tmp")
+                BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile))
+                String line;
+
+                while ((line = br.readLine()) != null) {
+                    if (line.startsWith(INCLUDE_START)) {
+
+                        def matchString = line.substring(INCLUDE_START.length(), line.indexOf('"', INCLUDE_START
+                                .length()));
+
+                        String moddedPath = null;
+
+                        if (pathToTranslatedFileMap.containsKey(matchString))
+                        {
+                            moddedPath = pathToTranslatedFileMap.get(matchString)
+                        }
+                        else if (pathToTranslatedFileMap.containsKey(parentPath + "/" + matchString))
+                        {
+                            println (parentPath + "/" + matchString)
+                            moddedPath = pathToTranslatedFileMap.get(parentPath + "/" + matchString)
+                        }
+
+
+                        if (moddedPath != null) {
+                            bw.append(INCLUDE_START).append(moddedPath).append('"').append("\n")
+                        } else {
+                            bw.append(line).append("\n")
+                        }
+                    } else if(line.startsWith(IMPORT_START)){
+                        def matchString = line.substring(IMPORT_START.length(), line.indexOf('"', IMPORT_START
+                                .length()));
+
+                        String moddedPath = null;
+
+                        if (pathToTranslatedFileMap.containsKey(matchString))
+                        {
+                            moddedPath = pathToTranslatedFileMap.get(matchString)
+                        }
+                        else if (pathToTranslatedFileMap.containsKey(parentPath + "/" + matchString))
+                        {
+                            println (parentPath + "/" + matchString)
+                            moddedPath = pathToTranslatedFileMap.get(parentPath + "/" + matchString)
+                        }
+
+
+                        if (moddedPath != null) {
+                            bw.append(IMPORT_START).append(moddedPath).append('"').append("\n")
+                        } else {
+                            bw.append(line).append("\n")
+                        }
+                    }
+
+                    else {
+                        bw.append(line).append("\n")
+                    }
+                }
+
+                bw.close()
+                br.close()
+                inFile.delete()
+                tempFile.renameTo(inFile)
+
+                String transformPath = inFile.getPath().substring(basePath.length())
+                if(transformPath.startsWith("/"))
+                    transformPath = transformPath.substring(1)
+
+                String outputPath = findTransformedFilePath(transformPath, project)
+                def moveTo = new File(srcDir, outputPath)
+                inFile.renameTo(moveTo)
+            } catch (Exception e) {
+                logger.error("Move failed", e)
+            }
         }
     }
-
+/*
     static void modifyIncludeForFile(File inFile, Project project) {
 
         BufferedReader br = new BufferedReader(new FileReader(inFile))
@@ -454,10 +540,13 @@ class TranslateTask extends DefaultTask {
         br.close()
         inFile.delete()
         tempFile.renameTo(inFile)
-    }
+    }*/
 
     static String findTransformedFilePath(String transformPath, org.gradle.api.Project project) {
         String[] theBits = transformPath.split("/")
+        if(theBits.length == 1)
+            return transformPath
+
         StringBuilder sb = new StringBuilder()
         J2objcConfig config = project == null ? null : project.extensions.findByType(J2objcConfig)
 

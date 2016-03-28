@@ -16,11 +16,13 @@ class FixLibraryPaths {
             }
         })
 
-        transformDirs.each {File f ->
-            renameRecursive(rootPath, f)
-        }
+        List<File> allFiles = new ArrayList<>()
 
-        def headerFixList = rootPath.listFiles(new FileFilter() {
+        renameRecursive(rootPath, rootPath, allFiles)
+
+        TranslateTask.remapHeaderLinks(allFiles.toArray(new File[allFiles.size()]), rootPath, null)
+
+        /*def headerFixList = rootPath.listFiles(new FileFilter() {
             @Override
             boolean accept(File pathname) {
                 return !pathname.isDirectory() && (pathname.getName().endsWith(".h") || pathname.getName().endsWith(".m"))
@@ -29,27 +31,34 @@ class FixLibraryPaths {
 
         headerFixList.each {File f ->
             TranslateTask.modifyIncludeForFile(f, null)
-        }
+        }*/
     }
 
-    static void renameRecursive(File rootDir, File dir)
+    static void renameRecursive(File rootDir, File dir, List<File> allFiles)
     {
-        def files = dir.listFiles()
+        def files = dir.listFiles(new FileFilter() {
+            @Override
+            boolean accept(File pathname) {
+                return pathname.isDirectory() || (pathname.getName().endsWith(".h") || pathname.getName().endsWith(".m"))
+            }
+        })
 
         files.each {File f ->
             if(f.isDirectory())
             {
-                renameRecursive(rootDir, f)
+                renameRecursive(rootDir, f, allFiles)
             }
             else
             {
-                def relativePath = f.getPath().substring(rootDir.getPath().length())
+                allFiles.add(f)
+                println "Adding: "+ f.getPath()
+                /*def relativePath = f.getPath().substring(rootDir.getPath().length())
 
                 def renamePath = TranslateTask.findTransformedFilePath(relativePath, null)
                 if(renamePath != null && renamePath.length() > 0)
                 {
                     f.renameTo(new File(rootDir, renamePath))
-                }
+                }*/
             }
         }
 
