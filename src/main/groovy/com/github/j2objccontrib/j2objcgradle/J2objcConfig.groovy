@@ -196,6 +196,8 @@ class J2objcConfig {
 
     List<String> podDependency = new ArrayList<>()
 
+    Map<String, String> translatedPathPrefix = new HashMap<>()
+
     /**
      * Add command line arguments for j2objc translate.
      * <p/>
@@ -212,6 +214,11 @@ class J2objcConfig {
         for (String s : dep) {
             this.podDependency.add(s)
         }
+    }
+
+    void translatedPathPrefix(String path, String prefix)
+    {
+        translatedPathPrefix.put(path, prefix)
     }
 
     /**

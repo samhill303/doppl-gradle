@@ -21,6 +21,7 @@ import groovy.transform.CompileStatic
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
+import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileCollection
@@ -43,6 +44,9 @@ class TranslateTask extends DefaultTask {
 
     // If the j2objc distribution changes, we want to rerun the task completely.
     // As an InputFile, if the content changes, the task will re-run in non-incremental mode.
+
+    public static final String INCLUDE_START = "#include \""
+
     @InputFile
     File getJ2objcJar() {
         return Utils.j2objcJar(project)
@@ -309,6 +313,11 @@ class TranslateTask extends DefaultTask {
 
     void doTranslate(UnionFileCollection sourcepathDirs, File srcDir, List<String> translateArgs,
                      FileCollection srcFilesToTranslate, String srcFilesArgFilename) {
+
+        srcFilesToTranslate.each {File f ->
+            logger.warn("totranslate: "+ f.getPath())
+        }
+
         int num = srcFilesToTranslate.getFiles().size()
         logger.info("Translating $num files with j2objc...")
         if (srcFilesToTranslate.getFiles().size() == 0) {
@@ -385,9 +394,86 @@ class TranslateTask extends DefaultTask {
                 setErrorOutput stderr
             })
 
+            def generatedFiles = project.fileTree(dir: srcDir, includes: ['**/*.h', '**/*.m'])
+            def basePath = srcDir.getPath()
+
+            generatedFiles.each {File inFile ->
+
+                try {
+                    String transformPath = inFile.getPath().substring(basePath.length())
+                    String outputPath = findTransformedFilePath(transformPath, project)
+
+                    def moveTo = new File(srcDir, outputPath)
+                    inFile.renameTo(moveTo)
+                } catch (Exception e) {
+                    logger.error("Move failed", e)
+                }
+            }
+
+            def movedFiles = project.fileTree(dir: srcDir, includes: ['*.h', '*.m'])
+            modifyInclude(movedFiles, project)
+
+
         } catch (Exception exception) {  // NOSONAR
             // TODO: match on common failures and provide useful help
             throw exception
         }
+    }
+
+    static void modifyInclude(ConfigurableFileTree movedFiles, Project project) {
+        movedFiles.each { File inFile ->
+            modifyIncludeForFile(inFile, project)
+        }
+    }
+
+    static void modifyIncludeForFile(File inFile, Project project) {
+
+        BufferedReader br = new BufferedReader(new FileReader(inFile))
+        def tempFile = new File(inFile.getParentFile(), inFile.getName() + ".tmp")
+        BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile))
+        String line;
+
+        while ((line = br.readLine()) != null) {
+            if (line.startsWith(INCLUDE_START)) {
+                def matchString = line.substring(INCLUDE_START.length(), line.indexOf('"', INCLUDE_START.length()))
+                def moddedPath = findTransformedFilePath(matchString, project)
+
+                if (moddedPath != null) {
+                    bw.append(INCLUDE_START).append(moddedPath).append('"').append("\n")
+                } else {
+                    bw.append(line).append("\n")
+                }
+            }
+            else
+            {
+                bw.append(line).append("\n")
+            }
+        }
+
+        bw.close()
+        br.close()
+        inFile.delete()
+        tempFile.renameTo(inFile)
+    }
+
+    static String findTransformedFilePath(String transformPath, org.gradle.api.Project project) {
+        String[] theBits = transformPath.split("/")
+        StringBuilder sb = new StringBuilder()
+        J2objcConfig config = project == null ? null : project.extensions.findByType(J2objcConfig)
+
+        theBits.each { String bit ->
+            if (bit.equals(theBits.last())) {
+                sb.append(bit)
+            } else {
+                sb.append(bit.capitalize())
+            }
+
+            if (config != null && config.translatedPathPrefix.containsKey(sb.toString())) {
+                sb = new StringBuilder(config.translatedPathPrefix.get(sb.toString()))
+            }
+        }
+
+        def outputPath = sb.toString()
+        outputPath
     }
 }
