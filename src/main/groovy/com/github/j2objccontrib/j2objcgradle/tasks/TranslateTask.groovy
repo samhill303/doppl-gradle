@@ -26,6 +26,7 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileCollection
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
@@ -140,6 +141,10 @@ class TranslateTask extends DefaultTask {
     @OutputDirectory
     File srcGenTestDir
 
+//    @InputDirectory
+    File srcMainObjcDir;
+
+    File srcTestObjcDir;
 
     @TaskAction
     void translate(IncrementalTaskInputs inputs) {
@@ -273,7 +278,7 @@ class TranslateTask extends DefaultTask {
         }
         logger.warn("#######sourcepathDirs: "+ sb.toString())
 
-        doTranslate(sourcepathDirs, srcGenMainDir, translateArgs, mainSrcFilesChanged, "mainSrcFilesArgFile")
+        doTranslate(sourcepathDirs, srcMainObjcDir, srcGenMainDir, translateArgs, mainSrcFilesChanged, "mainSrcFilesArgFile")
 
         // Translate test code. Tests are never built with --build-closure; otherwise
         // we will get duplicate symbol errors.
@@ -290,7 +295,7 @@ class TranslateTask extends DefaultTask {
                 project.files(getTranslateSourcepaths()),
                 project.files(getGeneratedSourceDirs())
         ])
-        doTranslate(sourcepathDirs, srcGenTestDir, testTranslateArgs, testSrcFilesChanged, "testSrcFilesArgFile")
+        doTranslate(sourcepathDirs, srcTestObjcDir, srcGenTestDir, testTranslateArgs, testSrcFilesChanged, "testSrcFilesArgFile")
     }
 
     int deleteRemovedFiles(List<String> removedFileNames, File dir) {
@@ -312,8 +317,16 @@ class TranslateTask extends DefaultTask {
         return destFiles.getFiles().size()
     }
 
-    void doTranslate(UnionFileCollection sourcepathDirs, File srcDir, List<String> translateArgs,
+    void doTranslate(UnionFileCollection sourcepathDirs, File nativeSourceDir, File srcDir, List<String> translateArgs,
                      FileCollection srcFilesToTranslate, String srcFilesArgFilename) {
+
+        if(nativeSourceDir != null && nativeSourceDir.exists()){
+            Utils.projectCopy(project, {
+                includeEmptyDirs = false
+                from nativeSourceDir
+                into srcDir
+            })
+        }
 
         srcFilesToTranslate.each {File f ->
             logger.warn("totranslate: "+ f.getPath())
@@ -369,6 +382,7 @@ class TranslateTask extends DefaultTask {
         ByteArrayOutputStream stderr = new ByteArrayOutputStream()
 
         logger.debug('TranslateTask - projectExec:')
+
         try {
             Utils.projectExec(project, stdout, stderr, null, {
                 executable j2objcExecutable
@@ -395,9 +409,10 @@ class TranslateTask extends DefaultTask {
                 setErrorOutput stderr
             })
 
-            def generatedFiles = project.fileTree(dir: srcDir, includes: ['**/*.h', '**/*.m'])
 
-            remapHeaderLinks(generatedFiles.asList().toArray(new File[generatedFiles.size()]), srcDir, project)
+//            def generatedFiles = project.fileTree(dir: srcDir, includes: ['**/*.h', '**/*.m'])
+//
+//            remapHeaderLinks(generatedFiles.asList().toArray(new File[generatedFiles.size()]), srcDir, project)
 
         } catch (Exception exception) {  // NOSONAR
             // TODO: match on common failures and provide useful help
@@ -407,7 +422,7 @@ class TranslateTask extends DefaultTask {
 
     static void remapHeaderLinks(File[] generatedFiles, File srcDir, Project project) {
         def basePath = srcDir.getPath()
-        Map<String, String> pathToTranslatedFileMap = new HashMap<>()
+        Map<String, String> pathToTranslatedFileMap = project.extensions.findByType(J2objcConfig).pathToTranslatedFileMap
 
         generatedFiles.each { File inFile ->
 
@@ -509,6 +524,10 @@ class TranslateTask extends DefaultTask {
             } catch (Exception e) {
                 logger.error("Move failed", e)
             }
+        }
+
+        pathToTranslatedFileMap.keySet().each {String key ->
+            println(key +"="+ pathToTranslatedFileMap.get(key))
         }
     }
 /*

@@ -195,6 +195,7 @@ class J2objcConfig {
     List<String> translateArgs = new ArrayList<>()
 
     List<String> podDependency = new ArrayList<>()
+    List<String> headerMappingFiles = new ArrayList<>()
 
     Map<String, String> translatedPathPrefix = new HashMap<>()
 
@@ -213,6 +214,13 @@ class J2objcConfig {
     void podDependency(String... dep) {
         for (String s : dep) {
             this.podDependency.add(s)
+        }
+    }
+
+    void headerMappingFiles(String... f)
+    {
+        for (String filename : f) {
+            this.headerMappingFiles.add(filename)
         }
     }
 
@@ -311,7 +319,7 @@ class J2objcConfig {
             // Memory annotations, e.g. @Weak, @AutoreleasePool
             "j2objc_annotations.jar",
             // Libraries that have CycleFinder fixes, e.g. @Weak and code removal
-            "j2objc_guava.jar", "j2objc_junit.jar", "jre_emul.jar",
+            "guava-19.0.jar", "j2objc_junit.jar", "jre_emul.jar",
             // Libraries that don't need CycleFinder fixes
             "javax.inject-1.jar", "jsr305-3.0.0.jar",
             "mockito-core-1.9.5.jar", "hamcrest-core-1.3.jar", "protobuf_runtime.jar"]
@@ -770,6 +778,9 @@ class J2objcConfig {
     List<String> xcodeReleaseConfigurations = ['Release']
 
     protected boolean finalConfigured = false
+
+    Map<String, String> pathToTranslatedFileMap = new TreeMap<>()
+
     /**
      * Configures the j2objc build.  Must be called at the very
      * end of your j2objcConfig block.
@@ -800,6 +811,19 @@ class J2objcConfig {
         resolveDeps()
         configureNativeCompilation()
         configureTaskState()
+
+        headerMappingFiles.each {String inpFile ->
+            def properties = new Properties()
+
+            def reader = new FileReader(project.file(inpFile))
+            properties.load(reader)
+            reader.close()
+
+            properties.propertyNames().each {String key ->
+                pathToTranslatedFileMap.put(key, properties.getProperty(key))
+            }
+        }
+
         finalConfigured = true
     }
 
@@ -810,14 +834,14 @@ class J2objcConfig {
             return
         }
 
-        if (!Utils.isAtLeastVersion(j2objcVersion, MIN_SUPPORTED_J2OBJC_VERSION)) {
+        /*if (!Utils.isAtLeastVersion(j2objcVersion, MIN_SUPPORTED_J2OBJC_VERSION)) {
             String requestedVersion = j2objcVersion
             // j2objcVersion is used for instructing the user how to install j2objc
             // so we should use the version we need, not the bad one the user requested.
             j2objcVersion = MIN_SUPPORTED_J2OBJC_VERSION
             Utils.throwJ2objcConfigFailure(project,
                     "Must use at least J2ObjC version $MIN_SUPPORTED_J2OBJC_VERSION; you requested $requestedVersion.")
-        }
+        }*/
 
         // Make sure we have *some* J2ObjC distribution identified.
         // This will throw a proper out-of-box error if misconfigured.
@@ -863,12 +887,12 @@ class J2objcConfig {
                                                     "J2ObjC binary at $j2objcHome too old, v$j2objcVersion required.")
         }
         // Yes, J2ObjC uses stderr to output the version.
-        String actualVersionString = stderr.toString().trim()
+        /*String actualVersionString = stderr.toString().trim()
         if (actualVersionString != "j2objc $j2objcVersion".toString()) {
             // Note that actualVersionString will usually already have the word 'j2objc' in it.
             Utils.throwJ2objcConfigFailure(project,
                     "Found $actualVersionString at $j2objcHome, J2ObjC v$j2objcVersion required.")
-        }
+        }*/
     }
 
     protected void validateConfiguration() {

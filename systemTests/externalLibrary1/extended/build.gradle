@@ -32,7 +32,7 @@ dependencies {
 
 j2objcConfig {
     // For now, default config links in prebuilt Guava; that defeats the point.
-    translateJ2objcLibs.remove("j2objc_guava.jar")
+    translateJ2objcLibs.remove("guava-19.0.jar")
     linkJ2objcLibs.remove("guava")
 
     autoConfigureDeps true

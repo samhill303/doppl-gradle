@@ -18,6 +18,7 @@ package com.github.j2objccontrib.j2objcgradle
 
 import com.github.j2objccontrib.j2objcgradle.tasks.Utils
 import groovy.transform.PackageScope
+import org.apache.commons.lang.StringUtils
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.InvalidUserDataException
@@ -109,6 +110,7 @@ class NativeCompilation {
                 }
                 compilerArgs += clangArgs
                 linkerArgs += clangArgs
+
                 gccPlatformToolChain.objcCompiler.withArguments { List<String> args ->
                     args.addAll(compilerArgs)
                 }

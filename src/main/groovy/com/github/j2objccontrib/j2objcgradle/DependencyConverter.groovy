@@ -125,12 +125,12 @@ class DependencyConverter {
         project.logger.debug("j2objc dependency converter: External module dep: $dep")
         // If the dep is already in the j2objc dist, ignore it.
         def depResolveString = "${dep.group}:${dep.name}".toString()
-        if(DOPPEL_HARDCODED.contains(depResolveString))
+        /*if(DOPPEL_HARDCODED.contains(depResolveString))
         {
             project.logger.debug("-- Added DOPPEL_HARDCODED: $dep")
             project.configurations.getByName(isTest ? 'j2objcTestLinkage' : 'j2objcLinkage').dependencies.add(dep.copy())
         }
-        else if (J2OBJC_DEFAULT_LIBS.contains(depResolveString))
+        else */if (J2OBJC_DEFAULT_LIBS.contains(depResolveString))
         {
             // TODO: A more correct method might be converting these into our own
             // form of SelfResolvingDependency that specifies which j2objc dist lib

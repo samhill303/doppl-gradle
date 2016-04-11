@@ -225,8 +225,6 @@ class XcodeTask extends DefaultTask {
                 getXcodeTargetsIos(), getXcodeTargetsOsx(), getXcodeTargetsWatchos(),
                 getMinVersionIos(), getMinVersionOsx(), getMinVersionWatchos())
 
-        logger.error("balls\nYou are a shitheel, whoever wrote this")
-
         List<String> dependencies = getPodDependencies()
         for (String s : dependencies) {
             logger.error("asdf: "+ s)
@@ -734,7 +732,13 @@ class XcodeTask extends DefaultTask {
 
         List<String> insertLines = new ArrayList<>()
         insertLines.add('    platform :INVALID')
+        Map<String, PodspecDetails> distinctPodspecs = new HashMap<>()
+
         podspecDetailsList.each { PodspecDetails podspecDetails ->
+            distinctPodspecs.put(podspecDetails.getPodMethodName(), podspecDetails)
+        }
+
+        distinctPodspecs.values().each { PodspecDetails podspecDetails ->
             insertLines.add("    ${podspecDetails.getPodMethodName()}".toString())
         }
 

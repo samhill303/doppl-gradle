@@ -39,6 +39,7 @@ class AssembleSourceTask extends DefaultTask {
     File srcGenTestDir
 
 
+
     @OutputDirectory
     File getDestSrcMainObjcDirFile() {
         return J2objcConfig.from(project).getDestSrcDirFile('main', 'objc')

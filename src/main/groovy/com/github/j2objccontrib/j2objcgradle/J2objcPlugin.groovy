@@ -150,6 +150,20 @@ class J2objcPlugin implements Plugin<Project> {
                 // Output directories of 'j2objcTranslate', input for all other tasks
                 srcGenMainDir = j2objcSrcGenMainDir
                 srcGenTestDir = j2objcSrcGenTestDir
+                try {
+                    def file = file('src/main/objc')
+                    if(file.exists())
+                        srcMainObjcDir = file
+                } catch (Exception e) {
+                    //Ugh
+                }
+                try {
+                    def file = file('src/test/objc')
+                    if(file.exists())
+                        srcTestObjcDir = file
+                } catch (Exception e) {
+                    //Don't care
+                }
             }
 
             // j2objcCycleFinder is disabled by default as it's complex to use and understand.

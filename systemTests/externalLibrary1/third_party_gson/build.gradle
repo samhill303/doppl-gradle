@@ -27,15 +27,21 @@ dependencies {
     // j2objcTranslation must always be passed a *source* jar,
     // therefore, note the ':sources' classifier.
     j2objcTranslation 'com.google.code.gson:gson:2.3.1:sources'
+
+
 }
 
 j2objcConfig {
     forceFilenameCollisionCheck false
     // For now, default config links in prebuilt Guava; that defeats the point.
-    translateJ2objcLibs.remove("j2objc_guava.jar")
+    translateJ2objcLibs.remove("guava-19.0.jar")
     linkJ2objcLibs.remove("guava")
 
     // Almost always there are no tests provided in an external source jar.
     testMinExpectedTests 0
+
+    translateArgs '-use-arc'
+    extraObjcCompilerArgs '-fobjc-arc'
+
     finalConfigure()
 }
