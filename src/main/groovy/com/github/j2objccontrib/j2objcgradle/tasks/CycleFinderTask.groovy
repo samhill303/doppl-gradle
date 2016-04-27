@@ -122,7 +122,7 @@ class CycleFinderTask extends DefaultTask {
 
         UnionFileCollection sourcepathDirs = new UnionFileCollection([
                 project.files(Utils.srcSet(project, 'main', 'java').getSrcDirs()),
-                project.files(Utils.srcSet(project, 'test', 'java').getSrcDirs()),
+//                project.files(Utils.srcSet(project, 'test', 'java').getSrcDirs()),
                 project.files(getTranslateSourcepaths()),
                 project.files(getGeneratedSourceDirs())
         ])
@@ -175,6 +175,8 @@ class CycleFinderTask extends DefaultTask {
             if (!Utils.isProjectExecNonZeroExit(exception)) {
                 throw exception
             }
+
+            print(stdout.toString());
 
             String cyclesFoundStr = Utils.matchRegexOutputs(stdout, stderr, cyclesFoundRegex)
             if (!cyclesFoundStr?.isInteger()) {

@@ -67,8 +67,8 @@ class J2objcPlugin implements Plugin<Project> {
                                  "https://github.com/j2objc-contrib/j2objc-gradle/blob/master/FAQ.md#how-do-i-call-finalconfigure")
                 }
 
-                boolean arcTranslateArg = '-use-arc' in evaluatedProject.j2objcConfig.translateArgs
-                boolean arcCompilerArg = '-fobjc-arc' in evaluatedProject.j2objcConfig.extraObjcCompilerArgs
+                boolean arcTranslateArg = true;// = '-use-arc' in evaluatedProject.j2objcConfig.translateArgs
+                boolean arcCompilerArg = true;//'-fobjc-arc' in evaluatedProject.j2objcConfig.extraObjcCompilerArgs
                 if (arcTranslateArg && !arcCompilerArg || !arcTranslateArg && arcCompilerArg) {
                     logger.error("Project '${evaluatedProject.name}' is missing required ARC flags:\n" +
                                  "https://github.com/j2objc-contrib/j2objc-gradle/blob/master/FAQ.md#how-do-i-enable-arc-for-my-translated-objective-c-classes")

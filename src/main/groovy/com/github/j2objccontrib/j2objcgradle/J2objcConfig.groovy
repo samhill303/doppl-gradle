@@ -113,6 +113,8 @@ class J2objcConfig {
      */
     String destSrcTestDir = null
 
+    boolean podRetainSource = false;
+
     // Private helper methods
     // Should use instead of accessing client set 'dest' strings
     File getDestLibDirFile() {

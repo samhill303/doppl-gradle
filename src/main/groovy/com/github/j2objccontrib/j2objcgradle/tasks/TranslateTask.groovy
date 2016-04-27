@@ -392,7 +392,7 @@ class TranslateTask extends DefaultTask {
 
                 // Arguments
                 args "-d", srcDir
-                args "-use-arc", ''
+//                args "-use-arc", ''
                 args "-sourcepath", sourcepathArg
                 args "-classpath", classpathArg
                 translateArgs.each { String translateArg ->
