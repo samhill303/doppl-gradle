@@ -286,27 +286,6 @@ class J2objcConfig {
     boolean UNSAFE_incrementalBuildClosure = false
 
     /**
-     * Experimental functionality to automatically configure dependencies.
-     * Consider you have dependencies like:
-     * <pre>
-     * dependencies {
-     *     compile project(':peer1')                  // type (1)
-     *     compile 'com.google.code.gson:gson:2.3.1'  // type (3)
-     *     compile 'com.google.guava:guava:18.0'      // type (2)
-     *     testCompile 'junit:junit:4.11'             // type (2)
-     * }
-     * </pre>
-     * Project dependencies (1) will be added as a `j2objcLink` dependency.
-     * Libraries already included in j2objc (2) will be ignored.
-     * External libraries in Maven (3) will be added in source JAR form to
-     * `j2objcTranslate`, and translated using `--build-closure`.
-     * Dependencies must be fully specified before you call finalConfigure().
-     * <p/>
-     * This will become the default when stable in future releases.
-     */
-    boolean autoConfigureDeps = false
-
-    /**
      * Additional Java libraries that are part of the j2objc distribution.
      * <p/>
      * For example:
@@ -804,10 +783,7 @@ class J2objcConfig {
         }
 
         validateConfiguration()
-        // Conversion of compile and testCompile dependencies occurs optionally.
-        if (autoConfigureDeps) {
-            convertDeps()
-        }
+
         // Resolution of j2objcTranslateSource dependencies occurs always.
         // This lets users turn off autoConfigureDeps but manually set j2objcTranslateSource.
         resolveDeps()
@@ -927,10 +903,6 @@ class J2objcConfig {
         nativeCompilation.applyWhenUnsupported()
     }
 
-    protected void convertDeps() {
-        new DependencyConverter(project, this).configureAll()
-    }
-
     protected void resolveDeps() {
         new DependencyResolver(project, this).configureAll()
     }
@@ -1021,9 +993,6 @@ class J2objcConfig {
     void testingOnlyPrepConfigurations() {
         // When testing we don't always want to apply the entire plugin
         // before calling finalConfigure.
-        project.configurations.create('j2objcTranslationClosure')
-        project.configurations.create('j2objcTranslation')
-        project.configurations.create('j2objcTestTranslation')
         project.configurations.create('j2objcLinkage')
         project.configurations.create('j2objcTestLinkage')
     }
