@@ -86,16 +86,24 @@ class NativeCompilation {
                 String[] linkerArgs = []
                 J2objcConfig config = J2objcConfig.from(project)
                 String j2objcPath = Utils.j2objcHome(project)
+                String doppelPath = Utils.doppelHome(project)
+
                 switch (targetSpec) {
                     case TargetSpec.TARGET_IOS_DEVICE:
                         clangArgs += iphoneClangArgs
                         clangArgs += ["-miphoneos-version-min=${config.minVersionIos}"]
                         linkerArgs += ["-L$j2objcPath/lib"]
+                        config.translateDoppelLibs.each { String libArg ->
+                            linkerArgs += ["-L$doppelPath/$libArg/lib"]
+                        }
                         break
                     case TargetSpec.TARGET_IOS_SIMULATOR:
                         clangArgs += simulatorClangArgs
                         clangArgs += ["-mios-simulator-version-min=${config.minVersionIos}"]
                         linkerArgs += ["-L$j2objcPath/lib"]
+                        config.translateDoppelLibs.each { String libArg ->
+                            linkerArgs += ["-L$doppelPath/$libArg/lib"]
+                        }
                         break
                     case TargetSpec.TARGET_OSX:
                         if (!Utils.j2objcHasOsxDistribution(project)) {
@@ -105,6 +113,9 @@ class NativeCompilation {
                             throw new InvalidUserDataException(msg)
                         }
                         linkerArgs += ["-L$j2objcPath/lib/macosx"]
+                        config.translateDoppelLibs.each { String libArg ->
+                            linkerArgs += ["-L$doppelPath/$libArg/lib/x86_64Debug"]
+                        }
                         linkerArgs += ['-framework', 'ExceptionHandling']
                         break
                 }
@@ -274,6 +285,7 @@ class NativeCompilation {
                 // Only want to modify the Objective-C toolchain, not the JDK one.
                 if (toolChain in Clang) {
                     String j2objcPath = Utils.j2objcHome(project)
+                    String doppelPath = Utils.doppelHome(project)
 
                     // If you want to override the arguments passed to the compiler and linker,
                     // you must configure the binaries in your own build.gradle.
@@ -293,6 +305,11 @@ class NativeCompilation {
                     linker.args '-ljre_emul'
                     j2objcConfig.linkJ2objcLibs.each { String libArg ->
                         linker.args "-l$libArg"
+                    }
+
+                    j2objcConfig.translateDoppelLibs.each { String libArg ->
+                        objcCompiler.args "-I$doppelPath/$libArg/include"
+                        linker.args "-l$libArg-j2objc"
                     }
 
                     // J2ObjC iOS library dependencies:

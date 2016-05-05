@@ -239,6 +239,7 @@ class Utils {
         'debug.enabled',
         'enabledArchs',
         'home',
+        'doppel.home',
         'release.enabled',
         'translateOnlyMode'
     ))
@@ -305,6 +306,19 @@ class Utils {
         }
         // File removes trailing slashes cause problems with string concatenation logic
         return j2objcHomeFile.absolutePath
+    }
+
+    static String doppelHome(Project proj) {
+        String doppelHome = getLocalProperty(proj, 'doppel.home')
+        if (doppelHome == null) {
+            throwJ2objcConfigFailure(proj, "Doppel Home not set.")
+        }
+        File doppelHomeFile = new File(doppelHome)
+        if (!doppelHomeFile.exists()) {
+            throwJ2objcConfigFailure(proj, "Doppel Home directory not found, expected at $doppelHome.")
+        }
+        // File removes trailing slashes cause problems with string concatenation logic
+        return doppelHomeFile.absolutePath
     }
 
     static File j2objcJar(Project proj) {
@@ -441,6 +455,13 @@ class Utils {
                                    List<String> libraries) {
         return libraries.collect { String library ->
             return "$j2objcHome/lib/$library"
+        }
+    }
+
+    static List<String> doppelJarLibs(String doppelHome,
+                                   List<String> libraries) {
+        return libraries.collect { String library ->
+            return "$doppelHome/$library/lib/$library" + ".jar"
         }
     }
 

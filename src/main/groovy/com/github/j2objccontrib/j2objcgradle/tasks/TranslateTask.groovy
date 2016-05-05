@@ -113,6 +113,9 @@ class TranslateTask extends DefaultTask {
     String getJ2objcHome() { return Utils.j2objcHome(project) }
 
     @Input
+    String getDoppelHome() { return Utils.doppelHome(project) }
+
+    @Input
     List<String> getTranslateArgs() { return J2objcConfig.from(project).translateArgs }
 
     @Input
@@ -126,6 +129,9 @@ class TranslateTask extends DefaultTask {
 
     @Input
     List<String> getTranslateJ2objcLibs() { return J2objcConfig.from(project).translateJ2objcLibs }
+
+    @Input
+    List<String> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }
 
     @Input
     Map<String, String> getTranslateSourceMapping() { return J2objcConfig.from(project).translateSourceMapping }
@@ -351,8 +357,10 @@ class TranslateTask extends DefaultTask {
 
         UnionFileCollection classpathFiles = new UnionFileCollection([
                 project.files(getTranslateClasspaths()),
-                project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs()))
+                project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs())),
+                project.files(Utils.doppelJarLibs(getDoppelHome(), getTranslateDoppelLibs()))
         ])
+
         // TODO: comment explaining ${project.buildDir}/classes
         String classpathArg = Utils.joinedPathArg(classpathFiles) +
                               Utils.pathSeparator() + "${project.buildDir}/classes"

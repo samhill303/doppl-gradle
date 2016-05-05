@@ -67,6 +67,7 @@ class J2objcConfig {
 
         // Provide defaults for assembly output locations.
         destLibDir = new File(project.buildDir, 'j2objcOutputs/lib').absolutePath
+        destJavaJarDir = new File(project.buildDir, 'libs').absolutePath
         // Can't be in subdirectory as podspec paths must be relative and not traverse parent ('..')
         destPodspecDir = new File(project.buildDir, 'j2objcOutputs').absolutePath
         destSrcMainDir = new File(project.buildDir, 'j2objcOutputs/src/main').absolutePath
@@ -98,10 +99,12 @@ class J2objcConfig {
      */
     String destLibDir = null
 
+    String destJavaJarDir = null;
+
     /**
      * Where to assemble generated main source and resources files.
      * <p/>
-     * Defaults to $buildDir/j2objcOutputs/src/main/objc
+     * Defaults to $buildDir/j2objcOutputs/src/main
      */
     String destSrcMainDir = null
 
@@ -109,7 +112,7 @@ class J2objcConfig {
      * Where to assemble generated test source and resources files.
      * <p/>
      * Can be the same directory as destDir
-     * Defaults to $buildDir/j2objcOutputs/src/test/objc
+     * Defaults to $buildDir/j2objcOutputs/src/test
      */
     String destSrcTestDir = null
 
@@ -196,7 +199,6 @@ class J2objcConfig {
      */
     List<String> translateArgs = new ArrayList<>()
 
-    List<String> podDependency = new ArrayList<>()
     List<String> headerMappingFiles = new ArrayList<>()
 
     Map<String, String> translatedPathPrefix = new HashMap<>()
@@ -211,12 +213,6 @@ class J2objcConfig {
      */
     void translateArgs(String... translateArgs) {
         appendArgs(this.translateArgs, 'translateArgs', true, translateArgs)
-    }
-
-    void podDependency(String... dep) {
-        for (String s : dep) {
-            this.podDependency.add(s)
-        }
     }
 
     void headerMappingFiles(String... f)
@@ -304,6 +300,23 @@ class J2objcConfig {
             // Libraries that don't need CycleFinder fixes
             "javax.inject-1.jar", "jsr305-3.0.0.jar",
             "mockito-core-1.9.5.jar", "hamcrest-core-1.3.jar", "protobuf_runtime.jar"]
+
+    /**
+     * Additional arguments to pass to the native linker.
+     */
+    // Native build accepts empty array but throws exception on empty List<String>
+    List<String> translateDoppelLibs = new ArrayList<>()
+
+    /**
+     * Add arguments to pass to the native linker.
+     *
+     * @param extraLinkerArgs add arguments to pass to the native linker.
+     */
+    void translateDoppelLibs(String... translateDoppelLibs) {
+        for (String arg in translateDoppelLibs) {
+            this.translateDoppelLibs += arg
+        }
+    }
 
     /**
      * Additional native libraries that are part of the j2objc distribution to link
@@ -670,6 +683,11 @@ class J2objcConfig {
      *
      */
     String xcodeProjectDir = null
+
+    /**
+     * Directory of doppel package deploy. Should really be used for doppel insiders.  Not users.  But whatever.
+     */
+    String doppelDeployDir = null
 
     /**
      * iOS app and test Xcode targets to link to the generated libraries.

@@ -20,6 +20,7 @@ import com.github.j2objccontrib.j2objcgradle.tasks.AssembleLibrariesTask
 import com.github.j2objccontrib.j2objcgradle.tasks.AssembleResourcesTask
 import com.github.j2objccontrib.j2objcgradle.tasks.AssembleSourceTask
 import com.github.j2objccontrib.j2objcgradle.tasks.CycleFinderTask
+import com.github.j2objccontrib.j2objcgradle.tasks.DoppelDeployTask
 import com.github.j2objccontrib.j2objcgradle.tasks.PackLibrariesTask
 import com.github.j2objccontrib.j2objcgradle.tasks.PodspecTask
 import com.github.j2objccontrib.j2objcgradle.tasks.TestTask
@@ -266,7 +267,13 @@ class J2objcPlugin implements Plugin<Project> {
                 group 'build'
                 description "Marker task for all tasks that take part in regular j2objc builds"
             }
-            lateDependsOn(project, 'build', 'j2objcBuild')
+
+            tasks.create(name: 'doppelDeploy', type: DoppelDeployTask,
+                    dependsOn: 'j2objcBuild') {
+                group 'build'
+                description 'Depends on j2objc build, move all doppel stuff to deploy dir'
+            }
+            lateDependsOn(project, 'build', 'doppelDeploy')
         }
     }
 
