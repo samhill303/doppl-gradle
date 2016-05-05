@@ -39,12 +39,12 @@ task wrapper(type: Wrapper) {
     distributionUrl = 'https://services.gradle.org/distributions/gradle-2.4-all.zip'
 }
 
-group = 'com.github.j2objccontrib.j2objcgradle'
+group = 'com.touchlab.doppel'
 
 // A suffix of -SNAPSHOT means this is not an official release of the
 // system, but built from an intermediate source tree.  Instructions:
 // https://github.com/j2objc-contrib/j2objc-gradle/blob/master/CONTRIBUTING.md#publishing-and-versioning
-version = '0.7.2-alpha-SNAPSHOT'
+version = '0.1.0-alpha-SNAPSHOT'
 
 test {
     testLogging {
@@ -69,8 +69,8 @@ pluginBundle {
 
     plugins {
         j2objcPlugin {
-            id = 'com.github.j2objccontrib.j2objcgradle'
-            displayName = 'J2ObjC Gradle Plugin'
+            id = 'com.touchlab.doppel.doppelgradle'
+            displayName = 'Doppel Gradle Plugin'
         }
     }
 }
@@ -88,7 +88,7 @@ configurations {
 install {
     repositories.mavenInstaller {
         pom.version = project.version
-        pom.artifactId = 'j2objc-touchlab'
+        pom.artifactId = 'doppelgradle'
     }
 }
 
