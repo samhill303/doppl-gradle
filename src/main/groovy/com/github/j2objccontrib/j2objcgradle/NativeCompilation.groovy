@@ -294,7 +294,7 @@ class NativeCompilation {
                     // TODO: Consider making this configuration easier using plugin extension.
                     // If we do that, however, we will become inconsistent with Gradle Objective-C building.
                     objcCompiler.args "-I$j2objcPath/include"
-                    objcCompiler.args /*'-Werror',*/ '-Wno-parentheses', '-fno-strict-overflow'//, '-fembed-bitcode-marker'
+                    objcCompiler.args /*'-Werror',*/ '-Wno-parentheses', '-fno-strict-overflow', '-fembed-bitcode'//, '-fembed-bitcode-marker'
                     objcCompiler.args '-std=c11'
                     objcCompiler.args j2objcConfig.extraObjcCompilerArgs
 
@@ -313,7 +313,7 @@ class NativeCompilation {
                     }
 
                     // J2ObjC iOS library dependencies:
-                    linker.args '-lc++'                    // C++ runtime for protobuf runtime
+//                    linker.args '-lc++'                    // C++ runtime for protobuf runtime
                     linker.args '-licucore'                // java.text
                     linker.args '-lz'                      // java.util.zip
                     linker.args '-framework', 'Foundation' // core ObjC classes: NSObject, NSString

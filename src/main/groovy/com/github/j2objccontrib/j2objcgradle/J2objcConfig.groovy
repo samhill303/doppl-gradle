@@ -161,6 +161,16 @@ class J2objcConfig {
         appendArgs(this.generatedSourceDirs, 'generatedSourceDirs', true, generatedSourceDirs)
     }
 
+    List<String> generatedTestSourceDirs = ['build/classes/test', 'build/generated/source/apt/test']
+    /**
+     * Add generated source files directories, e.g. from dagger annotations.
+     *
+     * @param generatedSourceDirs adds generated source directories for j2objc translate
+     */
+    void generatedTestSourceDirs(String... generatedTestSourceDirs) {
+        appendArgs(this.generatedTestSourceDirs, 'generatedTestSourceDirs', true, generatedTestSourceDirs)
+    }
+
 
     // CYCLEFINDER
     /**
@@ -299,7 +309,7 @@ class J2objcConfig {
             "guava-19.0.jar", "j2objc_junit.jar", "jre_emul.jar",
             // Libraries that don't need CycleFinder fixes
             "javax.inject-1.jar", "jsr305-3.0.0.jar",
-            "mockito-core-1.9.5.jar", "hamcrest-core-1.3.jar", "protobuf_runtime.jar"]
+            "mockito-core-1.9.5.jar", "hamcrest-core-1.3.jar"/*, "protobuf_runtime.jar"*/]
 
     /**
      * Additional arguments to pass to the native linker.
@@ -329,7 +339,7 @@ class J2objcConfig {
      */
     // J2objc default libraries, from $J2OBJC_HOME/lib/..., without '.a' extension.
     // TODO: auto add libraries based on java dependencies, warn on version differences
-    List<String> linkJ2objcLibs = ['guava', 'javax_inject', 'jsr305', 'protobuf_runtime']
+    List<String> linkJ2objcLibs = ['guava', 'javax_inject', 'jsr305'/*, 'protobuf_runtime'*/]
 
     /**
      * Additional native libraries that are part of the j2objc distribution to link

@@ -29,6 +29,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
@@ -67,7 +68,7 @@ class TranslateTask extends DefaultTask {
             allFiles = allFiles.matching(J2objcConfig.from(project).translatePattern)
         }
         FileCollection ret = allFiles.plus(Utils.javaTrees(project, getGeneratedSourceDirs()))
-        allFiles.plus(project.fileTree(dir: "${project.buildDir}/generated/source/apt/main"))
+//        allFiles.plus(project.fileTree(dir: "${project.buildDir}/generated/source/apt/main"))
         ret = Utils.mapSourceFiles(project, ret, getTranslateSourceMapping())
         return ret
     }
@@ -79,8 +80,8 @@ class TranslateTask extends DefaultTask {
         if (J2objcConfig.from(project).translatePattern != null) {
             allFiles = allFiles.matching(J2objcConfig.from(project).translatePattern)
         }
-        FileCollection ret = allFiles
-        allFiles.plus(project.fileTree(dir: "${project.buildDir}/generated/source/apt/test"))
+        FileCollection ret = allFiles.plus(Utils.javaTrees(project, getGeneratedTestSourceDirs()))
+//        allFiles.plus(project.fileTree(dir: "${project.buildDir}/generated/source/apt/test"))
         ret = Utils.mapSourceFiles(project, ret, getTranslateSourceMapping())
         return ret
     }
@@ -128,6 +129,9 @@ class TranslateTask extends DefaultTask {
     List<String> getGeneratedSourceDirs() { return J2objcConfig.from(project).generatedSourceDirs }
 
     @Input
+    List<String> getGeneratedTestSourceDirs() { return J2objcConfig.from(project).generatedTestSourceDirs }
+
+    @Input
     List<String> getTranslateJ2objcLibs() { return J2objcConfig.from(project).translateJ2objcLibs }
 
     @Input
@@ -147,9 +151,10 @@ class TranslateTask extends DefaultTask {
     @OutputDirectory
     File srcGenTestDir
 
-//    @InputDirectory
+    @InputDirectory @Optional
     File srcMainObjcDir;
 
+    @InputDirectory @Optional
     File srcTestObjcDir;
 
     @TaskAction
@@ -299,7 +304,8 @@ class TranslateTask extends DefaultTask {
                 project.files(Utils.srcSet(project, 'main', 'java').getSrcDirs()),
                 project.files(Utils.srcSet(project, 'test', 'java').getSrcDirs()),
                 project.files(getTranslateSourcepaths()),
-                project.files(getGeneratedSourceDirs())
+                project.files(getGeneratedSourceDirs()),
+                project.files(getGeneratedTestSourceDirs())
         ])
         doTranslate(sourcepathDirs, srcTestObjcDir, srcGenTestDir, testTranslateArgs, testSrcFilesChanged, "testSrcFilesArgFile")
     }

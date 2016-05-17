@@ -68,11 +68,11 @@ class Utils {
             errorMsg = "J2ObjC Gradle Plugin requires minimum Gradle version: $minGradleVersion"
         }
 
-        final GradleVersion unsupportedGradleVersion = GradleVersion.version('2.9')
+        /*final GradleVersion unsupportedGradleVersion = GradleVersion.version('2.9')
         if (gradleVersion.compareTo(unsupportedGradleVersion) >= 0) {
             errorMsg = "Please use Gradle 2.8 as $unsupportedGradleVersion is unsupported:\n" +
                        "https://github.com/j2objc-contrib/j2objc-gradle/issues/568"
-        }
+        }*/
 
         if (!errorMsg.isEmpty()) {
             if (throwIfUnsupported) {

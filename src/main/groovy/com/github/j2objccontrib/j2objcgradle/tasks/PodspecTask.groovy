@@ -176,12 +176,12 @@ class PodspecTask extends DefaultTask {
                "  spec.resources = 'resources/**/*'\n" +
 
                 //TODO: This may not really be true
-               "  spec.requires_arc = true\n" +
+//               "  spec.requires_arc = true\n" +
                 "  spec.public_header_files = '${headerPath}/**/*.h'\n" +
                 "  spec.header_mappings_dir = '${headerPath}'\n" +
                "  spec.libraries = " +  // continuation of same line
 
-               "'ObjC', 'guava', 'javax_inject', 'jre_emul', 'jsr305', 'z', 'icucore'\n";
+               "'ObjC', 'javax_inject', 'jre_emul', 'jsr305', 'z', 'icucore'\n";
 
         if(retainSource)
         {
