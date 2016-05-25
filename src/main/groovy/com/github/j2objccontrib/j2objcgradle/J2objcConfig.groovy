@@ -695,9 +695,13 @@ class J2objcConfig {
     String xcodeProjectDir = null
 
     /**
-     * Directory of doppel package deploy. Should really be used for doppel insiders.  Not users.  But whatever.
+     * Deploy as doppel package? You probably don't want this to be true.
      */
-    String doppelDeployDir = null
+    boolean doppelPackageDeploy = false
+
+    String getDoppelDeployDirectory(){
+        return new File(Utils.j2objcHome(project), "doppel").getAbsolutePath()
+    }
 
     /**
      * iOS app and test Xcode targets to link to the generated libraries.

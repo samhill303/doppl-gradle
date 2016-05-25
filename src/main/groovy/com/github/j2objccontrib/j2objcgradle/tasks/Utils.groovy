@@ -239,7 +239,6 @@ class Utils {
         'debug.enabled',
         'enabledArchs',
         'home',
-        'doppel.home',
         'release.enabled',
         'translateOnlyMode'
     ))
@@ -298,6 +297,9 @@ class Utils {
     static String j2objcHome(Project proj) {
         String j2objcHome = getLocalProperty(proj, 'home')
         if (j2objcHome == null) {
+            j2objcHome = System.getenv("J2OBJC_HOME")
+        }
+        if (j2objcHome == null) {
             throwJ2objcConfigFailure(proj, "J2ObjC Home not set.")
         }
         File j2objcHomeFile = new File(j2objcHome)
@@ -309,13 +311,12 @@ class Utils {
     }
 
     static String doppelHome(Project proj) {
-        String doppelHome = getLocalProperty(proj, 'doppel.home')
-        if (doppelHome == null) {
-            throwJ2objcConfigFailure(proj, "Doppel Home not set.")
-        }
-        File doppelHomeFile = new File(doppelHome)
+
+        def j2objcDir = new File(j2objcHome(proj))
+
+        File doppelHomeFile = new File(j2objcDir, "doppel")
         if (!doppelHomeFile.exists()) {
-            throwJ2objcConfigFailure(proj, "Doppel Home directory not found, expected at $doppelHome.")
+            throwJ2objcConfigFailure(proj, "Doppel Home directory not found, expected at $doppelHomeFile.absolutePath.")
         }
         // File removes trailing slashes cause problems with string concatenation logic
         return doppelHomeFile.absolutePath

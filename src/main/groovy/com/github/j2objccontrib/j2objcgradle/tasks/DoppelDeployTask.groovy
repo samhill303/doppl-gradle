@@ -30,12 +30,14 @@ import org.gradle.api.tasks.TaskAction
 class DoppelDeployTask extends DefaultTask {
 
 
-    String getDoppelDeployDir() { return J2objcConfig.from(project).doppelDeployDir }
+    String getDoppelDeployDir() {
+        return J2objcConfig.from(project).getDoppelDeployDirectory()
+    }
 
     @Input
     String getInputFiles(){return J2objcConfig.from(project).destLibDir}
 
-    boolean isTaskActive() { return getDoppelDeployDir() != null }
+    boolean isTaskActive() { return J2objcConfig.from(project).doppelPackageDeploy }
 
     @TaskAction
     void doppelDeploy() {

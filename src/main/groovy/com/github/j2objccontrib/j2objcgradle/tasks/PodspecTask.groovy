@@ -83,9 +83,9 @@ class PodspecTask extends DefaultTask {
     String getMinVersionWatchos() { return J2objcConfig.from(project).getMinVersionWatchos() }
 
     @Input @Optional
-    String getDoppelDeployDir() { return J2objcConfig.from(project).doppelDeployDir }
+    String getDoppelDeployDir() { return J2objcConfig.from(project).getDoppelDeployDirectory() }
 
-    boolean isDoppelPackage() { return getDoppelDeployDir() != null }
+    boolean isDoppelPackage() { return J2objcConfig.from(project).doppelPackageDeploy }
 
     @OutputFile
     File getPodspecDebug() {
