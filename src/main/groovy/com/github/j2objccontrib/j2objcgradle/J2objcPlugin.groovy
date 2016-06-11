@@ -31,8 +31,10 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.logging.LogLevel
+import org.gradle.api.tasks.testing.Test
 
 /*
  * Main plugin class for creation of extension object and all the tasks.
@@ -41,6 +43,25 @@ class J2objcPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
+
+        //Gradle issue hack
+        project.tasks.withType(Test) {
+            scanForTestClasses = false
+            include "**/*Test.class" // whatever Ant pattern matches your test class files
+        }
+
+        project.configurations {
+            provided
+            compile.extendsFrom provided
+        }
+
+        project.dependencies {
+            provided project.files(Utils.doppelHome(project) + "/androidbase/lib/androidbase.jar")
+            provided project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
+            provided 'com.intellij:annotations:9.0.4'
+            compile 'com.google.j2objc:j2objc-annotations:0.1'
+        }
+
         String version = BuildInfo.VERSION
         String commit = BuildInfo.GIT_COMMIT
         String url = BuildInfo.URL

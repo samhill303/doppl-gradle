@@ -33,7 +33,6 @@ dependencies {
     compile gradleApi()
 }
 
-
 task wrapper(type: Wrapper) {
     gradleVersion = '2.4'
     distributionUrl = 'https://services.gradle.org/distributions/gradle-2.4-all.zip'

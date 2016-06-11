@@ -19,6 +19,7 @@ package com.github.j2objccontrib.j2objcgradle.tasks
 import com.github.j2objccontrib.j2objcgradle.J2objcConfig
 import com.google.common.annotations.VisibleForTesting
 import groovy.transform.CompileStatic
+import org.apache.commons.io.IOUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Project
@@ -48,7 +49,7 @@ class TestTask extends DefaultTask {
     String buildType
 
     @InputFiles
-    FileTree getTestSrcFiles() {
+    FileCollection getTestSrcFiles() {
         // Note that neither testPattern nor translatePattern need to be @Input methods because they are solely
         // inputs to this method, which is already an input via @InputFiles.
         FileTree allFiles = Utils.srcSet(project, 'test', 'java')
@@ -59,7 +60,36 @@ class TestTask extends DefaultTask {
         if (config.testPattern != null) {
             allFiles = allFiles.matching(config.testPattern)
         }
-        return allFiles
+
+        //Look for individual test argument, or for annotation
+        if (project.hasProperty("doppelTest")) {
+            def doppelTestMatch = project.properties.get("doppelTest").toString()
+            logger.warn("has doppelTest: "+ doppelTestMatch);
+
+            return allFiles.filter { File f ->
+                logger.warn("The path: "+ f.getPath());
+                if(f.getName().contains(doppelTestMatch)) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        } else {
+            return allFiles.filter { File f ->
+                def reader = new FileReader(f)
+                boolean doppelAnnotationFound = false
+                ((List<String>) IOUtils.readLines(reader)).each { String s ->
+                    if (s.contains("@DoppelTest")) {
+                        doppelAnnotationFound = true
+                    }
+                }
+
+                reader.close()
+
+                return doppelAnnotationFound
+            }
+        }
     }
 
     @Input
@@ -185,12 +215,17 @@ class TestTask extends DefaultTask {
         }
         int testCount = testCountStr.toInteger()
 
+        logger.warn("Tests run: "+ testCount)
         String message =
                 "\n" +
                 "j2objcConfig {\n" +
                 "    testMinExpectedTests ${testCount}\n" +
                 "}\n"
-        if (getTestMinExpectedTests() == 0) {
+        if(project.hasProperty("doppelTest"))
+        {
+            logger.warn("Min Test check disabled due to: doppelTest specified")
+        }
+        else if (getTestMinExpectedTests() == 0) {
             logger.warn("Min Test check disabled due to: 'testMinExpectedTests 0'")
         } else if (testCount < getTestMinExpectedTests()) {
             if (testCount == 0) {

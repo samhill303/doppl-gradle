@@ -733,8 +733,8 @@ class XcodeTask extends DefaultTask {
         }
 
         translateDoppelLibs.each {String doppelLib ->
-            insertLines.add("pod 'j2objc-${doppelLib}-debug', :configuration => ['Debug'], :path => ENV['DOPPEL_LIB_HOME'] + '/${doppelLib}'".toString())
-            insertLines.add("pod 'j2objc-${doppelLib}-release', :configuration => ['Release'], :path => ENV['DOPPEL_LIB_HOME'] + '/${doppelLib}'".toString())
+            insertLines.add("pod 'j2objc-${doppelLib}-debug', :configuration => ['Debug'], :path => ENV['J2OBJC_HOME'] + '/doppel/${doppelLib}'".toString())
+            insertLines.add("pod 'j2objc-${doppelLib}-release', :configuration => ['Release'], :path => ENV['J2OBJC_HOME'] + '/doppel/${doppelLib}'".toString())
         }
 
         xcodeTargetDetails.xcodeTargetsIos.each { String iosTarget ->
