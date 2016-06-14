@@ -74,6 +74,8 @@ class PodspecTask extends DefaultTask {
     String getPodNameDebug() { "j2objc-${project.name}-debug" }
     @Input
     String getPodNameRelease() { "j2objc-${project.name}-release" }
+    @Input
+    String getPodNameTest() { "j2objc-${project.name}-test" }
 
     @Input
     String getMinVersionIos() { return J2objcConfig.from(project).getMinVersionIos() }
@@ -94,6 +96,10 @@ class PodspecTask extends DefaultTask {
     @OutputFile
     File getPodspecRelease() {
         return new File(getDestPodspecDirFile(), "${getPodNameRelease()}.podspec")
+    }
+    @OutputFile
+    File getPodspecTest() {
+        return new File(getDestPodspecDirFile(), "${getPodNameTest()}.podspec")
     }
 
 
@@ -123,18 +129,30 @@ class PodspecTask extends DefaultTask {
                 genPodspec(getPodNameDebug(), headerIncludePath, resourceIncludePath, objcIncludePath,
                         libDirIosDebug, libDirOsxDebug, libDirIosDebug,
                         getMinVersionIos(), getMinVersionOsx(), getMinVersionWatchos(),
-                        getLibName(), getJ2objcHome(), j2objcConfig.podRetainSource, isDoppelPackage())
+                        getLibName(), getJ2objcHome(), j2objcConfig.podRetainSource, isDoppelPackage(), false)
+
         String podspecContentsRelease =
                 genPodspec(getPodNameRelease(), headerIncludePath, resourceIncludePath, objcIncludePath,
                         libDirIosRelease, libDirOsxRelease, libDirIosRelease,
                         getMinVersionIos(), getMinVersionOsx(), getMinVersionWatchos(),
-                        getLibName(), getJ2objcHome(), j2objcConfig.podRetainSource, isDoppelPackage())
+                        getLibName(), getJ2objcHome(), j2objcConfig.podRetainSource, isDoppelPackage(), false)
+
+        String podspecContentsTest =
+                genPodspec(getPodNameTest(), headerIncludePath, resourceIncludePath, objcIncludePath,
+                        libDirIosRelease, libDirOsxRelease, libDirIosRelease,
+                        getMinVersionIos(), getMinVersionOsx(), getMinVersionWatchos(),
+                        getLibName(), getJ2objcHome(), j2objcConfig.podRetainSource, isDoppelPackage(), true)
 
         Utils.projectMkDir(project, getDestPodspecDirFile())
+
         logger.debug("Writing debug podspec... ${getPodspecDebug()}")
         getPodspecDebug().write(podspecContentsDebug)
+
         logger.debug("Writing release podspec... ${getPodspecRelease()}")
         getPodspecRelease().write(podspecContentsRelease)
+
+        logger.debug("Writing test podspec... ${getPodspecTest()}")
+        getPodspecTest().write(podspecContentsTest)
     }
 
     // Podspec references are relative to project.buildDir
@@ -142,7 +160,7 @@ class PodspecTask extends DefaultTask {
     static String genPodspec(String podname, String publicHeadersDir, String resourceDir, String objcIncludePath,
                              String libDirIos, String libDirOsx, String libDirWatchos,
                              String minVersionIos, String minVersionOsx, String minVersionWatchos,
-                             String libName, String j2objcHome, boolean rsArg, boolean doppelPackage) {
+                             String libName, String j2objcHome, boolean rsArg, boolean doppelPackage, boolean testPodspec) {
 
         boolean retainSource = rsArg;
 
@@ -162,7 +180,12 @@ class PodspecTask extends DefaultTask {
         // TODO: replace xcconfig with {pod|user}_target_xcconfig
         // See 'Split of xcconfig' from: http://blog.cocoapods.org/CocoaPods-0.38/
 
-        String headerPath = doppelPackage ? "include" : "src/main/objc";
+        //KPG: Make test sources the "sources"
+        String headerPath;
+        if(testPodspec)
+            headerPath = "src/test/objc";
+        else
+            headerPath = doppelPackage ? "include" : "src/main/objc";
 
         // File and line separators assumed to be '/' and '\n' as podspec can only be used on OS X
         String podString =  "Pod::Spec.new do |spec|\n" +
@@ -181,7 +204,7 @@ class PodspecTask extends DefaultTask {
                 "  spec.header_mappings_dir = '${headerPath}'\n" +
                "  spec.libraries = " +  // continuation of same line
 
-               "'ObjC', 'javax_inject', 'jre_emul', 'jsr305', 'z', 'icucore'\n";
+               "'ObjC', 'javax_inject', 'jre_emul', 'jsr305', 'z', 'icucore', 'junit', 'sqlite3'\n";
 
         if(retainSource)
         {
@@ -210,6 +233,11 @@ class PodspecTask extends DefaultTask {
                          "  spec.osx.deployment_target = '$minVersionOsx'\n" +
                          "  spec.watchos.deployment_target = '$minVersionWatchos'\n" +
                          "  spec.osx.frameworks = 'ExceptionHandling'\n";
+        }
+
+        if(testPodspec)
+        {
+            podString += "  spec.source_files  = 'ios', '${headerPath}/**/*.{h,m}'\n";
         }
 
         podString += "end\n";

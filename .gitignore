@@ -1,6 +1,7 @@
 # Temp files
 *~
 .gradle
+.DS_Store
 
 # Don't save away IntelliJ config, except code-style which all commits must follow.
 .idea/*

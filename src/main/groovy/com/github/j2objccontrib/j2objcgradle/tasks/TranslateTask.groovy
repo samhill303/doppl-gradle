@@ -289,7 +289,7 @@ class TranslateTask extends DefaultTask {
         }
         logger.warn("#######sourcepathDirs: "+ sb.toString())
 
-        doTranslate(sourcepathDirs, srcMainObjcDir, srcGenMainDir, translateArgs, mainSrcFilesChanged, "mainSrcFilesArgFile")
+        doTranslate(sourcepathDirs, srcMainObjcDir, srcGenMainDir, translateArgs, mainSrcFilesChanged, "mainSrcFilesArgFile", false)
 
         // Translate test code. Tests are never built with --build-closure; otherwise
         // we will get duplicate symbol errors.
@@ -307,7 +307,7 @@ class TranslateTask extends DefaultTask {
                 project.files(getGeneratedSourceDirs()),
                 project.files(getGeneratedTestSourceDirs())
         ])
-        doTranslate(sourcepathDirs, srcTestObjcDir, srcGenTestDir, testTranslateArgs, testSrcFilesChanged, "testSrcFilesArgFile")
+        doTranslate(sourcepathDirs, srcTestObjcDir, srcGenTestDir, testTranslateArgs, testSrcFilesChanged, "testSrcFilesArgFile", true)
     }
 
     int deleteRemovedFiles(List<String> removedFileNames, File dir) {
@@ -330,7 +330,7 @@ class TranslateTask extends DefaultTask {
     }
 
     void doTranslate(UnionFileCollection sourcepathDirs, File nativeSourceDir, File srcDir, List<String> translateArgs,
-                     FileCollection srcFilesToTranslate, String srcFilesArgFilename) {
+                     FileCollection srcFilesToTranslate, String srcFilesArgFilename, boolean testTranslate) {
 
         if(nativeSourceDir != null && nativeSourceDir.exists()){
             Utils.projectCopy(project, {
@@ -406,7 +406,10 @@ class TranslateTask extends DefaultTask {
 
                 // Arguments
                 args "-d", srcDir
-//                args "-use-arc", ''
+                if(testTranslate)
+                {
+                    args "-use-arc", ''
+                }
                 args "-sourcepath", sourcepathArg
                 args "-classpath", classpathArg
                 translateArgs.each { String translateArg ->
