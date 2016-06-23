@@ -20,9 +20,7 @@ import com.github.j2objccontrib.j2objcgradle.tasks.AssembleLibrariesTask
 import com.github.j2objccontrib.j2objcgradle.tasks.AssembleResourcesTask
 import com.github.j2objccontrib.j2objcgradle.tasks.AssembleSourceTask
 import com.github.j2objccontrib.j2objcgradle.tasks.CycleFinderTask
-import com.github.j2objccontrib.j2objcgradle.tasks.DoppelArchiveGroovyTask
-import com.github.j2objccontrib.j2objcgradle.tasks.DoppelArchiveTask
-import com.github.j2objccontrib.j2objcgradle.tasks.DoppelDeployTask
+import com.github.j2objccontrib.j2objcgradle.tasks.DoppelAssemblyTask
 import com.github.j2objccontrib.j2objcgradle.tasks.PackLibrariesTask
 import com.github.j2objccontrib.j2objcgradle.tasks.PodspecTask
 import com.github.j2objccontrib.j2objcgradle.tasks.TestTask
@@ -33,9 +31,9 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.logging.LogLevel
+import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.testing.Test
 
 /*
@@ -303,13 +301,36 @@ class J2objcPlugin implements Plugin<Project> {
                 description "Marker task for all tasks that take part in regular j2objc builds"
             }
 
-            tasks.create(name: 'doppelDeploy', type: DoppelDeployTask,
+            tasks.create(name: 'doppelAssembly', type: DoppelAssemblyTask,
                     dependsOn: 'j2objcBuild') {
                 group 'build'
-                description 'Depends on j2objc build, move all doppel stuff to deploy dir'
+                description 'Look out mother fucker!'
             }
 
-            tasks.create(name: 'doppelArchive', type: DoppelArchiveTask, dependsOn: 'doppelDeploy')
+//            tasks.create(name: 'doppelDeploy', type: Copy,
+//                    dependsOn: 'doppelAssembly') {
+//                group 'build'
+//                description 'Depends on j2objc build, move all doppel stuff to deploy dir'
+//
+//                from project.j2objcConfig.getDestDoppelDirFile()
+//                into project.j2objcConfig.getDoppelDeployDirectory() + "/" + project.name
+//            }
+
+//            tasks.create(name: 'doppelDeploy', type: DoppelDeployTask,
+//                    dependsOn: 'doppelAssembly') {
+//                group 'build'
+//                description 'Depends on j2objc build, move all doppel stuff to deploy dir'
+//            }
+
+            tasks.create(name: 'doppelArchive', type: Jar, dependsOn: 'doppelAssembly') {
+                group 'build'
+                description 'Depends on j2objc build, move all doppel stuff to deploy dir'
+
+                from project.j2objcConfig.getDoppelDeployDirectory() + "/" + project.name
+                extension 'dop'
+            }
+
+//            tasks.create(name: 'doppelArchive', type: DoppelArchiveTask, dependsOn: 'doppelDeploy')
 
             lateDependsOn(project, 'build', 'doppelArchive')
         }

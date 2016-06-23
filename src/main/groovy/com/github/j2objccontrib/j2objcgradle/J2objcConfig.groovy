@@ -72,6 +72,7 @@ class J2objcConfig {
         destPodspecDir = new File(project.buildDir, 'j2objcOutputs').absolutePath
         destSrcMainDir = new File(project.buildDir, 'j2objcOutputs/src/main').absolutePath
         destSrcTestDir = new File(project.buildDir, 'j2objcOutputs/src/test').absolutePath
+        destDoppelFolder = new File(project.buildDir, 'doppel').absolutePath
     }
 
     /**
@@ -116,6 +117,11 @@ class J2objcConfig {
      */
     String destSrcTestDir = null
 
+    /**
+     * Local exploded dir for doppel files
+     */
+    String destDoppelFolder = null
+
     boolean podRetainSource = false;
 
     // Private helper methods
@@ -123,6 +129,11 @@ class J2objcConfig {
     File getDestLibDirFile() {
         return project.file(destLibDir)
     }
+
+    File getDestDoppelDirFile(){
+        return project.file(destDoppelFolder)
+    }
+
     File getDestSrcDirFile(String sourceSetName, String fileType) {
         assert sourceSetName in ['main', 'test']
         assert fileType in ['objc', 'resources']
