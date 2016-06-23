@@ -19,6 +19,10 @@ package com.github.j2objccontrib.j2objcgradle.tasks
 import com.github.j2objccontrib.j2objcgradle.J2objcConfig
 import groovy.transform.CompileStatic
 import org.gradle.api.DefaultTask
+import org.gradle.api.Project
+import org.gradle.api.artifacts.Dependency
+import org.gradle.api.artifacts.DependencyArtifact
+import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
@@ -39,8 +43,28 @@ class DoppelDeployTask extends DefaultTask {
 
     boolean isTaskActive() { return J2objcConfig.from(project).doppelPackageDeploy }
 
+    void writeAllDependentProjects() {
+
+        project.configurations.getByName('doppel').files.each {file ->
+            logger.warn("file: "+ file.name +"/absolutePath: "+ file.absolutePath)
+        }
+        project.configurations.getByName('doppel').dependencies.each {Dependency d ->
+            ExternalModuleDependency externalModuleDependency = (ExternalModuleDependency) d
+
+            logger.warn("group: "+ d.group +"/name: "+ d.name +"/version: "+ d.version +" ("+ d.getClass().name +")")
+
+            Set<DependencyArtifact> artifacts = externalModuleDependency.getArtifacts()
+            for (DependencyArtifact artifact : artifacts) {
+                logger.warn("artifact name: "+ artifact.name +"/type: "+ artifact.type)
+            }
+        }
+
+    }
+
     @TaskAction
     void doppelDeploy() {
+
+        writeAllDependentProjects()
 
         if (!isTaskActive()) {
             logger.debug("j2objcXcode task disabled for ${project.name}")
@@ -80,5 +104,7 @@ class DoppelDeployTask extends DefaultTask {
             into getDoppelDeployDir() + "/" + project.name
             include '*.podspec'
         })
+
+        
     }
 }

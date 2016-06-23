@@ -20,6 +20,8 @@ import com.github.j2objccontrib.j2objcgradle.tasks.AssembleLibrariesTask
 import com.github.j2objccontrib.j2objcgradle.tasks.AssembleResourcesTask
 import com.github.j2objccontrib.j2objcgradle.tasks.AssembleSourceTask
 import com.github.j2objccontrib.j2objcgradle.tasks.CycleFinderTask
+import com.github.j2objccontrib.j2objcgradle.tasks.DoppelArchiveGroovyTask
+import com.github.j2objccontrib.j2objcgradle.tasks.DoppelArchiveTask
 import com.github.j2objccontrib.j2objcgradle.tasks.DoppelDeployTask
 import com.github.j2objccontrib.j2objcgradle.tasks.PackLibrariesTask
 import com.github.j2objccontrib.j2objcgradle.tasks.PodspecTask
@@ -121,6 +123,11 @@ class J2objcPlugin implements Plugin<Project> {
                 j2objcTestLinkage {
                     description = 'J2ObjC native library dependencies that need to be ' +
                                   'linked into the final tests, and do not need translation'
+                }
+
+                doppel{
+                    transitive = true
+                    description = 'For doppel special packages'
                 }
             }
 
@@ -301,7 +308,10 @@ class J2objcPlugin implements Plugin<Project> {
                 group 'build'
                 description 'Depends on j2objc build, move all doppel stuff to deploy dir'
             }
-            lateDependsOn(project, 'build', 'doppelDeploy')
+
+            tasks.create(name: 'doppelArchive', type: DoppelArchiveTask, dependsOn: 'doppelDeploy')
+
+            lateDependsOn(project, 'build', 'doppelArchive')
         }
     }
 
