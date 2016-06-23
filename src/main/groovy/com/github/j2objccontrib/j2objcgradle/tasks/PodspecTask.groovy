@@ -238,6 +238,7 @@ class PodspecTask extends DefaultTask {
         if(testPodspec)
         {
             podString += "  spec.source_files  = 'ios', '${headerPath}/**/*.{h,m}'\n";
+            podString += "  spec.requires_arc = false\n";
         }
 
         podString += "end\n";

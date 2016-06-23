@@ -58,10 +58,20 @@ class XcodeTask extends DefaultTask {
     @Input @Optional
     String getXcodeProjectDir() { return J2objcConfig.from(project).xcodeProjectDir }
 
+    @Input @Optional
+    String getXcodeTestProjectDir() { return J2objcConfig.from(project).xcodeTestProjectDir }
+
     @Input
     boolean getXcodeTargetsManualConfig() { return J2objcConfig.from(project).xcodeTargetsManualConfig }
 
-    boolean isTaskActive() { return getXcodeProjectDir() != null }
+    boolean isTaskActive() {
+        return getXcodeProjectDir() != null || getXcodeTestProjectDir() != null
+    }
+
+    boolean isPhaseActive(String projectDir)
+    {
+        return projectDir != null;
+    }
 
     @Input
     // List of all dependencies
@@ -78,6 +88,8 @@ class XcodeTask extends DefaultTask {
 
     @Input
     List<String> getXcodeTargetsIos() { return J2objcConfig.from(project).xcodeTargetsIos }
+    @Input
+    List<String> getXcodeTestTargetsIos() { return J2objcConfig.from(project).xcodeTestTargetsIos }
     @Input
     List<String> getXcodeTargetsOsx() { return J2objcConfig.from(project).xcodeTargetsOsx }
     @Input
@@ -103,6 +115,11 @@ class XcodeTask extends DefaultTask {
         return project.file(new File(getXcodeProjectDir(), '/Podfile'))
     }
 
+    @OutputFile
+    File getTestPodfileFile() {
+        return project.file(new File(getXcodeTestProjectDir(), '/Podfile'))
+    }
+
     @EqualsAndHashCode
     // Must be serializable to be used as an @Input
     static class PodspecDetails implements Serializable {
@@ -112,14 +129,16 @@ class XcodeTask extends DefaultTask {
         String projectName
         File podspecDebug
         File podspecRelease
+        File podspecTest
         List<String> xcodeDebugConfigurations
         List<String> xcodeReleaseConfigurations
 
-        PodspecDetails(String projectNameIn, File podspecDebugIn, File podspecReleaseIn,
+        PodspecDetails(String projectNameIn, File podspecDebugIn, File podspecReleaseIn, File podspecTestIn,
                        List<String> xcodeDebugConfigurationsIn, List<String> xcodeReleaseConfigurationsIn) {
             projectName = projectNameIn
             podspecDebug = podspecDebugIn
             podspecRelease = podspecReleaseIn
+            podspecTest = podspecTestIn
             xcodeDebugConfigurations = xcodeDebugConfigurationsIn
             xcodeReleaseConfigurations = xcodeReleaseConfigurationsIn
         }
@@ -160,12 +179,9 @@ class XcodeTask extends DefaultTask {
         }
     }
 
-
-    @TaskAction
-    void xcodeConfig() {
-        Utils.requireMacOSX('j2objcXcode task')
-
-        if (!isTaskActive()) {
+    void writePodfile(String xcProjectDir, File podfileFile, List<String> xcodeTargetsIos, boolean testPodfile)
+    {
+        if (!isPhaseActive(xcProjectDir)) {
             logger.debug("j2objcXcode task disabled for ${project.name}")
             return
         }
@@ -186,11 +202,11 @@ class XcodeTask extends DefaultTask {
 //        throw new InvalidUserDataException(message)
 
         // link the podspec in pod file
-        File podfile = getPodfileFile()
+        File podfile = podfileFile;
         if (!podfile.exists()) {
 
             // TODO: offer to run the setup commands
-            String xcodeAbsPath = project.file(getXcodeProjectDir()).absolutePath
+            String xcodeAbsPath = project.file(xcProjectDir).absolutePath
             String message =
                     "No podfile exists in the xcodeProjectDir directory:\n" +
                     "    ${podfile.path}\n" +
@@ -198,7 +214,7 @@ class XcodeTask extends DefaultTask {
                     "To fix this:\n" +
                     "\n" +
                     "1) Set xcodeProjectDir to the directory containing 'IOS-APP.xcodeproj':\n" +
-                    "    current value: ${getXcodeProjectDir()}\n" +
+                    "    current value: ${xcProjectDir}\n" +
                     "    absolute path: $xcodeAbsPath\n" +
                     "\n" +
                     "2) Within that directory, create the Podfile with:\n" +
@@ -215,16 +231,16 @@ class XcodeTask extends DefaultTask {
 
             throw new InvalidUserDataException(message)
         }
-        logger.debug("Pod exists at path: ${getXcodeProjectDir()}")
+        logger.debug("Pod exists at path: ${xcProjectDir}")
 
         // Write Podfile based on all the podspecs from dependent projects
         List<PodspecDetails> podspecDetailsList = getPodspecDependencies()
 
         XcodeTargetDetails xcodeTargetDetails = new XcodeTargetDetails(
-                getXcodeTargetsIos(), getXcodeTargetsOsx(), getXcodeTargetsWatchos(),
+                xcodeTargetsIos, getXcodeTargetsOsx(), getXcodeTargetsWatchos(),
                 getMinVersionIos(), getMinVersionOsx(), getMinVersionWatchos())
 
-        writeUpdatedPodfileIfNeeded(podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile, getTranslateDoppelLibs())
+        writeUpdatedPodfileIfNeeded(podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile, getTranslateDoppelLibs(), testPodfile)
 
         // install the pod
         ByteArrayOutputStream stdout = new ByteArrayOutputStream()
@@ -232,7 +248,7 @@ class XcodeTask extends DefaultTask {
         try {
             logger.debug('XcodeTask - projectExec - pod install:')
             Utils.projectExec(project, stdout, stderr, null, {
-                setWorkingDir project.file(getXcodeProjectDir())
+                setWorkingDir project.file(xcProjectDir)
                 executable 'pod'
                 args 'install'
                 setStandardOutput stdout
@@ -254,6 +270,19 @@ class XcodeTask extends DefaultTask {
         }
     }
 
+    @TaskAction
+    void xcodeConfig() {
+        Utils.requireMacOSX('j2objcXcode task')
+
+        if (!isTaskActive()) {
+            logger.debug("j2objcXcode task disabled for ${project.name}")
+            return
+        }
+
+        //getXcodeProjectDir() != null || getXcodeTestProjectDir() != null
+        writePodfile(getXcodeProjectDir(), getPodfileFile(), getXcodeTargetsIos(), false);
+        writePodfile(getXcodeTestProjectDir(), getTestPodfileFile(), getXcodeTestTargetsIos(), true);
+    }
 
     /**
      * Retrieve a list of debug and release podspecs to update Xcode
@@ -274,9 +303,15 @@ class XcodeTask extends DefaultTask {
 
         logger.debug("${proj.getName()} project podspecs: " +
                      "${j2objcPodspec.getPodNameDebug()}, ${j2objcPodspec.getPodNameRelease()}")
-        podspecs.add(new PodspecDetails(proj.getName(),
-                j2objcPodspec.getPodspecDebug(), j2objcPodspec.getPodspecRelease(),
-                getXcodeDebugConfigurations2(), getXcodeReleaseConfigurations2()))
+        podspecs.add(new PodspecDetails(
+                proj.getName(),
+                j2objcPodspec.getPodspecDebug(),
+                j2objcPodspec.getPodspecRelease(),
+                j2objcPodspec.getPodspecTest(),
+                getXcodeDebugConfigurations2(),
+                getXcodeReleaseConfigurations2()
+        )
+        )
 
         J2objcConfig j2objcConfig = proj.getExtensions().getByType(J2objcConfig)
         j2objcConfig.getBeforeProjects().each { Project beforeProject ->
@@ -533,13 +568,14 @@ class XcodeTask extends DefaultTask {
             XcodeTargetDetails xcodeTargetDetails,
             boolean xcodeTargetsManualConfig,
             File podfile,
-            List<String> translateDoppelLibs) {
+            List<String> translateDoppelLibs,
+            boolean testPodfile) {
 
         List<String> oldPodfileLines = podfile.readLines()
         List<String> newPodfileLines = new ArrayList<String>(oldPodfileLines)
 
         newPodfileLines = updatePodfile(
-                newPodfileLines, podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile, translateDoppelLibs)
+                newPodfileLines, podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile, translateDoppelLibs, testPodfile)
 
         // Write file only if it's changed
         if (!oldPodfileLines.equals(newPodfileLines)) {
@@ -554,7 +590,8 @@ class XcodeTask extends DefaultTask {
             XcodeTargetDetails xcodeTargetDetails,
             boolean xcodeTargetsManualConfig,
             File podfile,
-            List<String> translateDoppelLibs) {
+            List<String> translateDoppelLibs,
+            boolean testPodfile) {
 
         List<String> newPodfileLines
 
@@ -607,7 +644,7 @@ class XcodeTask extends DefaultTask {
         }
 
         // update pod methods
-        newPodfileLines = updatePodMethods(newPodfileLines, podspecDetailsList, podfile)
+        newPodfileLines = updatePodMethods(newPodfileLines, podspecDetailsList, podfile, testPodfile)
 
         return newPodfileLines
     }
@@ -633,13 +670,13 @@ class XcodeTask extends DefaultTask {
 
     @VisibleForTesting
     static List<String> updatePodMethods(
-            List<String> podfileLines, List<PodspecDetails> podspecDetailsList, File podfile) {
+            List<String> podfileLines, List<PodspecDetails> podspecDetailsList, File podfile, boolean testPodfile) {
 
         // create new methods
         List<String> insertLines = new ArrayList<>()
         insertLines.add(podMethodsStart)
         podspecDetailsList.each { PodspecDetails podspecDetails ->
-            insertLines.addAll(podMethodLines(podspecDetails, podfile))
+            insertLines.addAll(podMethodLines(podspecDetails, podfile, testPodfile))
         }
         insertLines.add(podMethodsEnd)
 
@@ -662,7 +699,7 @@ class XcodeTask extends DefaultTask {
 
     @VisibleForTesting
     static List<String> podMethodLines(
-            PodspecDetails podspecDetails, File podfile) {
+            PodspecDetails podspecDetails, File podfile, boolean testPodfile) {
 
         // Inputs:
         //   podNameMethod:     j2objc_PROJECT
@@ -673,13 +710,17 @@ class XcodeTask extends DefaultTask {
         //   pathDebug:         ../PROJECT/build   (relative path to podfile)
         String podspecDebugName = podspecDetails.podspecDebug.getName()
         String podspecReleaseName = podspecDetails.podspecRelease.getName()
-        assert podspecDebugName.endsWith('.podspec') && podspecDebugName.endsWith('.podspec')
+        String podspecTestName = podspecDetails.podspecTest.getName()
+        assert podspecDebugName.endsWith('.podspec') && podspecReleaseName.endsWith('.podspec') && podspecTestName.endsWith('.podspec')
+
         podspecDebugName = podspecDebugName.replace('.podspec', '')
         podspecReleaseName = podspecReleaseName.replace('.podspec', '')
+        podspecTestName = podspecTestName.replace('.podspec', '')
 
         // Relative paths are between parent directories
         String pathDebug = Utils.relativizeNonParent(podfile.getParentFile(), podspecDetails.podspecDebug.getParentFile())
         String pathRelease = Utils.relativizeNonParent(podfile.getParentFile(), podspecDetails.podspecRelease.getParentFile())
+        String pathTest = Utils.relativizeNonParent(podfile.getParentFile(), podspecDetails.podspecTest.getParentFile())
 
         // Search for pod within the xcodeTarget, until "end" is found for that target
         // Either update pod line in place or add line if pod doesn't exist
@@ -692,6 +733,10 @@ class XcodeTask extends DefaultTask {
         if (!podspecDetails.xcodeReleaseConfigurations.isEmpty()) {
             String configs = Utils.toQuotedList(podspecDetails.xcodeReleaseConfigurations)
             podMethodLines.add("    pod '$podspecReleaseName', :configuration => [$configs], :path => '$pathRelease'".toString())
+        }
+
+        if(testPodfile) {
+            podMethodLines.add("    pod '$podspecTestName', :path => '$pathTest'".toString())
         }
 
         podMethodLines.add("end")

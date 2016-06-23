@@ -462,8 +462,20 @@ class Utils {
     static List<String> doppelJarLibs(String doppelHome,
                                    List<String> libraries) {
         return libraries.collect { String library ->
-            return "$doppelHome/$library/lib/$library" + ".jar"
+            return findDoppelLibraryJar(doppelHome, library)
         }
+    }
+
+    public static String findDoppelLibraryJar(String doppelHome, String library) {
+
+        def libDir = new File("$doppelHome/$library/lib")
+        def files = libDir.listFiles()
+        for (File file : files) {
+            if (!file.isDirectory() && file.getName().endsWith(".jar")) {
+                return file.getAbsolutePath()
+            }
+        }
+        return null
     }
 
     // Convert FileCollection to joined path arg, e.g. "src/Some.java:src/Another.java"

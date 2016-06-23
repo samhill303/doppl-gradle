@@ -56,7 +56,14 @@ class J2objcPlugin implements Plugin<Project> {
         }
 
         project.dependencies {
-            provided project.files(Utils.doppelHome(project) + "/androidbase/lib/androidbase.jar")
+            def androidBaseJar = Utils.findDoppelLibraryJar(Utils.doppelHome(project), "androidbase")
+            if(androidBaseJar != null)
+                provided project.files(androidBaseJar)
+
+            def testJarPath = Utils.findDoppelLibraryJar(Utils.doppelHome(project), "androidbasetest")
+            if(testJarPath != null)
+                testCompile project.files(testJarPath)
+
             provided project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
             provided 'com.intellij:annotations:9.0.4'
             compile 'com.google.j2objc:j2objc-annotations:0.1'

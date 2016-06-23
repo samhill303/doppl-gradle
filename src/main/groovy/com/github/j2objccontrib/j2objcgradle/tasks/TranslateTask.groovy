@@ -406,10 +406,10 @@ class TranslateTask extends DefaultTask {
 
                 // Arguments
                 args "-d", srcDir
-                if(testTranslate)
+                /*if(testTranslate)
                 {
                     args "-use-arc", ''
-                }
+                }*/
                 args "-sourcepath", sourcepathArg
                 args "-classpath", classpathArg
                 translateArgs.each { String translateArg ->

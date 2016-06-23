@@ -693,6 +693,7 @@ class J2objcConfig {
      *
      */
     String xcodeProjectDir = null
+    String xcodeTestProjectDir = null
 
     /**
      * Deploy as doppel package? You probably don't want this to be true.
@@ -710,6 +711,7 @@ class J2objcConfig {
      * to the generated shared libraries. This should include test targets also.
      */
     List<String> xcodeTargetsIos = new ArrayList<>()
+
     /**
      * iOS app and test Xcode targets to link to the generated libraries.
      *
@@ -717,6 +719,23 @@ class J2objcConfig {
      */
     void xcodeTargetsIos(String... xcodeTargetsIos) {
         appendArgs(this.xcodeTargetsIos, 'xcodeTargetsIos', false, xcodeTargetsIos)
+    }
+
+    /**
+     * iOS app and test Xcode targets to link to the generated libraries.
+     *
+     * This will automatically add linkage for any target in the specified list
+     * to the generated shared libraries. This should include test targets also.
+     */
+    List<String> xcodeTestTargetsIos = new ArrayList<>()
+
+    /**
+     * iOS app and test Xcode targets to link to the generated libraries.
+     *
+     * @param xcodeTargetsIos targets to link to the generated libraries.
+     */
+    void xcodeTestTargetsIos(String... xcodeTestTargetsIos) {
+        appendArgs(this.xcodeTestTargetsIos, 'xcodeTestTargetsIos', false, xcodeTestTargetsIos)
     }
 
     /**
