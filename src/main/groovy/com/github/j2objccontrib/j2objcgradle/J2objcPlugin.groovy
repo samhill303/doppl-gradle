@@ -55,17 +55,23 @@ class J2objcPlugin implements Plugin<Project> {
             compile.extendsFrom provided
         }
 
-        project.dependencies {
+        /*project.dependencies {
             if(!project.name.equals('androidbase'))
+            {
                 provided 'co.touchlab.doppel:androidbase:0.1.0-SNAPSHOT'
+                doppel 'co.touchlab.doppel:androidbase:0.1.0-SNAPSHOT@dop'
+            }
 
             if(!project.name.equals('androidbase') && !project.name.equals('androidbasetest'))
+            {
                 testCompile 'co.touchlab.doppel:androidbasetest:0.1.0-SNAPSHOT'
+                doppel 'co.touchlab.doppel:androidbasetest:0.1.0-SNAPSHOT@dop'
+            }
 
             provided project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
             provided 'com.intellij:annotations:9.0.4'
             compile 'com.google.j2objc:j2objc-annotations:0.1'
-        }
+        }*/
 
         String version = BuildInfo.VERSION
         String commit = BuildInfo.GIT_COMMIT
@@ -125,6 +131,24 @@ class J2objcPlugin implements Plugin<Project> {
                     transitive = true
                     description = 'For doppel special packages'
                 }
+            }
+
+            dependencies {
+                if(!project.name.equals('androidbase'))
+                {
+                    provided 'co.touchlab.doppel:androidbase:0.1.0-SNAPSHOT'
+                    doppel 'co.touchlab.doppel:androidbase:0.1.0-SNAPSHOT@dop'
+                }
+
+                if(!project.name.equals('androidbase') && !project.name.equals('androidbasetest'))
+                {
+                    testCompile 'co.touchlab.doppel:androidbasetest:0.1.0-SNAPSHOT'
+                    doppel 'co.touchlab.doppel:androidbasetest:0.1.0-SNAPSHOT@dop'
+                }
+
+                provided project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
+                provided 'com.intellij:annotations:9.0.4'
+                compile 'com.google.j2objc:j2objc-annotations:0.1'
             }
 
             DependencyResolver.configureSourceSets(project)
