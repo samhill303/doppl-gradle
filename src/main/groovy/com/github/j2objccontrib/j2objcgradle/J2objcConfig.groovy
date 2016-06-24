@@ -73,6 +73,7 @@ class J2objcConfig {
         destSrcMainDir = new File(project.buildDir, 'j2objcOutputs/src/main').absolutePath
         destSrcTestDir = new File(project.buildDir, 'j2objcOutputs/src/test').absolutePath
         destDoppelFolder = new File(project.buildDir, 'doppel').absolutePath
+        doppelDependencyExploded = new File(project.buildDir, 'doppelDependencyExploded').absolutePath
     }
 
     /**
@@ -121,6 +122,8 @@ class J2objcConfig {
      * Local exploded dir for doppel files
      */
     String destDoppelFolder = null
+
+    String doppelDependencyExploded = null
 
     boolean podRetainSource = false;
 
@@ -326,18 +329,7 @@ class J2objcConfig {
      * Additional arguments to pass to the native linker.
      */
     // Native build accepts empty array but throws exception on empty List<String>
-    List<String> translateDoppelLibs = new ArrayList<>()
-
-    /**
-     * Add arguments to pass to the native linker.
-     *
-     * @param extraLinkerArgs add arguments to pass to the native linker.
-     */
-    void translateDoppelLibs(String... translateDoppelLibs) {
-        for (String arg in translateDoppelLibs) {
-            this.translateDoppelLibs += arg
-        }
-    }
+    List<DoppelDependency> translateDoppelLibs = new ArrayList<>()
 
     /**
      * Additional native libraries that are part of the j2objc distribution to link
@@ -705,15 +697,6 @@ class J2objcConfig {
      */
     String xcodeProjectDir = null
     String xcodeTestProjectDir = null
-
-    /**
-     * Deploy as doppel package? You probably don't want this to be true.
-     */
-    boolean doppelPackageDeploy = false
-
-    String getDoppelDeployDirectory(){
-        return new File(Utils.j2objcHome(project), "doppel").getAbsolutePath()
-    }
 
     /**
      * iOS app and test Xcode targets to link to the generated libraries.

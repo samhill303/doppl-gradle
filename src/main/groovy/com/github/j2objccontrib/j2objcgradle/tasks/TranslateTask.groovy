@@ -16,6 +16,7 @@
 
 package com.github.j2objccontrib.j2objcgradle.tasks
 
+import com.github.j2objccontrib.j2objcgradle.DoppelDependency
 import com.github.j2objccontrib.j2objcgradle.J2objcConfig
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
@@ -114,7 +115,10 @@ class TranslateTask extends DefaultTask {
     String getJ2objcHome() { return Utils.j2objcHome(project) }
 
     @Input
-    String getDoppelHome() { return Utils.doppelHome(project) }
+    String getDoppelHome() {
+        def doppelDependencyExploded = J2objcConfig.from(project).doppelDependencyExploded
+        return doppelDependencyExploded
+    }
 
     @Input
     List<String> getTranslateArgs() { return J2objcConfig.from(project).translateArgs }
@@ -134,8 +138,7 @@ class TranslateTask extends DefaultTask {
     @Input
     List<String> getTranslateJ2objcLibs() { return J2objcConfig.from(project).translateJ2objcLibs }
 
-    @Input
-    List<String> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }
+    List<DoppelDependency> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }
 
     @Input
     Map<String, String> getTranslateSourceMapping() { return J2objcConfig.from(project).translateSourceMapping }

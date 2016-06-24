@@ -56,13 +56,11 @@ class J2objcPlugin implements Plugin<Project> {
         }
 
         project.dependencies {
-            def androidBaseJar = Utils.findDoppelLibraryJar(Utils.doppelHome(project), "androidbase")
-            if(androidBaseJar != null)
-                provided project.files(androidBaseJar)
+            if(!project.name.equals('androidbase'))
+                provided 'co.touchlab.doppel:androidbase:0.1.0-SNAPSHOT'
 
-            def testJarPath = Utils.findDoppelLibraryJar(Utils.doppelHome(project), "androidbasetest")
-            if(testJarPath != null)
-                testCompile project.files(testJarPath)
+            if(!project.name.equals('androidbase') && !project.name.equals('androidbasetest'))
+                testCompile 'co.touchlab.doppel:androidbasetest:0.1.0-SNAPSHOT'
 
             provided project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
             provided 'com.intellij:annotations:9.0.4'
@@ -307,30 +305,13 @@ class J2objcPlugin implements Plugin<Project> {
                 description 'Look out mother fucker!'
             }
 
-//            tasks.create(name: 'doppelDeploy', type: Copy,
-//                    dependsOn: 'doppelAssembly') {
-//                group 'build'
-//                description 'Depends on j2objc build, move all doppel stuff to deploy dir'
-//
-//                from project.j2objcConfig.getDestDoppelDirFile()
-//                into project.j2objcConfig.getDoppelDeployDirectory() + "/" + project.name
-//            }
-
-//            tasks.create(name: 'doppelDeploy', type: DoppelDeployTask,
-//                    dependsOn: 'doppelAssembly') {
-//                group 'build'
-//                description 'Depends on j2objc build, move all doppel stuff to deploy dir'
-//            }
-
             tasks.create(name: 'doppelArchive', type: Jar, dependsOn: 'doppelAssembly') {
                 group 'build'
                 description 'Depends on j2objc build, move all doppel stuff to deploy dir'
 
-                from project.j2objcConfig.getDoppelDeployDirectory() + "/" + project.name
+                from project.j2objcConfig.destDoppelFolder
                 extension 'dop'
             }
-
-//            tasks.create(name: 'doppelArchive', type: DoppelArchiveTask, dependsOn: 'doppelDeploy')
 
             lateDependsOn(project, 'build', 'doppelArchive')
         }

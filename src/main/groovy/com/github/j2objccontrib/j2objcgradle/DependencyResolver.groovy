@@ -22,8 +22,11 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ProjectDependency
+import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.SelfResolvingDependency
+import org.gradle.api.file.CopySpec
 import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.Copy
@@ -74,6 +77,50 @@ class DependencyResolver {
         project.configurations.getByName('j2objcTestLinkage').dependencies.each {
             visitLink(it, true)
         }
+
+
+        //Current "lazy" plan. Just copy all dependencies. If something is changed, will need to clean.
+        //TODO: Fix the lazy
+        project.configurations.getByName('doppel').resolvedConfiguration.resolvedArtifacts.each { ResolvedArtifact ra ->
+
+            if(ra.extension.equals("dop")) {
+                def group = ra.moduleVersion.id.group
+                def name = ra.moduleVersion.id.name
+                def version = ra.moduleVersion.id.version
+                def dependency = new DoppelDependency(group, name, version)
+
+                project.copy { CopySpec cp ->
+                    cp.from project.zipTree(ra.file)
+                    cp.into j2objcConfig.doppelDependencyExploded + "/" + dependency.fullFolderName()
+                }
+
+                j2objcConfig.translateDoppelLibs.add(dependency)
+            }
+
+//            addCopyTask(f)
+//            project.tasks.create(name: 'doppelDependencyExtract_'+ f.name, type: Copy) {
+//                from zipTree(f)
+//                into file("${project.buildDir}/api/")
+//            }
+        }
+//        project.configurations.getByName('doppel').dependencies.each { Dependency dp ->
+//            println 'dp.name: '+ dp.name
+//
+//            if(dp instanceof DefaultExternalModuleDependency)
+//            {
+//                dp.artifacts
+//            }
+//        }
+    }
+
+    void addCopyTask(File f)
+    {
+
+//        project.tasks.create(name: 'doppelDependencyExtract_'+ f.name, type: Copy) {
+//
+//            from zipTree(f)
+//            into file("${project.buildDir}/api/")
+//        }
     }
 
     private static final String MAIN_EXTRACTION_TASK_NAME = 'j2objcTranslatedMainLibraryExtraction'

@@ -16,6 +16,7 @@
 
 package com.github.j2objccontrib.j2objcgradle.tasks
 
+import com.github.j2objccontrib.j2objcgradle.DoppelDependency
 import com.github.j2objccontrib.j2objcgradle.J2objcConfig
 import com.google.common.annotations.VisibleForTesting
 import groovy.transform.CompileStatic
@@ -310,18 +311,6 @@ class Utils {
         return j2objcHomeFile.absolutePath
     }
 
-    static String doppelHome(Project proj) {
-
-        def j2objcDir = new File(j2objcHome(proj))
-
-        File doppelHomeFile = new File(j2objcDir, "doppel")
-        if (!doppelHomeFile.exists()) {
-            throwJ2objcConfigFailure(proj, "Doppel Home directory not found, expected at $doppelHomeFile.absolutePath.")
-        }
-        // File removes trailing slashes cause problems with string concatenation logic
-        return doppelHomeFile.absolutePath
-    }
-
     static File j2objcJar(Project proj) {
         return proj.file("${j2objcHome(proj)}/lib/j2objc.jar")
     }
@@ -460,9 +449,9 @@ class Utils {
     }
 
     static List<String> doppelJarLibs(String doppelHome,
-                                   List<String> libraries) {
-        return libraries.collect { String library ->
-            return findDoppelLibraryJar(doppelHome, library)
+                                   List<DoppelDependency> libraries) {
+        return libraries.collect { DoppelDependency library ->
+            return findDoppelLibraryJar(doppelHome, library.fullFolderName())
         }
     }
 

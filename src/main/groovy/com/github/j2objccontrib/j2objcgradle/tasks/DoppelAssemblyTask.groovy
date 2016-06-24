@@ -74,7 +74,8 @@ class DoppelAssemblyTask extends DefaultTask {
         Utils.projectCopy(project, {
             from inputDestPodspecDir()
             into getDestDoppelDirFile().absolutePath
-            include '*.podspec'
+            include '*debug.podspec'
+            include '*release.podspec'
         })
     }
 

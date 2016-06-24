@@ -16,6 +16,7 @@
 
 package com.github.j2objccontrib.j2objcgradle.tasks
 
+import com.github.j2objccontrib.j2objcgradle.DoppelDependency
 import com.github.j2objccontrib.j2objcgradle.J2objcConfig
 import com.google.common.annotations.VisibleForTesting
 import groovy.transform.CompileStatic
@@ -83,8 +84,8 @@ class XcodeTask extends DefaultTask {
         return getPodspecDependencies(getProject(), new HashSet<Project>())
     }
 
-    @Input
-    List<String> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }
+
+    List<DoppelDependency> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }
 
     @Input
     List<String> getXcodeTargetsIos() { return J2objcConfig.from(project).xcodeTargetsIos }
@@ -240,10 +241,10 @@ class XcodeTask extends DefaultTask {
                 xcodeTargetsIos, getXcodeTargetsOsx(), getXcodeTargetsWatchos(),
                 getMinVersionIos(), getMinVersionOsx(), getMinVersionWatchos())
 
-        writeUpdatedPodfileIfNeeded(podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile, getTranslateDoppelLibs(), testPodfile)
+        writeUpdatedPodfileIfNeeded(podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile, getTranslateDoppelLibs(), testPodfile, J2objcConfig.from(project))
 
         // install the pod
-        ByteArrayOutputStream stdout = new ByteArrayOutputStream()
+        /*ByteArrayOutputStream stdout = new ByteArrayOutputStream()
         ByteArrayOutputStream stderr = new ByteArrayOutputStream()
         try {
             logger.debug('XcodeTask - projectExec - pod install:')
@@ -267,7 +268,7 @@ class XcodeTask extends DefaultTask {
             }
             // unrecognized errors are rethrown:
             throw exception
-        }
+        }*/
     }
 
     @TaskAction
@@ -568,14 +569,15 @@ class XcodeTask extends DefaultTask {
             XcodeTargetDetails xcodeTargetDetails,
             boolean xcodeTargetsManualConfig,
             File podfile,
-            List<String> translateDoppelLibs,
-            boolean testPodfile) {
+            List<DoppelDependency> translateDoppelLibs,
+            boolean testPodfile,
+            J2objcConfig j2objcConfig) {
 
         List<String> oldPodfileLines = podfile.readLines()
         List<String> newPodfileLines = new ArrayList<String>(oldPodfileLines)
 
         newPodfileLines = updatePodfile(
-                newPodfileLines, podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile, translateDoppelLibs, testPodfile)
+                newPodfileLines, podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile, translateDoppelLibs, testPodfile, j2objcConfig)
 
         // Write file only if it's changed
         if (!oldPodfileLines.equals(newPodfileLines)) {
@@ -590,8 +592,9 @@ class XcodeTask extends DefaultTask {
             XcodeTargetDetails xcodeTargetDetails,
             boolean xcodeTargetsManualConfig,
             File podfile,
-            List<String> translateDoppelLibs,
-            boolean testPodfile) {
+            List<DoppelDependency> translateDoppelLibs,
+            boolean testPodfile,
+            J2objcConfig j2objcConfig) {
 
         List<String> newPodfileLines
 
@@ -640,11 +643,11 @@ class XcodeTask extends DefaultTask {
                             "https://github.com/j2objc-contrib/j2objc-gradle/blob/master/FAQ.md#how-do-i-manually-configure-the-cocoapods-podfile")
                 }
             }
-            newPodfileLines = updatePodfileTargets(podfileLines, podspecDetailsList, xcodeTargetDetails, translateDoppelLibs)
+            newPodfileLines = updatePodfileTargets(podfileLines, podspecDetailsList, xcodeTargetDetails, translateDoppelLibs, j2objcConfig)
         }
 
         // update pod methods
-        newPodfileLines = updatePodMethods(newPodfileLines, podspecDetailsList, podfile, testPodfile)
+        newPodfileLines = updatePodMethods(newPodfileLines, podspecDetailsList, podfile, testPodfile, j2objcConfig)
 
         return newPodfileLines
     }
@@ -670,13 +673,13 @@ class XcodeTask extends DefaultTask {
 
     @VisibleForTesting
     static List<String> updatePodMethods(
-            List<String> podfileLines, List<PodspecDetails> podspecDetailsList, File podfile, boolean testPodfile) {
+            List<String> podfileLines, List<PodspecDetails> podspecDetailsList, File podfile, boolean testPodfile, J2objcConfig j2objcConfig) {
 
         // create new methods
         List<String> insertLines = new ArrayList<>()
         insertLines.add(podMethodsStart)
         podspecDetailsList.each { PodspecDetails podspecDetails ->
-            insertLines.addAll(podMethodLines(podspecDetails, podfile, testPodfile))
+            insertLines.addAll(podMethodLines(podspecDetails, podfile, testPodfile, j2objcConfig))
         }
         insertLines.add(podMethodsEnd)
 
@@ -699,7 +702,7 @@ class XcodeTask extends DefaultTask {
 
     @VisibleForTesting
     static List<String> podMethodLines(
-            PodspecDetails podspecDetails, File podfile, boolean testPodfile) {
+            PodspecDetails podspecDetails, File podfile, boolean testPodfile, J2objcConfig j2objcConfig) {
 
         // Inputs:
         //   podNameMethod:     j2objc_PROJECT
@@ -718,8 +721,10 @@ class XcodeTask extends DefaultTask {
         podspecTestName = podspecTestName.replace('.podspec', '')
 
         // Relative paths are between parent directories
-        String pathDebug = Utils.relativizeNonParent(podfile.getParentFile(), podspecDetails.podspecDebug.getParentFile())
-        String pathRelease = Utils.relativizeNonParent(podfile.getParentFile(), podspecDetails.podspecRelease.getParentFile())
+
+        def localDoppelDirFile = new File(j2objcConfig.destDoppelFolder)
+        String pathDebug = Utils.relativizeNonParent(podfile.getParentFile(), localDoppelDirFile)
+        String pathRelease = Utils.relativizeNonParent(podfile.getParentFile(), localDoppelDirFile)
         String pathTest = Utils.relativizeNonParent(podfile.getParentFile(), podspecDetails.podspecTest.getParentFile())
 
         // Search for pod within the xcodeTarget, until "end" is found for that target
@@ -754,7 +759,8 @@ class XcodeTask extends DefaultTask {
             List<String> podfileLines,
             List<PodspecDetails> podspecDetailsList,
             XcodeTargetDetails xcodeTargetDetails,
-            List<String> translateDoppelLibs) {
+            List<DoppelDependency> translateDoppelLibs,
+            J2objcConfig j2objcConfig) {
 
         // Strip the following:
         // 1) pod method calls
@@ -777,9 +783,9 @@ class XcodeTask extends DefaultTask {
             insertLines.add("    ${podspecDetails.getPodMethodName()}".toString())
         }
 
-        translateDoppelLibs.each {String doppelLib ->
-            insertLines.add("pod 'j2objc-${doppelLib}-debug', :configuration => ['Debug'], :path => ENV['J2OBJC_HOME'] + '/doppel/${doppelLib}'".toString())
-            insertLines.add("pod 'j2objc-${doppelLib}-release', :configuration => ['Release'], :path => ENV['J2OBJC_HOME'] + '/doppel/${doppelLib}'".toString())
+        translateDoppelLibs.each {DoppelDependency doppelLib ->
+            insertLines.add("pod 'j2objc-${doppelLib.name}-debug', :configuration => ['Debug'], :path => '${j2objcConfig.doppelDependencyExploded}/${doppelLib.fullFolderName()}'".toString())
+            insertLines.add("pod 'j2objc-${doppelLib.name}-release', :configuration => ['Release'], :path => '${j2objcConfig.doppelDependencyExploded}/${doppelLib.fullFolderName()}'".toString())
         }
 
         xcodeTargetDetails.xcodeTargetsIos.each { String iosTarget ->

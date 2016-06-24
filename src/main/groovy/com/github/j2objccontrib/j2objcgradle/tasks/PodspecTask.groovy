@@ -84,11 +84,6 @@ class PodspecTask extends DefaultTask {
     @Input
     String getMinVersionWatchos() { return J2objcConfig.from(project).getMinVersionWatchos() }
 
-    @Input @Optional
-    String getDoppelDeployDir() { return J2objcConfig.from(project).getDoppelDeployDirectory() }
-
-    boolean isDoppelPackage() { return J2objcConfig.from(project).doppelPackageDeploy }
-
     @OutputFile
     File getPodspecDebug() {
         return new File(getDestPodspecDirFile(), "${getPodNameDebug()}.podspec")
@@ -129,19 +124,19 @@ class PodspecTask extends DefaultTask {
                 genPodspec(getPodNameDebug(), headerIncludePath, resourceIncludePath, objcIncludePath,
                         libDirIosDebug, libDirOsxDebug, libDirIosDebug,
                         getMinVersionIos(), getMinVersionOsx(), getMinVersionWatchos(),
-                        getLibName(), getJ2objcHome(), j2objcConfig.podRetainSource, isDoppelPackage(), false)
+                        getLibName(), getJ2objcHome(), false)
 
         String podspecContentsRelease =
                 genPodspec(getPodNameRelease(), headerIncludePath, resourceIncludePath, objcIncludePath,
                         libDirIosRelease, libDirOsxRelease, libDirIosRelease,
                         getMinVersionIos(), getMinVersionOsx(), getMinVersionWatchos(),
-                        getLibName(), getJ2objcHome(), j2objcConfig.podRetainSource, isDoppelPackage(), false)
+                        getLibName(), getJ2objcHome(), false)
 
         String podspecContentsTest =
                 genPodspec(getPodNameTest(), headerIncludePath, resourceIncludePath, objcIncludePath,
                         libDirIosRelease, libDirOsxRelease, libDirIosRelease,
                         getMinVersionIos(), getMinVersionOsx(), getMinVersionWatchos(),
-                        getLibName(), getJ2objcHome(), j2objcConfig.podRetainSource, isDoppelPackage(), true)
+                        getLibName(), getJ2objcHome(), true)
 
         Utils.projectMkDir(project, getDestPodspecDirFile())
 
@@ -160,9 +155,7 @@ class PodspecTask extends DefaultTask {
     static String genPodspec(String podname, String publicHeadersDir, String resourceDir, String objcIncludePath,
                              String libDirIos, String libDirOsx, String libDirWatchos,
                              String minVersionIos, String minVersionOsx, String minVersionWatchos,
-                             String libName, String j2objcHome, boolean rsArg, boolean doppelPackage, boolean testPodspec) {
-
-        boolean retainSource = rsArg;
+                             String libName, String j2objcHome, boolean testPodspec) {
 
         // Relative paths for content referenced by CocoaPods
         validatePodspecPath(libDirIos, true)
@@ -185,7 +178,7 @@ class PodspecTask extends DefaultTask {
         if(testPodspec)
             headerPath = "src/test/objc";
         else
-            headerPath = doppelPackage ? "include" : "src/main/objc";
+            headerPath = "include";
 
         // File and line separators assumed to be '/' and '\n' as podspec can only be used on OS X
         String podString =  "Pod::Spec.new do |spec|\n" +
@@ -206,13 +199,7 @@ class PodspecTask extends DefaultTask {
 
                "'ObjC', 'javax_inject', 'jre_emul', 'jsr305', 'z', 'icucore', 'junit', 'sqlite3'\n";
 
-        if(retainSource)
-        {
-            podString += "  spec.source_files  = 'ios', '$objcIncludePath/**/*.{h,m}'\n";
-//            "  spec.header_mappings_dir = '$objcIncludePath'\n";
-        }
-        else
-        {
+
             podString += "  spec.ios.vendored_libraries = '$libDirIos/lib${libName}.a'\n" +
                          "  spec.osx.vendored_libraries = '$libDirOsx/lib${libName}.a'\n" +
                          "  spec.watchos.vendored_libraries = '$libDirWatchos/lib${libName}.a'\n" +
@@ -233,7 +220,6 @@ class PodspecTask extends DefaultTask {
                          "  spec.osx.deployment_target = '$minVersionOsx'\n" +
                          "  spec.watchos.deployment_target = '$minVersionWatchos'\n" +
                          "  spec.osx.frameworks = 'ExceptionHandling'\n";
-        }
 
         if(testPodspec)
         {
