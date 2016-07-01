@@ -33,6 +33,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.logging.LogLevel
+import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.testing.Test
 
@@ -134,6 +135,9 @@ class J2objcPlugin implements Plugin<Project> {
             }
 
             dependencies {
+
+                provided project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
+
                 if(!project.name.equals('androidbase'))
                 {
                     provided 'co.touchlab.doppel:androidbase:0.1.0-SNAPSHOT'
@@ -146,8 +150,11 @@ class J2objcPlugin implements Plugin<Project> {
                     doppel 'co.touchlab.doppel:androidbasetest:0.1.0-SNAPSHOT@dop'
                 }
 
-                provided project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
-                provided 'com.intellij:annotations:9.0.4'
+//                if(!project.name.equals('androidbase') && !project.name.equals('androidbasetest') && !project.name.equals('intellijannotations')) {
+//                    provided 'com.intellij:annotations:9.0.4'
+//                    doppel 'com.intellij:annotations:9.0.4@dop'
+//                }
+
                 compile 'com.google.j2objc:j2objc-annotations:0.1'
             }
 
@@ -335,6 +342,14 @@ class J2objcPlugin implements Plugin<Project> {
 
                 from project.j2objcConfig.destDoppelFolder
                 extension 'dop'
+            }
+
+            tasks.create(name: 'flatDirDeploy', type: Copy) {
+                from(project.j2objcConfig.destJavaJarDir) {
+//                    include '**/*.jar'
+                    include '**/*.dop'
+                }
+                into '/Users/kgalligan/temp/flatdirtest'
             }
 
             lateDependsOn(project, 'build', 'doppelArchive')
