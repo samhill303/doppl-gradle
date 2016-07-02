@@ -45,7 +45,6 @@ import java.util.regex.Matcher
 @CompileStatic
 class XcodeTask extends DefaultTask {
 
-
     public static final String targetStartRegex = /^\s*target\s+'([^']*)'\s+do\s*$/
     public static final String targetNamedRegex = /^\s*target\s+'TARGET'\s+do\s*$/
     public static final String targetEndRegex = /^\s*end\s*/
@@ -110,6 +109,42 @@ class XcodeTask extends DefaultTask {
     List<String> getXcodeDebugConfigurations2() { return J2objcConfig.from(project).xcodeDebugConfigurations }
     @Input
     List<String> getXcodeReleaseConfigurations2() { return J2objcConfig.from(project).xcodeReleaseConfigurations }
+
+    /**
+     * When files are added/removed, should run pod install again.
+     * @return
+     */
+    @Input
+    List<String> getObjectiveCSourceFiles() {
+        def j2objcConfig = J2objcConfig.from(project)
+        List<String> files = new ArrayList<>()
+
+        aggregateFile(files, new File(j2objcConfig.destSrcMainDir))
+        aggregateFile(files, new File(j2objcConfig.destSrcTestDir))
+
+        return files
+    }
+
+    void aggregateFile(List<String> files, File dir)
+    {
+        def dirFiles = dir.listFiles(new FileFilter() {
+            @Override
+            boolean accept(File pathname) {
+                return pathname.isDirectory() || pathname.name.endsWith(".m") || pathname.name.endsWith(".h")
+            }
+        })
+
+        dirFiles.each {File f ->
+            if(f.isDirectory())
+            {
+                aggregateFile(files, f)
+            }
+            else
+            {
+                files.add(f.getAbsolutePath())
+            }
+        }
+    }
 
     @OutputFile
     File getPodfileFile() {
@@ -244,7 +279,7 @@ class XcodeTask extends DefaultTask {
         writeUpdatedPodfileIfNeeded(podspecDetailsList, xcodeTargetDetails, xcodeTargetsManualConfig, podfile, getTranslateDoppelLibs(), testPodfile, J2objcConfig.from(project))
 
         // install the pod
-        /*ByteArrayOutputStream stdout = new ByteArrayOutputStream()
+        ByteArrayOutputStream stdout = new ByteArrayOutputStream()
         ByteArrayOutputStream stderr = new ByteArrayOutputStream()
         try {
             logger.debug('XcodeTask - projectExec - pod install:')
@@ -268,7 +303,7 @@ class XcodeTask extends DefaultTask {
             }
             // unrecognized errors are rethrown:
             throw exception
-        }*/
+        }
     }
 
     @TaskAction

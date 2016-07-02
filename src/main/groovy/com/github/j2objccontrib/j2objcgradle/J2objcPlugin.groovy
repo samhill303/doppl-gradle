@@ -242,7 +242,7 @@ class J2objcPlugin implements Plugin<Project> {
             }
             // 'check' task is added by 'java' plugin, it depends on 'test' and
             // all the other verification tasks, now including 'j2objcTest'.
-            lateDependsOn(project, 'check', 'j2objcTest')
+//            lateDependsOn(project, 'check', 'j2objcTest')
 
             // Pack Libraries
             tasks.create(name: 'j2objcPackLibrariesDebug', type: PackLibrariesTask,
@@ -309,7 +309,7 @@ class J2objcPlugin implements Plugin<Project> {
                 group 'build'
                 description "Marker task for all assembly tasks that take part in regular j2objc builds"
             }
-            lateDependsOn(project, 'assemble', 'j2objcAssemble')
+//            lateDependsOn(project, 'assemble', 'j2objcAssemble')
 
             // Build
             tasks.create(name: 'j2objcBuildDebug', type: DefaultTask,
@@ -333,7 +333,7 @@ class J2objcPlugin implements Plugin<Project> {
             tasks.create(name: 'doppelAssembly', type: DoppelAssemblyTask,
                     dependsOn: 'j2objcBuild') {
                 group 'build'
-                description 'Look out mother fucker!'
+                description 'Pull together doppel pieces'
             }
 
             tasks.create(name: 'doppelArchive', type: Jar, dependsOn: 'doppelAssembly') {
@@ -344,15 +344,7 @@ class J2objcPlugin implements Plugin<Project> {
                 extension 'dop'
             }
 
-            tasks.create(name: 'flatDirDeploy', type: Copy) {
-                from(project.j2objcConfig.destJavaJarDir) {
-//                    include '**/*.jar'
-                    include '**/*.dop'
-                }
-                into '/Users/kgalligan/temp/flatdirtest'
-            }
-
-            lateDependsOn(project, 'build', 'doppelArchive')
+//            lateDependsOn(project, 'build', 'doppelArchive')
         }
     }
 
