@@ -125,8 +125,6 @@ class J2objcConfig {
 
     String doppelDependencyExploded = null
 
-    boolean podRetainSource = false;
-
     // Private helper methods
     // Should use instead of accessing client set 'dest' strings
     File getDestLibDirFile() {
@@ -166,6 +164,7 @@ class J2objcConfig {
     // the Java plugin convention may not be applied at this time.
     // TODO: Add a test counterpart for this.
     List<String> generatedSourceDirs = ['build/classes/main', 'build/generated/source/apt/main']
+
     /**
      * Add generated source files directories, e.g. from dagger annotations.
      *
@@ -176,6 +175,7 @@ class J2objcConfig {
     }
 
     List<String> generatedTestSourceDirs = ['build/classes/test', 'build/generated/source/apt/test']
+
     /**
      * Add generated source files directories, e.g. from dagger annotations.
      *
@@ -185,8 +185,6 @@ class J2objcConfig {
         appendArgs(this.generatedTestSourceDirs, 'generatedTestSourceDirs', true, generatedTestSourceDirs)
     }
 
-
-    // CYCLEFINDER
     /**
      * Command line arguments for j2objc cycle_finder.
      * <p/>
@@ -194,6 +192,7 @@ class J2objcConfig {
      * http://j2objc.org/docs/cycle_finder.html
      */
     List<String> cycleFinderArgs = new ArrayList<>()
+
     /**
      * Add command line arguments for j2objc cycle_finder.
      * <p/>
@@ -205,16 +204,7 @@ class J2objcConfig {
     void cycleFinderArgs(String... cycleFinderArgs) {
         appendArgs(this.cycleFinderArgs, 'cycleFinderArgs', true, cycleFinderArgs)
     }
-    /**
-     * Expected number of cycles, defaults to all those found in JRE.
-     * <p/>
-     * This is an exact number rather than minimum as any change is significant.
-     */
-    // TODO(bruno): convert to a default whitelist and change expected cyles to 0
-    int cycleFinderExpectedCycles = 40
 
-
-    // TRANSLATE
     /**
      * Command line arguments for j2objc translate.
      * <p/>
@@ -342,7 +332,7 @@ class J2objcConfig {
      */
     // J2objc default libraries, from $J2OBJC_HOME/lib/..., without '.a' extension.
     // TODO: auto add libraries based on java dependencies, warn on version differences
-    List<String> linkJ2objcLibs = ['guava', 'javax_inject', 'jsr305'/*, 'protobuf_runtime'*/]
+    List<String> linkJ2objcLibs = ['guava', 'javax_inject', 'jsr305', 'sqlite3'/*, 'protobuf_runtime'*/]
 
     /**
      * Additional native libraries that are part of the j2objc distribution to link
@@ -551,7 +541,7 @@ class J2objcConfig {
      * <p/>
      * It is a minimum so adding a unit test doesn't break the j2objc build.
      */
-    int testMinExpectedTests = 1
+    int testMinExpectedTests = 0
 
     /**
      * Filter on files to test.  Note this has no effect on which tests are

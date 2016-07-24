@@ -19,7 +19,6 @@ package com.github.j2objccontrib.j2objcgradle.tasks
 import com.github.j2objccontrib.j2objcgradle.J2objcConfig
 import com.google.common.annotations.VisibleForTesting
 import groovy.transform.CompileStatic
-import org.apache.commons.io.IOUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Project
@@ -61,35 +60,20 @@ class TestTask extends DefaultTask {
             allFiles = allFiles.matching(config.testPattern)
         }
 
-        //Look for individual test argument, or for annotation
-        if (project.hasProperty("doppelTest")) {
-            def doppelTestMatch = project.properties.get("doppelTest").toString()
-            logger.warn("has doppelTest: "+ doppelTestMatch);
+        return allFiles
+    }
 
-            return allFiles.filter { File f ->
-                logger.warn("The path: "+ f.getPath());
-                if(f.getName().contains(doppelTestMatch)) {
-                    return true;
-                }
-                else {
-                    return false;
-                }
-            }
-        } else {
-            return allFiles.filter { File f ->
-                def reader = new FileReader(f)
-                boolean doppelAnnotationFound = false
-                ((List<String>) IOUtils.readLines(reader)).each { String s ->
-                    if (s.contains("@DoppelTest")) {
-                        doppelAnnotationFound = true
-                    }
-                }
-
-                reader.close()
-
-                return doppelAnnotationFound
-            }
+    private List<String> readLines(Reader reader)
+    {
+        List<String> lines = new ArrayList<>()
+        def bf = new BufferedReader(reader)
+        String line;
+        while ((line = bf.readLine()) != null)
+        {
+            lines.add(line)
         }
+
+        return lines
     }
 
     @Input
@@ -221,11 +205,7 @@ class TestTask extends DefaultTask {
                 "j2objcConfig {\n" +
                 "    testMinExpectedTests ${testCount}\n" +
                 "}\n"
-        if(project.hasProperty("doppelTest"))
-        {
-            logger.warn("Min Test check disabled due to: doppelTest specified")
-        }
-        else if (getTestMinExpectedTests() == 0) {
+        if (getTestMinExpectedTests() == 0) {
             logger.warn("Min Test check disabled due to: 'testMinExpectedTests 0'")
         } else if (testCount < getTestMinExpectedTests()) {
             if (testCount == 0) {

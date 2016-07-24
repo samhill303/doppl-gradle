@@ -48,8 +48,6 @@ class CycleFinderTaskTest {
 
     @Test
     void cycleFinder_Simple_NoFiles_Success() {
-        // Expected number of cycles when using simple method
-        assert 40 == j2objcConfig.cycleFinderExpectedCycles
 
         CycleFinderTask j2objcCycleFinder = (CycleFinderTask) proj.tasks.create(
                 name: 'j2objcCycleFinder', type: CycleFinderTask) {
@@ -82,9 +80,6 @@ class CycleFinderTaskTest {
     void cycleFinder_Windows() {
         Utils.setFakeOSWindows()
 
-        // Expected number of cycles when using simple method
-        assert 40 == j2objcConfig.cycleFinderExpectedCycles
-
         CycleFinderTask j2objcCycleFinder = (CycleFinderTask) proj.tasks.create(
                 name: 'j2objcCycleFinder', type: CycleFinderTask) {
         }
@@ -114,7 +109,6 @@ class CycleFinderTaskTest {
 
     @Test(expected = InvalidUserDataException.class)
     void cycleFinder_Simple_NoFiles_Failure() {
-        assert 40 == j2objcConfig.cycleFinderExpectedCycles
 
         CycleFinderTask j2objcCycleFinder = (CycleFinderTask) proj.tasks.create(
                 name: 'j2objcCycleFinder', type: CycleFinderTask) {
@@ -151,7 +145,6 @@ class CycleFinderTaskTest {
     @Test
     void cycleFinder_Advanced_NoFiles_Success() {
         j2objcConfig.translateArgs('--no-package-directories')
-        j2objcConfig.cycleFinderExpectedCycles = 0
         j2objcConfig.cycleFinderArgs('--whitelist', '/J2OBJC_REPO/jre_emul/cycle_whitelist.txt')
         j2objcConfig.cycleFinderArgs('--sourcefilelist', '/J2OBJC_REPO/jre_emul/build_result/java_sources.mf')
 
@@ -187,7 +180,6 @@ class CycleFinderTaskTest {
     @Test(expected = InvalidUserDataException.class)
     void cycleFinder_Advanced_NoFiles_Failure() {
         j2objcConfig.translateArgs('--no-package-directories')
-        j2objcConfig.cycleFinderExpectedCycles = 0
         j2objcConfig.cycleFinderArgs('--whitelist', '/J2OBJC_REPO/jre_emul/cycle_whitelist.txt')
         j2objcConfig.cycleFinderArgs('--sourcefilelist', '/J2OBJC_REPO/jre_emul/build_result/java_sources.mf')
 

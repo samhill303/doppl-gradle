@@ -60,10 +60,10 @@ class DoppelAssemblyTask extends DefaultTask {
             include '**/*.h'
         })
 
-        Utils.projectCopy(project, {
-            from inputArchiveDirFile()
-            into getDestDoppelDirFile().absolutePath + "/lib"
-        })
+        copyLibDir("iosDebug")
+        copyLibDir("iosRelease")
+        copyLibDir("x86_64Debug")
+        copyLibDir("x86_64Release")
 
         Utils.projectCopy(project, {
             from inputJavaJarFile()
@@ -76,6 +76,14 @@ class DoppelAssemblyTask extends DefaultTask {
             into getDestDoppelDirFile().absolutePath
             include '*debug.podspec'
             include '*release.podspec'
+        })
+    }
+
+    private void copyLibDir(String dirName)
+    {
+        Utils.projectCopy(project, {
+            from new File(inputArchiveDirFile(), dirName)
+            into getDestDoppelDirFile().absolutePath + "/lib/"+ dirName
         })
     }
 

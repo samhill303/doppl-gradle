@@ -678,7 +678,7 @@ class XcodeTask extends DefaultTask {
                             "https://github.com/j2objc-contrib/j2objc-gradle/blob/master/FAQ.md#how-do-i-manually-configure-the-cocoapods-podfile")
                 }
             }
-            newPodfileLines = updatePodfileTargets(podfileLines, podspecDetailsList, xcodeTargetDetails, translateDoppelLibs, j2objcConfig)
+            newPodfileLines = updatePodfileTargets(podfileLines, podspecDetailsList, xcodeTargetDetails, translateDoppelLibs, j2objcConfig, podfile)
         }
 
         // update pod methods
@@ -795,7 +795,8 @@ class XcodeTask extends DefaultTask {
             List<PodspecDetails> podspecDetailsList,
             XcodeTargetDetails xcodeTargetDetails,
             List<DoppelDependency> translateDoppelLibs,
-            J2objcConfig j2objcConfig) {
+            J2objcConfig j2objcConfig,
+            File podfile) {
 
         // Strip the following:
         // 1) pod method calls
@@ -819,8 +820,9 @@ class XcodeTask extends DefaultTask {
         }
 
         translateDoppelLibs.each {DoppelDependency doppelLib ->
-            insertLines.add("pod 'j2objc-${doppelLib.name}-debug', :configuration => ['Debug'], :path => '${j2objcConfig.doppelDependencyExploded}/${doppelLib.fullFolderName()}'".toString())
-            insertLines.add("pod 'j2objc-${doppelLib.name}-release', :configuration => ['Release'], :path => '${j2objcConfig.doppelDependencyExploded}/${doppelLib.fullFolderName()}'".toString())
+            String pathDebug = Utils.relativizeNonParent(podfile.getParentFile(), doppelLib.dependencyFolderLocation())
+            insertLines.add("pod 'j2objc-${doppelLib.name}-debug', :configuration => ['Debug'], :path => '${pathDebug}'".toString())
+            insertLines.add("pod 'j2objc-${doppelLib.name}-release', :configuration => ['Release'], :path => '${pathDebug}'".toString())
         }
 
         xcodeTargetDetails.xcodeTargetsIos.each { String iosTarget ->

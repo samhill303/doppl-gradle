@@ -95,7 +95,7 @@ class NativeCompilation {
                         clangArgs += ["-miphoneos-version-min=${config.minVersionIos}"]
                         linkerArgs += ["-L$j2objcPath/lib"]
                         config.translateDoppelLibs.each { DoppelDependency libArg ->
-                            linkerArgs += ["-L$doppelDependencyExploded/${libArg.fullFolderName()}/lib"]
+                            linkerArgs += ["-L${libArg.dependencyFolderLocation().absolutePath}/lib"]
                         }
                         break
                     case TargetSpec.TARGET_IOS_SIMULATOR:
@@ -103,7 +103,7 @@ class NativeCompilation {
                         clangArgs += ["-mios-simulator-version-min=${config.minVersionIos}"]
                         linkerArgs += ["-L$j2objcPath/lib"]
                         config.translateDoppelLibs.each { DoppelDependency libArg ->
-                            linkerArgs += ["-L$doppelDependencyExploded/${libArg.fullFolderName()}/lib"]
+                            linkerArgs += ["-L${libArg.dependencyFolderLocation().absolutePath}/lib"]
                         }
                         break
                     case TargetSpec.TARGET_OSX:
@@ -115,7 +115,7 @@ class NativeCompilation {
                         }
                         linkerArgs += ["-L$j2objcPath/lib/macosx"]
                         config.translateDoppelLibs.each { DoppelDependency libArg ->
-                            linkerArgs += ["-L$doppelDependencyExploded/${libArg.fullFolderName()}/lib/x86_64Debug"]
+                            linkerArgs += ["-L${libArg.dependencyFolderLocation().absolutePath}/lib/x86_64Debug"]
                         }
                         linkerArgs += ['-framework', 'ExceptionHandling']
                         break
@@ -310,7 +310,7 @@ class NativeCompilation {
                     def doppelDependencyExploded = J2objcConfig.from(project).doppelDependencyExploded
 
                     j2objcConfig.translateDoppelLibs.each { DoppelDependency libArg ->
-                        objcCompiler.args "-I$doppelDependencyExploded/${libArg.fullFolderName()}/include"
+                        objcCompiler.args "-I${libArg.dependencyFolderLocation().absolutePath}/include"
                         linker.args "-l${libArg.name}-j2objc"
                     }
 

@@ -364,10 +364,17 @@ class TranslateTask extends DefaultTask {
 
         String sourcepathArg = Utils.joinedPathArg(sourcepathDirs)
 
+
+        def libs = Utils.doppelJarLibs(getTranslateDoppelLibs())
+        println "Start doppel libs"
+        for (String s : libs) {
+            println s
+        }
+        println "End doppel libs"
         UnionFileCollection classpathFiles = new UnionFileCollection([
                 project.files(getTranslateClasspaths()),
                 project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs())),
-                project.files(Utils.doppelJarLibs(getDoppelHome(), getTranslateDoppelLibs()))
+                project.files(libs)
         ])
 
         // TODO: comment explaining ${project.buildDir}/classes

@@ -20,6 +20,7 @@ import groovy.transform.PackageScope
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedArtifact
@@ -81,17 +82,24 @@ class DependencyResolver {
 
         //Current "lazy" plan. Just copy all dependencies. If something is changed, will need to clean.
         //TODO: Fix the lazy
-        project.configurations.getByName('doppel').resolvedConfiguration.resolvedArtifacts.each { ResolvedArtifact ra ->
+        def dopplConfig = project.configurations.getByName('doppel')
+        dopplConfig.dependencies.each {
+            if (it instanceof ProjectDependency) {
+                Project beforeProject = it.dependencyProject
+                j2objcConfig.translateDoppelLibs.add(new DoppelDependency(beforeProject.name, new File(J2objcConfig.from(beforeProject).getDestDoppelFolder())))
+            }
+        }
+        dopplConfig.resolvedConfiguration.resolvedArtifacts.each { ResolvedArtifact ra ->
 
             if(ra.extension.equals("dop")) {
                 def group = ra.moduleVersion.id.group
                 def name = ra.moduleVersion.id.name
                 def version = ra.moduleVersion.id.version
-                def dependency = new DoppelDependency(group, name, version)
+                def dependency = new DoppelDependency(group, name, version, new File(j2objcConfig.doppelDependencyExploded))
 
                 project.copy { CopySpec cp ->
                     cp.from project.zipTree(ra.file)
-                    cp.into j2objcConfig.doppelDependencyExploded + "/" + dependency.fullFolderName()
+                    cp.into dependency.dependencyFolderLocation()// j2objcConfig.doppelDependencyExploded + "/" + dependency.fullFolderName()
                 }
 
                 j2objcConfig.translateDoppelLibs.add(dependency)
@@ -193,7 +201,7 @@ class DependencyResolver {
         // Since we assert the presence of the J2objcPlugin above,
         // we are guaranteed that the java plugin, which creates the jar task,
         // is also present.
-        Task j2objcPrebuild = project.tasks.getByName('j2objcPreBuild')
+       /* Task j2objcPrebuild = project.tasks.getByName('j2objcPreBuild')
         project.logger.debug("${project.name}:j2objcPreBuild dependsOn ${beforeProject.name}:j2objcBuild")
         project.logger.debug("${project.name}:j2objcPreBuild dependsOn ${beforeProject.name}:jar")
         j2objcPrebuild.dependsOn(beforeProject.tasks.getByName('j2objcBuild'))
@@ -203,6 +211,6 @@ class DependencyResolver {
         project.logger.debug("$project:j2objcTranslate must use ${jarTask.archivePath}")
         // TODO: Handle separate classpaths for main translation and test translation.
         j2objcConfig.translateClasspaths += jarTask.archivePath.absolutePath
-        j2objcConfig.nativeCompilation.dependsOnJ2objcLib(beforeProject, isTest)
+        j2objcConfig.nativeCompilation.dependsOnJ2objcLib(beforeProject, isTest)*/
     }
 }

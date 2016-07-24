@@ -4,24 +4,28 @@ package com.github.j2objccontrib.j2objcgradle
  * Created by kgalligan on 6/24/16.
  */
 class DoppelDependency {
-    String group
     String name
-    String version
+    File dir
 
-    DoppelDependency(String group, String name, String version) {
-        this.group = group
+    DoppelDependency(String name, File dir) {
         this.name = name
-        this.version = version
+        this.dir = dir
     }
 
-    String fullFolderName()
+    DoppelDependency(String group, String name, String version, File explodedDir)
     {
+        this.name = name
+
         String foldername = group + "_" + name + "_" + version
 
         foldername = foldername.replace('-', '_')
         foldername = foldername.replace('.', '_')
         foldername = foldername.replace(' ', '_')
 
-        return foldername
+        dir = new File(explodedDir, foldername)
+    }
+
+    File dependencyFolderLocation(){
+        return dir
     }
 }

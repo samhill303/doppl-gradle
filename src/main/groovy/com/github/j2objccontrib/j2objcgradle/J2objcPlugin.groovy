@@ -52,7 +52,11 @@ class J2objcPlugin implements Plugin<Project> {
         }
 
         project.configurations {
-            provided
+            provided {
+                dependencies.all { dep ->
+                    project.configurations.default.exclude group: dep.group, module: dep.name
+                }
+            }
             compile.extendsFrom provided
         }
 
@@ -138,22 +142,15 @@ class J2objcPlugin implements Plugin<Project> {
 
                 provided project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
 
-                if(!project.name.equals('androidbase'))
+                if(!project.name.equals('androidbase') &&
+                   !project.name.equals('androidbasetest') &&
+                   !project.name.equals('testapt'))
                 {
-                    provided 'co.touchlab.doppel:androidbase:0.1.0-SNAPSHOT'
-                    doppel 'co.touchlab.doppel:androidbase:0.1.0-SNAPSHOT@dop'
+                    provided 'co.touchlab.doppel:androidbase:0.3.1-SNAPSHOT'
+                    doppel 'co.touchlab.doppel:androidbase:0.3.1-SNAPSHOT@dop'
+                    testCompile 'co.touchlab.doppel:androidbasetest:0.3.1-SNAPSHOT'
+                    doppel 'co.touchlab.doppel:androidbasetest:0.3.1-SNAPSHOT@dop'
                 }
-
-                if(!project.name.equals('androidbase') && !project.name.equals('androidbasetest'))
-                {
-                    testCompile 'co.touchlab.doppel:androidbasetest:0.1.0-SNAPSHOT'
-                    doppel 'co.touchlab.doppel:androidbasetest:0.1.0-SNAPSHOT@dop'
-                }
-
-//                if(!project.name.equals('androidbase') && !project.name.equals('androidbasetest') && !project.name.equals('intellijannotations')) {
-//                    provided 'com.intellij:annotations:9.0.4'
-//                    doppel 'com.intellij:annotations:9.0.4@dop'
-//                }
 
                 compile 'com.google.j2objc:j2objc-annotations:0.1'
             }
@@ -197,15 +194,13 @@ class J2objcPlugin implements Plugin<Project> {
                 }
             }
 
-            // j2objcCycleFinder is disabled by default as it's complex to use and understand.
-            // TODO: consider enabling by default if it's possible to make it easier to use.
-            // To enable the j2objcCycleFinder task, add the following to build.gradle:
+            // j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder
             // j2objcCycleFinder { enabled = true }
             tasks.create(name: 'j2objcCycleFinder', type: CycleFinderTask,
                     dependsOn: 'j2objcPreBuild') {
                 group 'build'
                 description "Run the cycle_finder tool on all Java source files"
-                enabled false
+                outputs.upToDateWhen { false }
             }
 
             // NOTE: When adding new tasks, consider whether they fall under 'translate-only' mode, and
@@ -236,7 +231,7 @@ class J2objcPlugin implements Plugin<Project> {
             lateShouldRunAfter(project, 'j2objcTestRelease', 'j2objcTestDebug')
 
             tasks.create(name: 'j2objcTest', type: DefaultTask,
-                    dependsOn: ['j2objcCycleFinder', 'j2objcTestDebug', 'j2objcTestRelease']) {
+                    dependsOn: ['j2objcTestDebug', 'j2objcTestRelease']) {
                 group 'build'
                 description "Marker task for all test tasks that take part in regular J2ObjC builds"
             }
@@ -278,16 +273,10 @@ class J2objcPlugin implements Plugin<Project> {
                 group 'build'
                 description 'Generate debug and release podspec that may be used for Xcode'
             }
-            tasks.create(name: 'j2objcXcode', type: XcodeTask,
-                    dependsOn: 'j2objcPodspec') {
-                // pod install is ok when podspec references resources that haven't yet been built
-                group 'build'
-                description 'Depends on j2objc translation, create a Pod file link it to Xcode project'
-            }
             // Assemble libaries
             tasks.create(name: 'j2objcAssembleDebug', type: AssembleLibrariesTask,
                     dependsOn: ['j2objcPackLibrariesDebug', 'j2objcAssembleSource',
-                                'j2objcAssembleResources', 'j2objcXcode']) {
+                                'j2objcAssembleResources', 'j2objcPodspec']) {
                 group 'build'
                 description 'Copies final generated source and debug libraries to assembly directories'
                 buildType = 'Debug'
@@ -296,7 +285,7 @@ class J2objcPlugin implements Plugin<Project> {
             }
             tasks.create(name: 'j2objcAssembleRelease', type: AssembleLibrariesTask,
                     dependsOn: ['j2objcPackLibrariesRelease', 'j2objcAssembleSource',
-                                'j2objcAssembleResources', 'j2objcXcode']) {
+                                'j2objcAssembleResources', 'j2objcPodspec']) {
                 group 'build'
                 description 'Copies final generated source and release libraries to assembly directories'
                 buildType = 'Release'
@@ -344,7 +333,15 @@ class J2objcPlugin implements Plugin<Project> {
                 extension 'dop'
             }
 
-//            lateDependsOn(project, 'build', 'doppelArchive')
+            tasks.create(name: 'j2objcXcode', type: XcodeTask,
+                    dependsOn: 'doppelArchive') {
+                // pod install is ok when podspec references resources that haven't yet been built
+                group 'build'
+                description 'Depends on j2objc translation, create a Pod file link it to Xcode project'
+            }
+
+
+            lateDependsOn(project, 'build', 'doppelArchive')
         }
     }
 

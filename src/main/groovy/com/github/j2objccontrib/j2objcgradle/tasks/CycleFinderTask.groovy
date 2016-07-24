@@ -16,6 +16,7 @@
 
 package com.github.j2objccontrib.j2objcgradle.tasks
 
+import com.github.j2objccontrib.j2objcgradle.DoppelDependency
 import com.github.j2objccontrib.j2objcgradle.J2objcConfig
 import groovy.transform.CompileStatic
 import org.gradle.api.DefaultTask
@@ -36,6 +37,7 @@ import org.gradle.api.tasks.TaskAction
 @CompileStatic
 class CycleFinderTask extends DefaultTask {
 
+
     // If the j2objc distribution changes, we want to rerun the task completely.
     // As an InputFile, if the content changes, the task will re-run in non-incremental mode.
     @InputFile
@@ -53,7 +55,7 @@ class CycleFinderTask extends DefaultTask {
         // Note that translatePattern does not need to be an @Input because it is
         // solely an input to this method, which is already an input (via @InputFiles).
         FileTree allFiles = Utils.srcSet(project, 'main', 'java')
-        allFiles = allFiles.plus(Utils.srcSet(project, 'test', 'java'))
+//        allFiles = allFiles.plus(Utils.srcSet(project, 'test', 'java'))
         FileTree ret = allFiles.plus(Utils.javaTrees(project, getGeneratedSourceDirs()))
         if (J2objcConfig.from(project).translatePattern != null) {
             ret = allFiles.matching(J2objcConfig.from(project).translatePattern)
@@ -70,9 +72,6 @@ class CycleFinderTask extends DefaultTask {
                 project.files(getTranslateSourcepaths())
         ])
     }
-
-    @Input
-    int getCycleFinderExpectedCycles() { return J2objcConfig.from(project).cycleFinderExpectedCycles }
 
     @Input
     String getJ2objcHome() { return Utils.j2objcHome(project) }
@@ -94,6 +93,14 @@ class CycleFinderTask extends DefaultTask {
 
     @Input
     Map<String, String> getTranslateSourceMapping() { return J2objcConfig.from(project).translateSourceMapping }
+
+    //TODO: Java compile path logic is replicated between this and TranslateTask. Should consolidate.
+    @Input
+    String getDoppelHome() {
+        def doppelDependencyExploded = J2objcConfig.from(project).doppelDependencyExploded
+        return doppelDependencyExploded
+    }
+    List<DoppelDependency> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }
 
     @Input
     boolean getFilenameCollisionCheck() { return J2objcConfig.from(project).getFilenameCollisionCheck() }
@@ -130,7 +137,8 @@ class CycleFinderTask extends DefaultTask {
 
         UnionFileCollection classpathFiles = new UnionFileCollection([
                 project.files(getTranslateClasspaths()),
-                project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs()))
+                project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs())),
+                project.files(Utils.doppelJarLibs(getTranslateDoppelLibs()))
         ])
         // TODO: comment explaining ${project.buildDir}/classes
         String classpathArg = Utils.joinedPathArg(classpathFiles) +
@@ -167,7 +175,6 @@ class CycleFinderTask extends DefaultTask {
             })
 
             logger.debug("CycleFinder found 0 cycles")
-            assert 0 == getCycleFinderExpectedCycles()
 
         } catch (Exception exception) {  // NOSONAR
             // ExecException is converted to InvalidUserDataException in Utils.projectExec(...)
@@ -191,20 +198,7 @@ class CycleFinderTask extends DefaultTask {
 
             // Matched (XX CYCLES FOUND), so assert on cyclesFound
             int cyclesFound = cyclesFoundStr.toInteger()
-            if (cyclesFound != getCycleFinderExpectedCycles()) {
-                String message =
-                        "Unexpected number of cycles found:\n" +
-                        "Expected Cycles:  ${getCycleFinderExpectedCycles()}\n" +
-                        "Actual Cycles:    $cyclesFound\n" +
-                        "\n" +
-                        "You should investigate the change and if ok, modify build.gradle:\n" +
-                        "\n" +
-                        "j2objcConfig {\n" +
-                        "    cycleFinderExpectedCycles $cyclesFound\n" +
-                        "}\n"
-                throw new InvalidUserDataException(message)
-            }
-            // Suppress exception when cycles found == cycleFinderExpectedCycles
+            println "Cycles Found: "+ cyclesFound
         } finally {
             // Write output always.
             getReportFile().write(Utils.stdOutAndErrToLogString(stdout, stderr))

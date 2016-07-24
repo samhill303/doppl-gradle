@@ -621,7 +621,6 @@ you expect, you should use that number instead of zero.
 j2objcConfig {
     cycleFinderArgs '--whitelist', 'J2OBJC_REPO/jre_emul/cycle_whitelist.txt'
     cycleFinderArgs '--sourcefilelist', 'J2OBJC_REPO/jre_emul/build_result/java_sources.mf'
-    cycleFinderExpectedCycles 0
     ...
 }
 ```

@@ -448,16 +448,15 @@ class Utils {
         }
     }
 
-    static List<String> doppelJarLibs(String doppelHome,
-                                   List<DoppelDependency> libraries) {
+    static List<String> doppelJarLibs(List<DoppelDependency> libraries) {
         return libraries.collect { DoppelDependency library ->
-            return findDoppelLibraryJar(doppelHome, library.fullFolderName())
+            return findDoppelLibraryJar(library.dependencyFolderLocation())
         }
     }
 
-    public static String findDoppelLibraryJar(String doppelHome, String library) {
+    public static String findDoppelLibraryJar(File libDirBase) {
 
-        def libDir = new File("$doppelHome/$library/lib")
+        def libDir = new File(libDirBase, "lib")
         def files = libDir.listFiles()
         for (File file : files) {
             if (!file.isDirectory() && file.getName().endsWith(".jar")) {
