@@ -121,17 +121,6 @@ class J2objcPlugin implements Plugin<Project> {
             // These configurations are groups of artifacts and dependencies for the plugin build
             // https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.Configuration.html
             configurations {
-                // Currently, we can only handle Project dependencies already translated to Objective-C.
-                j2objcLinkage {
-                    description = 'J2ObjC native library dependencies that need to be ' +
-                                  'linked into the final main library, and do not need translation'
-                }
-
-                j2objcTestLinkage {
-                    description = 'J2ObjC native library dependencies that need to be ' +
-                                  'linked into the final tests, and do not need translation'
-                }
-
                 doppel{
                     transitive = true
                     description = 'For doppel special packages'

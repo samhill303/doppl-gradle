@@ -72,25 +72,21 @@ class DependencyResolver {
     }
 
     void configureAll() {
-        project.configurations.getByName('j2objcLinkage').dependencies.each {
-            visitLink(it, false)
-        }
-        project.configurations.getByName('j2objcTestLinkage').dependencies.each {
-            visitLink(it, true)
-        }
-
 
         //Current "lazy" plan. Just copy all dependencies. If something is changed, will need to clean.
         //TODO: Fix the lazy
         def dopplConfig = project.configurations.getByName('doppel')
+
+        //Add project dependencies
         dopplConfig.dependencies.each {
             if (it instanceof ProjectDependency) {
                 Project beforeProject = it.dependencyProject
                 j2objcConfig.translateDoppelLibs.add(new DoppelDependency(beforeProject.name, new File(J2objcConfig.from(beforeProject).getDestDoppelFolder())))
             }
         }
-        dopplConfig.resolvedConfiguration.resolvedArtifacts.each { ResolvedArtifact ra ->
 
+        //Add external "dop" file dependencies
+        dopplConfig.resolvedConfiguration.resolvedArtifacts.each { ResolvedArtifact ra ->
             if(ra.extension.equals("dop")) {
                 def group = ra.moduleVersion.id.group
                 def name = ra.moduleVersion.id.name
@@ -104,31 +100,7 @@ class DependencyResolver {
 
                 j2objcConfig.translateDoppelLibs.add(dependency)
             }
-
-//            addCopyTask(f)
-//            project.tasks.create(name: 'doppelDependencyExtract_'+ f.name, type: Copy) {
-//                from zipTree(f)
-//                into file("${project.buildDir}/api/")
-//            }
         }
-//        project.configurations.getByName('doppel').dependencies.each { Dependency dp ->
-//            println 'dp.name: '+ dp.name
-//
-//            if(dp instanceof DefaultExternalModuleDependency)
-//            {
-//                dp.artifacts
-//            }
-//        }
-    }
-
-    void addCopyTask(File f)
-    {
-
-//        project.tasks.create(name: 'doppelDependencyExtract_'+ f.name, type: Copy) {
-//
-//            from zipTree(f)
-//            into file("${project.buildDir}/api/")
-//        }
     }
 
     private static final String MAIN_EXTRACTION_TASK_NAME = 'j2objcTranslatedMainLibraryExtraction'
@@ -156,61 +128,5 @@ class DependencyResolver {
                     task.duplicatesStrategy = DuplicatesStrategy.FAIL
                 })
         project.tasks.getByName(sourceSet.compileJavaTaskName).dependsOn(copy)
-    }
-
-    protected void visitLink(Dependency dep, boolean isTest) {
-        if (dep instanceof ProjectDependency) {
-            visitLinkProjectDependency((ProjectDependency) dep, isTest)
-        } else if (dep instanceof SelfResolvingDependency) {
-            visitLinkSelfResolvingDependency((SelfResolvingDependency) dep, isTest)
-        } else {
-                throw new UnsupportedOperationException(
-                    "Cannot automatically link J2ObjC dependency: $dep, test: $isTest")
-        }
-    }
-
-    protected void visitLinkSelfResolvingDependency(
-            SelfResolvingDependency dep, boolean isTest) {
-        // TODO: handle native prebuilt libraries as files.
-        throw new UnsupportedOperationException(
-            "Cannot automatically link J2ObjC dependency: $dep, test: $isTest")
-    }
-
-    protected void visitLinkProjectDependency(ProjectDependency dep, boolean isTest) {
-        Project beforeProject = dep.dependencyProject
-        // We need to have j2objcConfig on the beforeProject configured first.
-        project.evaluationDependsOn beforeProject.path
-
-        if (!beforeProject.plugins.hasPlugin(JavaPlugin)) {
-            String message = "$beforeProject is not a Java project.\n" +
-                             "dependsOnJ2ObjcLib can only automatically resolve a\n" +
-                             "dependency on a Java project also converted using the\n" +
-                             "J2ObjC Gradle Plugin."
-            throw new InvalidUserDataException(message)
-        }
-
-        if (!beforeProject.plugins.hasPlugin(J2objcPlugin)) {
-            String message = "$beforeProject does not use the J2ObjC Gradle Plugin.\n" +
-                             "dependsOnJ2objcLib can be used only with another project that\n" +
-                             "itself uses the J2ObjC Gradle Plugin."
-            throw new InvalidUserDataException(message)
-        }
-
-        // Build and test the java/objc libraries and the objc headers of
-        // the other project first.
-        // Since we assert the presence of the J2objcPlugin above,
-        // we are guaranteed that the java plugin, which creates the jar task,
-        // is also present.
-       /* Task j2objcPrebuild = project.tasks.getByName('j2objcPreBuild')
-        project.logger.debug("${project.name}:j2objcPreBuild dependsOn ${beforeProject.name}:j2objcBuild")
-        project.logger.debug("${project.name}:j2objcPreBuild dependsOn ${beforeProject.name}:jar")
-        j2objcPrebuild.dependsOn(beforeProject.tasks.getByName('j2objcBuild'))
-        j2objcPrebuild.dependsOn(beforeProject.tasks.getByName('jar'))
-
-        AbstractArchiveTask jarTask = beforeProject.tasks.getByName('jar') as AbstractArchiveTask
-        project.logger.debug("$project:j2objcTranslate must use ${jarTask.archivePath}")
-        // TODO: Handle separate classpaths for main translation and test translation.
-        j2objcConfig.translateClasspaths += jarTask.archivePath.absolutePath
-        j2objcConfig.nativeCompilation.dependsOnJ2objcLib(beforeProject, isTest)*/
     }
 }

@@ -176,19 +176,7 @@ class TranslateTask extends DefaultTask {
         logger.debug("Test source files: " + originalTestSrcFiles.getFiles().size())
 
         FileCollection mainSrcFilesChanged, testSrcFilesChanged
-        if (('--build-closure' in translateArgs) && !J2objcConfig.from(project).UNSAFE_incrementalBuildClosure) {
-            // We cannot correctly perform incremental compilation with --build-closure.
-            // Consider the example where src/main/Something.java is deleted, we would not
-            // be able to also delete the files that only Something.java depends on.
-            // Due to this issue, incremental builds with --build-closure are enabled ONLY
-            // if the user requests it with the UNSAFE_incrementalBuildClosure argument.
-            // TODO: One correct way to incrementally compile with --build-closure would be to use
-            // allInputFiles someway, but this will require some research.
-            Utils.projectClearDir(project, srcGenMainDir)
-            Utils.projectClearDir(project, srcGenTestDir)
-            mainSrcFilesChanged = originalMainSrcFiles
-            testSrcFilesChanged = originalTestSrcFiles
-        } else {
+
             boolean nonSourceFileChanged = false
             mainSrcFilesChanged = project.files()
             testSrcFilesChanged = project.files()
@@ -257,21 +245,9 @@ class TranslateTask extends DefaultTask {
                     translatedFiles += deleteRemovedFiles(removedTestFileNames, srcGenTestDir)
                 }
 
-                // add java classpath base to classpath for incremental translation
-                // we have to check if translation has been done before or not
-                // if it is only an incremental build we must remove the --build-closure
-                // argument to make fewer translations of dependent classes
-                // NOTE: There is one case which fails, when you have translated the code
-                // make an incremental change which refers to a not yet translated class from a
-                // source lib. In this case due to not using --build-closure the dependent source
-                // will not be translated, this can be fixed with a clean and fresh build.
-                // Due to this issue, incremental builds with --build-closure are enabled ONLY
-                // if the user requests it with the UNSAFE_incrementalBuildClosure argument.
-                if (translatedFiles > 0 && J2objcConfig.from(project).UNSAFE_incrementalBuildClosure) {
-                    translateArgs.remove('--build-closure')
-                }
+
             }
-        }
+
 
         if (getFilenameCollisionCheck()) {
             Utils.filenameCollisionCheck(getMainSrcFiles())
@@ -290,7 +266,6 @@ class TranslateTask extends DefaultTask {
                 sb.append(file.getPath()).append(' ')
             }
         }
-        logger.warn("#######sourcepathDirs: "+ sb.toString())
 
         doTranslate(sourcepathDirs, srcMainObjcDir, srcGenMainDir, translateArgs, mainSrcFilesChanged, "mainSrcFilesArgFile", false)
 
@@ -343,10 +318,6 @@ class TranslateTask extends DefaultTask {
             })
         }
 
-        srcFilesToTranslate.each {File f ->
-            logger.warn("totranslate: "+ f.getPath())
-        }
-
         int num = srcFilesToTranslate.getFiles().size()
         logger.info("Translating $num files with j2objc...")
         if (srcFilesToTranslate.getFiles().size() == 0) {
@@ -366,11 +337,7 @@ class TranslateTask extends DefaultTask {
 
 
         def libs = Utils.doppelJarLibs(getTranslateDoppelLibs())
-        println "Start doppel libs"
-        for (String s : libs) {
-            println s
-        }
-        println "End doppel libs"
+
         UnionFileCollection classpathFiles = new UnionFileCollection([
                 project.files(getTranslateClasspaths()),
                 project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs())),
@@ -557,36 +524,6 @@ class TranslateTask extends DefaultTask {
             println(key +"="+ pathToTranslatedFileMap.get(key))
         }
     }
-/*
-    static void modifyIncludeForFile(File inFile, Project project) {
-
-        BufferedReader br = new BufferedReader(new FileReader(inFile))
-        def tempFile = new File(inFile.getParentFile(), inFile.getName() + ".tmp")
-        BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile))
-        String line;
-
-        while ((line = br.readLine()) != null) {
-            if (line.startsWith(INCLUDE_START)) {
-                def matchString = line.substring(INCLUDE_START.length(), line.indexOf('"', INCLUDE_START.length()))
-                def moddedPath = findTransformedFilePath(matchString, project)
-
-                if (moddedPath != null) {
-                    bw.append(INCLUDE_START).append(moddedPath).append('"').append("\n")
-                } else {
-                    bw.append(line).append("\n")
-                }
-            }
-            else
-            {
-                bw.append(line).append("\n")
-            }
-        }
-
-        bw.close()
-        br.close()
-        inFile.delete()
-        tempFile.renameTo(inFile)
-    }*/
 
     static String findTransformedFilePath(String transformPath, org.gradle.api.Project project) {
         String[] theBits = transformPath.split("/")

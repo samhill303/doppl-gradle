@@ -242,17 +242,6 @@ class J2objcConfig {
     }
 
     /**
-     * Enables --build-closure, which translates classes referenced from the
-     * list of files passed for translation, using the
-     * {@link #translateSourcepaths}.
-     */
-    void enableBuildClosure() {
-        if (!translateArgs.contains('--build-closure')) {
-            translateArgs('--build-closure')
-        }
-    }
-
-    /**
      *  Local jars for translation e.g.: "lib/json-20140107.jar", "lib/somelib.jar".
      *  This will be added to j2objc as a '-classpath' argument.
      */
@@ -285,7 +274,6 @@ class J2objcConfig {
      * skipping all compilation, linking, and testing tasks.
      */
     boolean translateOnlyMode = false
-
 
     // Do not use groovydoc, this option should remain undocumented.
     // WARNING: Do not use this unless you know what you are doing.
@@ -414,18 +402,6 @@ class J2objcConfig {
         translateSourceMapping.put(before, after)
     }
 
-    /**
-     * @see #dependsOnJ2objcLib(org.gradle.api.Project)
-     * @deprecated Use `dependencies { j2objcLinkage project(':beforeProjectName') }` or
-     * `autoConfigureDeps = true` instead.
-     */
-    // TODO: Do this automatically based on project dependencies.
-    @Deprecated
-    void dependsOnJ2objcLib(String beforeProjectName) {
-        //noinspection GrDeprecatedAPIUsage
-        dependsOnJ2objcLib(project.project(beforeProjectName))
-    }
-
     protected NativeCompilation nativeCompilation
     /**
      * Get J2ObjC project dependencies.
@@ -435,32 +411,6 @@ class J2objcConfig {
     // TODO: ideally use immutable wrapper, not enough to justify Guava dependency
     List<Project> getBeforeProjects() {
         return nativeCompilation.beforeProjects
-    }
-
-    /**
-     * Uses the generated headers and compiled j2objc libraries of the given project when
-     * compiling this project.
-     * <p/>
-     * Generally every cross-project 'compile' dependency should have a corresponding
-     * call to dependsOnJ2objcLib.
-     * <p/>
-     * It is safe to use this in conjunction with --build-closure.
-     * <p/>
-     * Do not also include beforeProject's java source or jar in the
-     * translateSourcepaths or translateClasspaths, respectively.  Calling this method
-     * is preferable and sufficient.
-     *
-     * @deprecated Use `dependencies { j2objcLinkage project(':beforeProjectName') }` or
-     * `autoConfigureDeps=true` instead.
-     */
-    // TODO: Phase this API out, and have J2ObjC-applied project dependencies controlled
-    // solely via `j2objcLinkage` configuration.
-    @CompileStatic(TypeCheckingMode.SKIP)
-    @Deprecated
-    void dependsOnJ2objcLib(Project beforeProject) {
-        project.dependencies {
-            j2objcLinkage beforeProject
-        }
     }
 
     /**
@@ -562,7 +512,7 @@ class J2objcConfig {
      * <p/>
      * For example:
      * <pre>
-     * translatePattern {
+     * testPattern {
      *     exclude 'CannotTranslateFileTest.java'
      *     exclude '**&#47;CannotTranslateDir&#47;*.java'
      *     include '**&#47;CannotTranslateDir&#47;AnExceptionToIncludeTest.java'
@@ -1028,7 +978,6 @@ class J2objcConfig {
     void testingOnlyPrepConfigurations() {
         // When testing we don't always want to apply the entire plugin
         // before calling finalConfigure.
-        project.configurations.create('j2objcLinkage')
-        project.configurations.create('j2objcTestLinkage')
+        project.configurations.create('doppel')
     }
 }
