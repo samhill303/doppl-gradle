@@ -37,7 +37,7 @@ import org.gradle.platform.base.Platform
  */
 class NativeCompilation {
 
-    static final String[] ALL_IOS_ARCHS = ['ios_arm64', 'ios_armv7', 'ios_armv7s', 'ios_i386', 'ios_x86_64']
+    static final String[] ALL_IOS_ARCHS = ['ios_arm64', 'ios_armv7', 'ios_armv7s', 'ios_armv7k', 'ios_i386', 'ios_x86_64']
     // TODO: Provide a mechanism to vary which OSX architectures are built.
     static final String[] ALL_OSX_ARCHS = ['x86_64']
 
@@ -86,8 +86,6 @@ class NativeCompilation {
                 String[] linkerArgs = []
                 J2objcConfig config = J2objcConfig.from(project)
                 String j2objcPath = Utils.j2objcHome(project)
-
-                def doppelDependencyExploded = J2objcConfig.from(project).doppelDependencyExploded
 
                 switch (targetSpec) {
                     case TargetSpec.TARGET_IOS_DEVICE:
@@ -194,6 +192,7 @@ class NativeCompilation {
                         defineTarget(delegate, 'ios_arm64', TargetSpec.TARGET_IOS_DEVICE, 'arm64')
                         defineTarget(delegate, 'ios_armv7', TargetSpec.TARGET_IOS_DEVICE, 'armv7')
                         defineTarget(delegate, 'ios_armv7s', TargetSpec.TARGET_IOS_DEVICE, 'armv7s')
+                        defineTarget(delegate, 'ios_armv7k', TargetSpec.TARGET_IOS_DEVICE, 'armv7k')
                         defineTarget(delegate, 'ios_i386', TargetSpec.TARGET_IOS_SIMULATOR, 'i386')
                         defineTarget(delegate, 'ios_x86_64', TargetSpec.TARGET_IOS_SIMULATOR, 'x86_64')
                         defineTarget(delegate, 'x86_64', TargetSpec.TARGET_OSX, 'x86_64')

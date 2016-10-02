@@ -141,7 +141,7 @@ class J2objcPlugin implements Plugin<Project> {
                     doppel 'co.touchlab.doppel:androidbasetest:0.3.1-SNAPSHOT@dop'
                 }
 
-                compile 'com.google.j2objc:j2objc-annotations:0.1'
+                compile 'com.google.j2objc:j2objc-annotations:0.2.1'
             }
 
             DependencyResolver.configureSourceSets(project)
@@ -153,7 +153,7 @@ class J2objcPlugin implements Plugin<Project> {
             // on such generation.
             tasks.create(name: 'j2objcPreBuild', type: DefaultTask,
                     dependsOn: 'test') {
-                group 'build'
+                group 'doppl'
                 description "Marker task for all tasks that must be complete before j2objc building"
             }
 
@@ -162,7 +162,7 @@ class J2objcPlugin implements Plugin<Project> {
             // Dependency may be added in project.plugins.withType for Java or Android plugin
             tasks.create(name: 'j2objcTranslate', type: TranslateTask,
                     dependsOn: 'j2objcPreBuild') {
-                group 'build'
+                group 'doppl'
                 description "Translates all the java source files in to Objective-C using 'j2objc'"
                 // Output directories of 'j2objcTranslate', input for all other tasks
                 srcGenMainDir = j2objcSrcGenMainDir
@@ -187,7 +187,7 @@ class J2objcPlugin implements Plugin<Project> {
             // j2objcCycleFinder { enabled = true }
             tasks.create(name: 'j2objcCycleFinder', type: CycleFinderTask,
                     dependsOn: 'j2objcPreBuild') {
-                group 'build'
+                group 'doppl'
                 description "Run the cycle_finder tool on all Java source files"
                 outputs.upToDateWhen { false }
             }
@@ -221,7 +221,7 @@ class J2objcPlugin implements Plugin<Project> {
 
             tasks.create(name: 'j2objcTest', type: DefaultTask,
                     dependsOn: ['j2objcTestDebug', 'j2objcTestRelease']) {
-                group 'build'
+                group 'doppl'
                 description "Marker task for all test tasks that take part in regular J2ObjC builds"
             }
             // 'check' task is added by 'java' plugin, it depends on 'test' and
@@ -231,13 +231,13 @@ class J2objcPlugin implements Plugin<Project> {
             // Pack Libraries
             tasks.create(name: 'j2objcPackLibrariesDebug', type: PackLibrariesTask,
                     dependsOn: 'j2objcBuildObjcDebug') {
-                group 'build'
+                group 'doppl'
                 description 'Packs multiple architectures into a single debug static library'
                 buildType = 'Debug'
             }
             tasks.create(name: 'j2objcPackLibrariesRelease', type: PackLibrariesTask,
                     dependsOn: 'j2objcBuildObjcRelease') {
-                group 'build'
+                group 'doppl'
                 description 'Packs multiple architectures into a single release static library'
                 buildType = 'Release'
             }
@@ -245,12 +245,12 @@ class J2objcPlugin implements Plugin<Project> {
             // Assemble files
             tasks.create(name: 'j2objcAssembleResources', type: AssembleResourcesTask,
                     dependsOn: ['j2objcPreBuild']) {
-                group 'build'
+                group 'doppl'
                 description 'Copies mains and test resources to assembly directories'
             }
             tasks.create(name: 'j2objcAssembleSource', type: AssembleSourceTask,
                     dependsOn: ['j2objcTranslate']) {
-                group 'build'
+                group 'doppl'
                 description 'Copies final generated source to assembly directories'
                 srcGenMainDir = j2objcSrcGenMainDir
                 srcGenTestDir = j2objcSrcGenTestDir
@@ -259,14 +259,14 @@ class J2objcPlugin implements Plugin<Project> {
             tasks.create(name: 'j2objcPodspec', type: PodspecTask,
                     dependsOn: ['j2objcPreBuild']) {
                 // podspec may reference resources that haven't yet been built
-                group 'build'
+                group 'doppl'
                 description 'Generate debug and release podspec that may be used for Xcode'
             }
             // Assemble libaries
             tasks.create(name: 'j2objcAssembleDebug', type: AssembleLibrariesTask,
                     dependsOn: ['j2objcPackLibrariesDebug', 'j2objcAssembleSource',
                                 'j2objcAssembleResources', 'j2objcPodspec']) {
-                group 'build'
+                group 'doppl'
                 description 'Copies final generated source and debug libraries to assembly directories'
                 buildType = 'Debug'
                 srcLibDir = file("${buildDir}/binaries/${project.name}-j2objcStaticLibrary")
@@ -275,7 +275,7 @@ class J2objcPlugin implements Plugin<Project> {
             tasks.create(name: 'j2objcAssembleRelease', type: AssembleLibrariesTask,
                     dependsOn: ['j2objcPackLibrariesRelease', 'j2objcAssembleSource',
                                 'j2objcAssembleResources', 'j2objcPodspec']) {
-                group 'build'
+                group 'doppl'
                 description 'Copies final generated source and release libraries to assembly directories'
                 buildType = 'Release'
                 srcLibDir = file("${buildDir}/binaries/${project.name}-j2objcStaticLibrary")
@@ -284,38 +284,38 @@ class J2objcPlugin implements Plugin<Project> {
             // Assemble final task
             tasks.create(name: 'j2objcAssemble', type: DefaultTask,
                     dependsOn: ['j2objcAssembleDebug', 'j2objcAssembleRelease']) {
-                group 'build'
+                group 'doppl'
                 description "Marker task for all assembly tasks that take part in regular j2objc builds"
             }
 //            lateDependsOn(project, 'assemble', 'j2objcAssemble')
 
             // Build
             tasks.create(name: 'j2objcBuildDebug', type: DefaultTask,
-                    dependsOn: ['j2objcAssembleDebug', 'j2objcTestDebug']) {
-                group 'build'
+                    dependsOn: ['j2objcAssembleDebug']) {
+                group 'doppl'
                 description "Marker task for all debug tasks that take part in regular j2objc builds"
             }
             tasks.create(name: 'j2objcBuildRelease', type: DefaultTask,
-                    dependsOn: ['j2objcAssembleRelease', 'j2objcTestRelease']) {
-                group 'build'
+                    dependsOn: ['j2objcAssembleRelease']) {
+                group 'doppl'
                 description "Marker task for all release tasks that take part in regular j2objc builds"
             }
             // If users need to depend on this project to build other j2objc projects, they can use this
             // marker task.
             tasks.create(name: 'j2objcBuild', type: DefaultTask,
                     dependsOn: ['j2objcBuildDebug', 'j2objcBuildRelease']) {
-                group 'build'
+                group 'doppl'
                 description "Marker task for all tasks that take part in regular j2objc builds"
             }
 
             tasks.create(name: 'doppelAssembly', type: DoppelAssemblyTask,
                     dependsOn: 'j2objcBuild') {
-                group 'build'
+                group 'doppl'
                 description 'Pull together doppel pieces'
             }
 
             tasks.create(name: 'doppelArchive', type: Jar, dependsOn: 'doppelAssembly') {
-                group 'build'
+                group 'doppl'
                 description 'Depends on j2objc build, move all doppel stuff to deploy dir'
 
                 from project.j2objcConfig.destDoppelFolder
@@ -325,12 +325,14 @@ class J2objcPlugin implements Plugin<Project> {
             tasks.create(name: 'j2objcXcode', type: XcodeTask,
                     dependsOn: 'doppelArchive') {
                 // pod install is ok when podspec references resources that haven't yet been built
-                group 'build'
+                group 'doppl'
                 description 'Depends on j2objc translation, create a Pod file link it to Xcode project'
             }
 
 
-            lateDependsOn(project, 'build', 'doppelArchive')
+//            lateDependsOn(project, 'build', 'j2objcXcode')
+            lateShouldRunAfter(project, 'j2objcTest', 'j2objcXcode')
+//            lateDependsOn(project, 'build', 'j2objcTest')
         }
     }
 

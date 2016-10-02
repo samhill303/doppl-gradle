@@ -440,7 +440,7 @@ class J2objcConfig {
      * @see NativeCompilation#ALL_IOS_ARCHS
      */
     // Public to allow assignment of array of targets as shown in example
-    List<String> supportedArchs = ['ios_arm64', 'ios_armv7', 'ios_x86_64']
+    List<String> supportedArchs = ['ios_arm64', 'ios_armv7', 'ios_armv7s', 'ios_armv7k', 'ios_i386', 'ios_x86_64']
 
     /**
      * An architecture is active if it is both supported ({@link #supportedArchs})
