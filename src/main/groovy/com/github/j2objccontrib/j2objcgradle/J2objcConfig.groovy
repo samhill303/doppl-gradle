@@ -760,7 +760,7 @@ class J2objcConfig {
         //     https://github.com/j2objc-contrib/j2objc-gradle/issues/585
         // Exception is thrown when TranslateTask is run. Safest approach is to disable
         // all setup logic even though only NativeCompilation appears to cause any issue.
-        if (Utils.checkGradleVersion(false)) {
+        if (Utils.failGradleVersion(false)) {
             configureNativeCompilationForUnsupported()
             // Avoid misleading error message that finalConfigured() wasn't in build.gradle
             finalConfigured = true
