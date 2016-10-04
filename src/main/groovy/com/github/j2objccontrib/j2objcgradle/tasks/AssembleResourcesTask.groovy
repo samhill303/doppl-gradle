@@ -51,6 +51,9 @@ class AssembleResourcesTask extends DefaultTask {
 
     @TaskAction
     void assembleResources() {
+        if(Utils.failGradleVersion(false))
+            return;
+
         assert getDestSrcMainResDirFile().absolutePath !=
                getDestSrcTestResDirFile().absolutePath
         Utils.syncResourcesTo(project, ['main'], getDestSrcMainResDirFile())

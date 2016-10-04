@@ -57,6 +57,9 @@ class PackLibrariesTask extends DefaultTask {
 
     @TaskAction
     void packLibraries() {
+        if(Utils.failGradleVersion(false))
+            return;
+
         Utils.requireMacOSX('j2objcPackLibraries task')
         assert buildType in ['Debug', 'Release']
 

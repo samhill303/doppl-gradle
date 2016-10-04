@@ -50,6 +50,8 @@ class DoppelAssemblyTask extends DefaultTask {
 
     @TaskAction
     void doppelDeploy() {
+        if(Utils.failGradleVersion(false))
+            return;
 
         def config = J2objcConfig.from(project)
 

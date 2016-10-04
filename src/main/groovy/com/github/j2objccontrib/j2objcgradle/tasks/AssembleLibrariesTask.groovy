@@ -79,6 +79,9 @@ class AssembleLibrariesTask extends DefaultTask {
 
     @TaskAction
     void assembleLibraries() {
+        if(Utils.failGradleVersion(false))
+            return;
+
         // We don't need to clear out the library path, our libraries can co-exist
         // with other libraries if the user wishes them to.
 

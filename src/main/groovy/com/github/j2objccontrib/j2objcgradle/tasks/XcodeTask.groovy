@@ -308,6 +308,9 @@ class XcodeTask extends DefaultTask {
 
     @TaskAction
     void xcodeConfig() {
+        if(Utils.failGradleVersion(false))
+            return;
+
         Utils.requireMacOSX('j2objcXcode task')
 
         if (!isTaskActive()) {

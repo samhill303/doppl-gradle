@@ -109,6 +109,9 @@ class TestTask extends DefaultTask {
 
     @TaskAction
     void test() {
+        if(Utils.failGradleVersion(false))
+            return;
+
         Utils.requireMacOSX('j2objcTest task')
 
         // list of test names: ['com.example.dir.ClassOneTest', 'com.example.dir.ClassTwoTest']

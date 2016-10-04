@@ -101,6 +101,9 @@ class PodspecTask extends DefaultTask {
     @TaskAction
     void podspecWrite() {
 
+        if(Utils.failGradleVersion(false))
+            return;
+
         // Absolute path for header include, relative path for resource include
         String headerIncludePath = getDestSrcMainObjDirFile().getAbsolutePath()
 

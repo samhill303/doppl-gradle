@@ -113,6 +113,9 @@ class CycleFinderTask extends DefaultTask {
 
     @TaskAction
     void cycleFinder() {
+        if(Utils.failGradleVersion(false))
+            return;
+
         String cycleFinderExec = getJ2objcHome() + Utils.fileSeparator() + 'cycle_finder'
         List<String> windowsOnlyArgs = new ArrayList<String>()
         if (Utils.isWindows()) {

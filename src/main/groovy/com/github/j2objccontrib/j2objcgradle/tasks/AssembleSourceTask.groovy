@@ -52,6 +52,9 @@ class AssembleSourceTask extends DefaultTask {
 
     @TaskAction
     void assembleSource() {
+        if(Utils.failGradleVersion(false))
+            return;
+
         clearDestSrcDirWithChecks(getDestSrcMainObjcDirFile(), 'getDestSrcMainObjcDirFile')
         copyMainSource()
 
