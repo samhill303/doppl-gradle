@@ -135,10 +135,10 @@ class J2objcPlugin implements Plugin<Project> {
                    !project.name.equals('androidbasetest') &&
                    !project.name.equals('testapt'))
                 {
-                    provided 'co.touchlab.doppel:androidbase:0.3.1-SNAPSHOT'
-                    doppel 'co.touchlab.doppel:androidbase:0.3.1-SNAPSHOT@dop'
-                    testCompile 'co.touchlab.doppel:androidbasetest:0.3.1-SNAPSHOT'
-                    doppel 'co.touchlab.doppel:androidbasetest:0.3.1-SNAPSHOT@dop'
+                    provided 'co.touchlab.doppel:androidbase:0.4.0-SNAPSHOT'
+                    doppel 'co.touchlab.doppel:androidbase:0.4.0-SNAPSHOT@dop'
+                    testCompile 'co.touchlab.doppel:androidbasetest:0.4.0-SNAPSHOT'
+                    doppel 'co.touchlab.doppel:androidbasetest:0.4.0-SNAPSHOT@dop'
                 }
 
                 compile 'com.google.j2objc:j2objc-annotations:0.2.1'
@@ -330,9 +330,9 @@ class J2objcPlugin implements Plugin<Project> {
             }
 
 
-//            lateDependsOn(project, 'build', 'j2objcXcode')
+            lateDependsOn(project, 'build', 'j2objcXcode')
             lateShouldRunAfter(project, 'j2objcTest', 'j2objcXcode')
-//            lateDependsOn(project, 'build', 'j2objcTest')
+            lateDependsOn(project, 'build', 'j2objcTest')
         }
     }
 

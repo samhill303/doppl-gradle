@@ -121,7 +121,9 @@ class TranslateTask extends DefaultTask {
     }
 
     @Input
-    List<String> getTranslateArgs() { return J2objcConfig.from(project).translateArgs }
+    List<String> getTranslateArgs() {
+        return J2objcConfig.from(project).processedTranslateArgs()
+    }
 
     @Input
     List<String> getTranslateClasspaths() { return J2objcConfig.from(project).translateClasspaths }
@@ -386,8 +388,13 @@ class TranslateTask extends DefaultTask {
                 args "-d", srcDir
                 /*if(testTranslate)
                 {
+                    args "-g", ''
+                }*/
+                /*if(testTranslate)
+                {
                     args "-use-arc", ''
                 }*/
+                args "--package-prefixed-filenames", ''
                 args "-sourcepath", sourcepathArg
                 args "-classpath", classpathArg
                 translateArgs.each { String translateArg ->

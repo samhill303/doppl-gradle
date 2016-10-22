@@ -49,6 +49,10 @@ import org.gradle.util.ConfigureUtil
 @CompileStatic
 class J2objcConfig {
 
+
+    public static final String TRANSLATE_ARC_ARG = '-use-arc'
+    public static final String COMPILER_ARC_ARG = '-fobjc-arc'
+
     static J2objcConfig from(Project project) {
         return project.extensions.findByType(J2objcConfig)
     }
@@ -213,6 +217,21 @@ class J2objcConfig {
      */
     List<String> translateArgs = new ArrayList<>()
 
+    /**
+     * Additional arguments to pass to the native compiler.
+     */
+    // Native build accepts empty array but throws exception on empty List<String>
+    List<String> extraObjcCompilerArgs = new ArrayList<>()
+
+    /**
+     * Add arguments to pass to the native compiler.
+     *
+     * @param extraObjcCompilerArgs add arguments to pass to the native compiler.
+     */
+    void extraObjcCompilerArgs(String... extraObjcCompilerArgs) {
+        appendArgs(this.extraObjcCompilerArgs, 'extraObjcCompilerArgs', true, extraObjcCompilerArgs)
+    }
+
     List<String> headerMappingFiles = new ArrayList<>()
 
     Map<String, String> translatedPathPrefix = new HashMap<>()
@@ -228,6 +247,24 @@ class J2objcConfig {
     void translateArgs(String... translateArgs) {
         appendArgs(this.translateArgs, 'translateArgs', true, translateArgs)
     }
+
+    List<String> processedTranslateArgs()
+    {
+        if(useArc && !(translateArgs.contains(TRANSLATE_ARC_ARG)))
+            translateArgs(TRANSLATE_ARC_ARG);
+
+        return translateArgs;
+    }
+
+    String[] processedCompilerArgs()
+    {
+        if(useArc && !(extraObjcCompilerArgs.contains(COMPILER_ARC_ARG)))
+            extraObjcCompilerArgs(COMPILER_ARC_ARG);
+
+        return extraObjcCompilerArgs.toArray(new String[extraObjcCompilerArgs.size()]);
+    }
+
+    boolean useArc = false;
 
     void headerMappingFiles(String... f)
     {
@@ -548,22 +585,7 @@ class J2objcConfig {
             this.extraObjcSrcDirs += arg
         }
     }
-    /**
-     * Additional arguments to pass to the native compiler.
-     */
-    // Native build accepts empty array but throws exception on empty List<String>
-    String[] extraObjcCompilerArgs = []
-    /**
-     * Add arguments to pass to the native compiler.
-     *
-     * @param extraObjcCompilerArgs add arguments to pass to the native compiler.
-     */
-    void extraObjcCompilerArgs(String... extraObjcCompilerArgs) {
-        verifyArgs('extraObjcCompilerArgs', true, extraObjcCompilerArgs)
-        for (String arg in extraObjcCompilerArgs) {
-            this.extraObjcCompilerArgs += arg
-        }
-    }
+
     /**
      * Additional arguments to pass to the native linker.
      */

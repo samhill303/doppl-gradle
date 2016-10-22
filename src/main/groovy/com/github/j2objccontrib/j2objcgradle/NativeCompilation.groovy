@@ -295,7 +295,7 @@ class NativeCompilation {
                     objcCompiler.args "-I$j2objcPath/include"
                     objcCompiler.args /*'-Werror',*/ '-Wno-parentheses', '-fno-strict-overflow', '-fembed-bitcode'//, '-fembed-bitcode-marker'
                     objcCompiler.args '-std=c11'
-                    objcCompiler.args j2objcConfig.extraObjcCompilerArgs
+                    objcCompiler.args j2objcConfig.processedCompilerArgs()
 
                     linker.args '-ObjC'
 
