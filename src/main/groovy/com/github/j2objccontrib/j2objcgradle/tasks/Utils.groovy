@@ -393,33 +393,6 @@ class Utils {
         return props
     }
 
-    /*
-     * Throws exception if two filenames match, even if in distinct directories.
-     * This is important for referencing files with Xcode.
-     */
-
-    static void filenameCollisionCheck(FileCollection files) {
-        HashMap<String, File> nameMap = [:]
-        for (file in files) {
-            log.debug "CollisionCheck: ${file.name}, ${file.absolutePath}"
-            if (nameMap.containsKey(file.name)) {
-                File prevFile = nameMap.get(file.name)
-                String message =
-                        "File name collision detected:\n" +
-                        "  ${prevFile.path}\n" +
-                        "  ${file.path}\n" +
-                        "\n" +
-                        "To disable this check (which may overwrite files), modify build.gradle:\n" +
-                        "\n" +
-                        "j2objcConfig {\n" +
-                        "    forceFilenameCollisionCheck false\n" +
-                        "}\n"
-                throw new InvalidUserDataException(message)
-            }
-            nameMap.put(file.name, file)
-        }
-    }
-
     // Retrieves the configured source directories from the Java plugin SourceSets.
     // This includes the files for all Java source within these directories.
     static SourceDirectorySet srcSet(Project proj, String sourceSetName, String fileType) {

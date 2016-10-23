@@ -26,12 +26,14 @@ import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileCollection
+import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import org.gradle.api.tasks.incremental.InputFileDetails
@@ -42,20 +44,6 @@ import org.gradle.api.tasks.incremental.InputFileDetails
 @CompileStatic
 class TranslateTask extends DefaultTask {
 
-    // Note that translatePattern need not be @Inputs because it is solely an inputs
-    // to the 2 methods below, which are already @InputFiles.
-
-    // If the j2objc distribution changes, we want to rerun the task completely.
-    // As an InputFile, if the content changes, the task will re-run in non-incremental mode.
-
-    public static final String INCLUDE_START = "#include \""
-    public static final String IMPORT_START = "#import \""
-
-    @InputFile
-    File getJ2objcJar() {
-        return Utils.j2objcJar(project)
-    }
-
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Input String getJ2objcVersion() {
         return J2objcConfig.from(project).j2objcVersion
@@ -64,39 +52,24 @@ class TranslateTask extends DefaultTask {
     // Source files part of the Java main sourceSet.
     @InputFiles
     FileCollection getMainSrcFiles() {
-        FileTree allFiles = Utils.srcSet(project, 'main', 'java')
-        if (J2objcConfig.from(project).translatePattern != null) {
-            allFiles = allFiles.matching(J2objcConfig.from(project).translatePattern)
-        }
-        FileCollection ret = allFiles.plus(Utils.javaTrees(project, getGeneratedSourceDirs()))
-//        allFiles.plus(project.fileTree(dir: "${project.buildDir}/generated/source/apt/main"))
-        ret = Utils.mapSourceFiles(project, ret, getTranslateSourceMapping())
-        return ret
+        return allSourceFor('main', getGeneratedSourceDirs())
     }
 
     // Source files part of the Java test sourceSet.
     @InputFiles
     FileCollection getTestSrcFiles() {
-        FileTree allFiles = Utils.srcSet(project, 'test', 'java')
+        return allSourceFor('test', getGeneratedTestSourceDirs())
+    }
+
+    private FileCollection allSourceFor(String sourceSetName, List<String> generatedSourceDirs) {
+        FileTree allFiles = Utils.srcSet(project, sourceSetName, 'java')
         if (J2objcConfig.from(project).translatePattern != null) {
             allFiles = allFiles.matching(J2objcConfig.from(project).translatePattern)
         }
-        FileCollection ret = allFiles.plus(Utils.javaTrees(project, getGeneratedTestSourceDirs()))
-//        allFiles.plus(project.fileTree(dir: "${project.buildDir}/generated/source/apt/test"))
+
+        FileCollection ret = allFiles.plus(Utils.javaTrees(project, generatedSourceDirs))
         ret = Utils.mapSourceFiles(project, ret, getTranslateSourceMapping())
         return ret
-    }
-
-    // All input files that could affect translation output, except those in j2objc itself.
-    @InputFiles
-    FileCollection getAllInputFiles() {
-        FileCollection allFiles = getMainSrcFiles()
-        allFiles += getTestSrcFiles()
-        allFiles += project.files(getTranslateClasspaths())
-        allFiles += project.files(getTranslateSourcepaths())
-        // Only care about changes in the generatedSourceDirs paths and not the contents
-        // It assumes that any changes in generated code comes from change in non-generated code
-        return allFiles
     }
 
     // Property is never used, however it is an input value as
@@ -115,21 +88,24 @@ class TranslateTask extends DefaultTask {
     String getJ2objcHome() { return Utils.j2objcHome(project) }
 
     @Input
-    String getDoppelHome() {
-        def doppelDependencyExploded = J2objcConfig.from(project).doppelDependencyExploded
-        return doppelDependencyExploded
-    }
-
-    @Input
     List<String> getTranslateArgs() {
         return J2objcConfig.from(project).processedTranslateArgs()
     }
 
     @Input
-    List<String> getTranslateClasspaths() { return J2objcConfig.from(project).translateClasspaths }
+    FileCollection getMainSourceClasspath() {
+        return sourceSetClasspath(SourceSet.MAIN_SOURCE_SET_NAME)
+    }
 
     @Input
-    List<String> getTranslateSourcepaths() { return J2objcConfig.from(project).translateSourcepaths }
+    FileCollection getTestSourceClasspath() {
+        return sourceSetClasspath(SourceSet.TEST_SOURCE_SET_NAME)
+    }
+
+    private FileCollection sourceSetClasspath(String sourceSetName) {
+        JavaPluginConvention javaConvention = project.getConvention().getPlugin(JavaPluginConvention)
+        return javaConvention.sourceSets.findByName(sourceSetName).compileClasspath
+    }
 
     @Input
     List<String> getGeneratedSourceDirs() { return J2objcConfig.from(project).generatedSourceDirs }
@@ -144,10 +120,6 @@ class TranslateTask extends DefaultTask {
 
     @Input
     Map<String, String> getTranslateSourceMapping() { return J2objcConfig.from(project).translateSourceMapping }
-
-    @Input
-    boolean getFilenameCollisionCheck() { return J2objcConfig.from(project).getFilenameCollisionCheck() }
-
 
     // Generated ObjC files
     @OutputDirectory
@@ -164,13 +136,9 @@ class TranslateTask extends DefaultTask {
 
     @TaskAction
     void translate(IncrementalTaskInputs inputs) {
-        // Exceptions must be delayed until Plugin tasks are run
-        // Doing it earlier causes Gradle deadlock:
-        // https://github.com/j2objc-contrib/j2objc-gradle/issues/585
-        if(Utils.failGradleVersion(false))
-            return;
 
         List<String> translateArgs = getTranslateArgs()
+
         // Don't evaluate this expensive property multiple times.
         FileCollection originalMainSrcFiles = getMainSrcFiles()
         FileCollection originalTestSrcFiles = getTestSrcFiles()
@@ -183,6 +151,7 @@ class TranslateTask extends DefaultTask {
             boolean nonSourceFileChanged = false
             mainSrcFilesChanged = project.files()
             testSrcFilesChanged = project.files()
+
             inputs.outOfDate(new Action<InputFileDetails>() {
                 @Override
                 void execute(InputFileDetails details) {
@@ -199,6 +168,7 @@ class TranslateTask extends DefaultTask {
                     }
                 }
             })
+
             List<String> removedMainFileNames = new ArrayList<>()
             List<String> removedTestFileNames = new ArrayList<>()
             inputs.removed(new Action<InputFileDetails>() {
@@ -251,26 +221,20 @@ class TranslateTask extends DefaultTask {
 
             }
 
-
-        if (getFilenameCollisionCheck()) {
-            Utils.filenameCollisionCheck(getMainSrcFiles())
-            Utils.filenameCollisionCheck(getTestSrcFiles())
-        }
-
-        // Translate main code.
         UnionFileCollection sourcepathDirs = new UnionFileCollection([
                 project.files(Utils.srcSet(project, 'main', 'java').getSrcDirs()),
-                project.files(getTranslateSourcepaths()),
                 project.files(getGeneratedSourceDirs())
         ])
-        StringBuilder sb = new StringBuilder()
-        for (FileCollection collection: sourcepathDirs.sources ) {
-            for (File file : collection.files) {
-                sb.append(file.getPath()).append(' ')
-            }
-        }
 
-        doTranslate(sourcepathDirs, srcMainObjcDir, srcGenMainDir, translateArgs, mainSrcFilesChanged, "mainSrcFilesArgFile", false)
+        doTranslate(
+                sourcepathDirs,
+                getMainSourceClasspath(),
+                srcMainObjcDir,
+                srcGenMainDir,
+                translateArgs,
+                mainSrcFilesChanged,
+                "mainSrcFilesArgFile",
+                false)
 
         // Translate test code. Tests are never built with --build-closure; otherwise
         // we will get duplicate symbol errors.
@@ -279,16 +243,26 @@ class TranslateTask extends DefaultTask {
         // needed by the test code is not a subset of the API of X used by the main
         // code, compilation will fail. The solution is to just build the whole library
         // X as a separate j2objc project and depend on it.
+        //KPG: We don't pass '--build-closure' to j2objc. Evaluate if we want to add support.
         List<String> testTranslateArgs = new ArrayList<>(translateArgs)
         testTranslateArgs.removeAll('--build-closure')
+
         sourcepathDirs = new UnionFileCollection([
                 project.files(Utils.srcSet(project, 'main', 'java').getSrcDirs()),
                 project.files(Utils.srcSet(project, 'test', 'java').getSrcDirs()),
-                project.files(getTranslateSourcepaths()),
                 project.files(getGeneratedSourceDirs()),
                 project.files(getGeneratedTestSourceDirs())
         ])
-        doTranslate(sourcepathDirs, srcTestObjcDir, srcGenTestDir, testTranslateArgs, testSrcFilesChanged, "testSrcFilesArgFile", true)
+
+        doTranslate(
+                sourcepathDirs,
+                getTestSourceClasspath(),
+                srcTestObjcDir,
+                srcGenTestDir,
+                testTranslateArgs,
+                testSrcFilesChanged,
+                "testSrcFilesArgFile",
+                true)
     }
 
     int deleteRemovedFiles(List<String> removedFileNames, File dir) {
@@ -310,7 +284,7 @@ class TranslateTask extends DefaultTask {
         return destFiles.getFiles().size()
     }
 
-    void doTranslate(UnionFileCollection sourcepathDirs, File nativeSourceDir, File srcDir, List<String> translateArgs,
+    void doTranslate(FileCollection sourcepathDirs, FileCollection classpathCollection, File nativeSourceDir, File srcDir, List<String> translateArgs,
                      FileCollection srcFilesToTranslate, String srcFilesArgFilename, boolean testTranslate) {
 
         if(nativeSourceDir != null && nativeSourceDir.exists()){
@@ -329,20 +303,13 @@ class TranslateTask extends DefaultTask {
         }
 
         String j2objcExecutable = "${getJ2objcHome()}/j2objc"
-        List<String> windowsOnlyArgs = new ArrayList<String>()
-        if (Utils.isWindows()) {
-            j2objcExecutable = 'java'
-            windowsOnlyArgs.add('-jar')
-            windowsOnlyArgs.add(getJ2objcJar().absolutePath)
-        }
 
         String sourcepathArg = Utils.joinedPathArg(sourcepathDirs)
-
 
         def libs = Utils.doppelJarLibs(getTranslateDoppelLibs())
 
         UnionFileCollection classpathFiles = new UnionFileCollection([
-                project.files(getTranslateClasspaths()),
+                project.files(classpathCollection),
                 project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs())),
                 project.files(libs)
         ])
@@ -380,9 +347,6 @@ class TranslateTask extends DefaultTask {
         try {
             Utils.projectExec(project, stdout, stderr, null, {
                 executable j2objcExecutable
-                windowsOnlyArgs.each { String windowsOnlyArg ->
-                    args windowsOnlyArg
-                }
 
                 // Arguments
                 args "-d", srcDir
@@ -411,149 +375,9 @@ class TranslateTask extends DefaultTask {
                 setErrorOutput stderr
             })
 
-
-//            def generatedFiles = project.fileTree(dir: srcDir, includes: ['**/*.h', '**/*.m'])
-//
-//            remapHeaderLinks(generatedFiles.asList().toArray(new File[generatedFiles.size()]), srcDir, project)
-
         } catch (Exception exception) {  // NOSONAR
             // TODO: match on common failures and provide useful help
             throw exception
         }
-    }
-
-    static void remapHeaderLinks(File[] generatedFiles, File srcDir, Project project) {
-        def basePath = srcDir.getPath()
-        Map<String, String> pathToTranslatedFileMap = project.extensions.findByType(J2objcConfig).pathToTranslatedFileMap
-
-        generatedFiles.each { File inFile ->
-
-            try {
-                String transformPath = inFile.getPath().substring(basePath.length())
-                String outputPath = findTransformedFilePath(transformPath, project)
-
-                if (transformPath.startsWith("/"))
-                    transformPath = transformPath.substring(1)
-
-                pathToTranslatedFileMap.put(transformPath, outputPath)
-
-            } catch (Exception e) {
-                e.printStackTrace()
-//                logger.error("Move failed", e)
-            }
-        }
-
-        generatedFiles.each { File inFile ->
-
-            try {
-                def parentPath = inFile.getParentFile().getPath().substring(basePath.length())
-                if (parentPath.startsWith("/"))
-                    parentPath = parentPath.substring(1)
-
-                if(inFile.getPath().endsWith("IOSClass.h"))
-                    println "Just a break"
-
-                BufferedReader br = new BufferedReader(new FileReader(inFile))
-                def tempFile = new File(inFile.getParentFile(), inFile.getName() + ".tmp")
-                BufferedWriter bw = new BufferedWriter(new FileWriter(tempFile))
-                String line;
-
-                while ((line = br.readLine()) != null) {
-                    if (line.startsWith(INCLUDE_START)) {
-
-                        def matchString = line.substring(INCLUDE_START.length(), line.indexOf('"', INCLUDE_START
-                                .length()));
-
-                        String moddedPath = null;
-
-                        if (pathToTranslatedFileMap.containsKey(matchString))
-                        {
-                            moddedPath = pathToTranslatedFileMap.get(matchString)
-                        }
-                        else if (pathToTranslatedFileMap.containsKey(parentPath + "/" + matchString))
-                        {
-                            println (parentPath + "/" + matchString)
-                            moddedPath = pathToTranslatedFileMap.get(parentPath + "/" + matchString)
-                        }
-
-
-                        if (moddedPath != null) {
-                            bw.append(INCLUDE_START).append(moddedPath).append('"').append("\n")
-                        } else {
-                            bw.append(line).append("\n")
-                        }
-                    } else if(line.startsWith(IMPORT_START)){
-                        def matchString = line.substring(IMPORT_START.length(), line.indexOf('"', IMPORT_START
-                                .length()));
-
-                        String moddedPath = null;
-
-                        if (pathToTranslatedFileMap.containsKey(matchString))
-                        {
-                            moddedPath = pathToTranslatedFileMap.get(matchString)
-                        }
-                        else if (pathToTranslatedFileMap.containsKey(parentPath + "/" + matchString))
-                        {
-                            println (parentPath + "/" + matchString)
-                            moddedPath = pathToTranslatedFileMap.get(parentPath + "/" + matchString)
-                        }
-
-
-                        if (moddedPath != null) {
-                            bw.append(IMPORT_START).append(moddedPath).append('"').append("\n")
-                        } else {
-                            bw.append(line).append("\n")
-                        }
-                    }
-
-                    else {
-                        bw.append(line).append("\n")
-                    }
-                }
-
-                bw.close()
-                br.close()
-                inFile.delete()
-                tempFile.renameTo(inFile)
-
-                String transformPath = inFile.getPath().substring(basePath.length())
-                if(transformPath.startsWith("/"))
-                    transformPath = transformPath.substring(1)
-
-                String outputPath = findTransformedFilePath(transformPath, project)
-                def moveTo = new File(srcDir, outputPath)
-                inFile.renameTo(moveTo)
-            } catch (Exception e) {
-                logger.error("Move failed", e)
-            }
-        }
-
-        pathToTranslatedFileMap.keySet().each {String key ->
-            println(key +"="+ pathToTranslatedFileMap.get(key))
-        }
-    }
-
-    static String findTransformedFilePath(String transformPath, org.gradle.api.Project project) {
-        String[] theBits = transformPath.split("/")
-        if(theBits.length == 1)
-            return transformPath
-
-        StringBuilder sb = new StringBuilder()
-        J2objcConfig config = project == null ? null : project.extensions.findByType(J2objcConfig)
-
-        theBits.each { String bit ->
-            if (bit.equals(theBits.last())) {
-                sb.append(bit)
-            } else {
-                sb.append(bit.capitalize())
-            }
-
-            if (config != null && config.translatedPathPrefix.containsKey(sb.toString())) {
-                sb = new StringBuilder(config.translatedPathPrefix.get(sb.toString()))
-            }
-        }
-
-        def outputPath = sb.toString()
-        outputPath
     }
 }
