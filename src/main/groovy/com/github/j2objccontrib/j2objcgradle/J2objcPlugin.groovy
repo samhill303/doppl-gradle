@@ -146,6 +146,7 @@ class J2objcPlugin implements Plugin<Project> {
                     dependsOn: 'j2objcTranslate') {
                 group 'doppl'
                 description 'Pull together doppel pieces'
+                srcGenMainDir = j2objcSrcGenMainDir
             }
 
             /*tasks.create(name: 'j2objcAssembleResources', type: AssembleResourcesTask,
@@ -172,6 +173,7 @@ class J2objcPlugin implements Plugin<Project> {
             tasks.create(name: 'doppelArchive', type: Jar, dependsOn: 'doppelAssembly') {
                 group 'doppl'
                 description 'Depends on j2objc build, move all doppel stuff to deploy dir'
+
 
                 from project.j2objcConfig.destDoppelFolder
                 extension 'dop'

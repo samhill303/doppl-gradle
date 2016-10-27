@@ -439,6 +439,17 @@ class Utils {
         throw new IllegalArgumentException("No jar found in doppl directory")
     }
 
+    public static String findDoppelLibraryMappings(File dopplDir) {
+
+        def files = dopplDir.listFiles()
+        for (File file : files) {
+            if (!file.isDirectory() && file.getName().endsWith(".mappings")) {
+                return file.getAbsolutePath()
+            }
+        }
+        return null
+    }
+
     // Convert FileCollection to joined path arg, e.g. "src/Some.java:src/Another.java"
     static String joinedPathArg(FileCollection files) {
         String[] paths = []

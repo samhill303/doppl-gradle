@@ -24,7 +24,6 @@ import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
-import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.internal.file.UnionFileCollection
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.Input
@@ -264,6 +263,18 @@ class TranslateTask extends DefaultTask {
                 project.files(getGeneratedSourceDirs())
         ])
 
+
+
+        doTranslate(
+                sourcepathDirs,
+                getMainSourceClasspath(),
+                srcMainObjcDir,
+                srcGenMainDir,
+                translateArgs,
+                mainSrcFilesChanged,
+                "mainSrcFilesArgFile",
+                false)
+
         if(frameworkName() != null)
         {
             Set<File> allSourceDirs = new HashSet<>()
@@ -276,16 +287,6 @@ class TranslateTask extends DefaultTask {
             writeMasterHeader()
             writeHeaderMappings(allSourceDirs)
         }
-
-        doTranslate(
-                sourcepathDirs,
-                getMainSourceClasspath(),
-                srcMainObjcDir,
-                srcGenMainDir,
-                translateArgs,
-                mainSrcFilesChanged,
-                "mainSrcFilesArgFile",
-                false)
 
         // Translate test code. Tests are never built with --build-closure; otherwise
         // we will get duplicate symbol errors.
@@ -449,6 +450,17 @@ class TranslateTask extends DefaultTask {
 
         logger.debug('TranslateTask - projectExec:')
 
+
+        List<String> mappingFiles = new ArrayList<>()
+        for (DoppelDependency lib : dopplLibs) {
+
+            String mappingPath = Utils.findDoppelLibraryMappings(lib.dependencyFolderLocation())
+            if(mappingPath != null && !mappingPath.isEmpty())
+            {
+                mappingFiles.add(mappingPath)
+            }
+        }
+
         try {
             Utils.projectExec(project, stdout, stderr, null, {
                 executable j2objcExecutable
@@ -464,6 +476,10 @@ class TranslateTask extends DefaultTask {
                     args "-use-arc", ''
                 }*/
                 args "--package-prefixed-filenames", ''
+                if(mappingFiles.size() > 0)
+                {
+                    args "--header-mapping", mappingFiles.join(",")
+                }
                 args "-sourcepath", sourcepathArg
                 args "-classpath", classpathArg
                 translateArgs.each { String translateArg ->

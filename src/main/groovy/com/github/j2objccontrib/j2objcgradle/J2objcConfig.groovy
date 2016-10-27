@@ -42,9 +42,9 @@ class J2objcConfig {
         this.project = project
 
         // Can't be in subdirectory as podspec paths must be relative and not traverse parent ('..')
-        destPodspecDir = new File(project.buildDir, 'j2objcOutputs').absolutePath
-        destSrcMainDir = new File(project.buildDir, 'j2objcOutputs/src/main').absolutePath
-        destSrcTestDir = new File(project.buildDir, 'j2objcOutputs/src/test').absolutePath
+//        destPodspecDir = new File(project.buildDir, 'j2objcOutputs').absolutePath
+//        destSrcMainDir = new File(project.buildDir, 'j2objcOutputs/src/main').absolutePath
+//        destSrcTestDir = new File(project.buildDir, 'j2objcOutputs/src/test').absolutePath
 
 
         // Provide defaults for assembly output locations.
@@ -82,7 +82,7 @@ class J2objcConfig {
      * <p/>
      * Defaults to $buildDir/j2objcOutputs
      */
-    String destPodspecDir = null
+//    String destPodspecDir = null
 
     /**
      * Where to assemble generated main libraries.
@@ -100,7 +100,7 @@ class J2objcConfig {
      * <p/>
      * Defaults to $buildDir/j2objcOutputs/src/main
      */
-    String destSrcMainDir = null
+//    String destSrcMainDir = null
 
     /**
      * Where to assemble generated test source and resources files.
@@ -108,13 +108,13 @@ class J2objcConfig {
      * Can be the same directory as destDir
      * Defaults to $buildDir/j2objcOutputs/src/test
      */
-    String destSrcTestDir = null
+//    String destSrcTestDir = null
 
     boolean useArc = false;
 
     boolean checkJ2objcVersionExplicit = false;
 
-    File getDestSrcDirFile(String sourceSetName, String fileType) {
+    /*File getDestSrcDirFile(String sourceSetName, String fileType) {
         assert sourceSetName in ['main', 'test']
         assert fileType in ['objc', 'resources']
 
@@ -128,11 +128,11 @@ class J2objcConfig {
         }
 
         return project.file(new File(destSrcDir, fileType))
-    }
+    }*/
 
-    File getDestPodspecDirFile() {
+    /*File getDestPodspecDirFile() {
         return project.file(destPodspecDir)
-    }
+    }*/
 
     /**
      * Generated source files directories, e.g. from dagger annotations.
