@@ -17,12 +17,15 @@
 package com.github.j2objccontrib.j2objcgradle
 
 import com.github.j2objccontrib.j2objcgradle.tasks.CycleFinderTask
+import com.github.j2objccontrib.j2objcgradle.tasks.DoppelAssemblyTask
 import com.github.j2objccontrib.j2objcgradle.tasks.TranslateTask
 import com.github.j2objccontrib.j2objcgradle.tasks.Utils
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.logging.LogLevel
+import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.plugins.JavaPlugin
 
 /*
@@ -32,6 +35,15 @@ class J2objcPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
+
+        project.configurations {
+            provided {
+                dependencies.all { dep ->
+                    project.configurations.default.exclude group: dep.group, module: dep.name
+                }
+            }
+            compile.extendsFrom provided
+        }
 
         String version = BuildInfo.VERSION
         String commit = BuildInfo.GIT_COMMIT
@@ -47,11 +59,6 @@ class J2objcPlugin implements Plugin<Project> {
             extensions.create('j2objcConfig', J2objcConfig, project)
 
             afterEvaluate { Project evaluatedProject ->
-                if (!evaluatedProject.j2objcConfig.isFinalConfigured()) {
-                    logger.error("Project '${evaluatedProject.name}' is missing finalConfigure():\n" +
-                                 "https://github.com/j2objc-contrib/j2objc-gradle/blob/master/FAQ.md#how-do-i-call-finalconfigure")
-                }
-
                 boolean arcTranslateArg = true;// = '-use-arc' in evaluatedProject.j2objcConfig.translateArgs
                 boolean arcCompilerArg = true;//'-fobjc-arc' in evaluatedProject.j2objcConfig.extraObjcCompilerArgs
                 if (arcTranslateArg && !arcCompilerArg || !arcTranslateArg && arcCompilerArg) {
@@ -96,7 +103,7 @@ class J2objcPlugin implements Plugin<Project> {
 
             // If users need to generate extra files that j2objc depends on, they can make this task dependent
             // on such generation.
-            tasks.create(name: 'j2objcPreBuild', type: DefaultTask, dependsOn: 'build') {
+            tasks.create(name: 'j2objcPreBuild', type: DefaultTask, dependsOn: 'jar') {
                 group 'doppl'
                 description "Marker task for all tasks that must be complete before j2objc building"
             }
@@ -135,6 +142,12 @@ class J2objcPlugin implements Plugin<Project> {
                 outputs.upToDateWhen { false }
             }
 
+            tasks.create(name: 'doppelAssembly', type: DoppelAssemblyTask,
+                    dependsOn: 'j2objcTranslate') {
+                group 'doppl'
+                description 'Pull together doppel pieces'
+            }
+
             /*tasks.create(name: 'j2objcAssembleResources', type: AssembleResourcesTask,
                     dependsOn: ['j2objcPreBuild']) {
                 group 'doppl'
@@ -156,13 +169,13 @@ class J2objcPlugin implements Plugin<Project> {
                 description 'Generate debug and release podspec that may be used for Xcode'
             }*/
 
-            /*tasks.create(name: 'doppelArchive', type: Jar, dependsOn: 'doppelAssembly') {
+            tasks.create(name: 'doppelArchive', type: Jar, dependsOn: 'doppelAssembly') {
                 group 'doppl'
                 description 'Depends on j2objc build, move all doppel stuff to deploy dir'
 
                 from project.j2objcConfig.destDoppelFolder
                 extension 'dop'
-            }*/
+            }
 
             /*tasks.create(name: 'j2objcXcode', type: XcodeTask,
                     dependsOn: 'doppelArchive') {
@@ -170,6 +183,29 @@ class J2objcPlugin implements Plugin<Project> {
                 group 'doppl'
                 description 'Depends on j2objc translation, create a Pod file link it to Xcode project'
             }*/
+            lateDependsOn(project, 'build', 'doppelArchive')
+        }
+    }
+
+    // Has task named afterTaskName depend on the task named beforeTaskName, regardless of
+    // whether afterTaskName has been created yet or not.
+    // The before task must already exist.
+    private static void lateDependsOn(Project proj, String afterTaskName, String beforeTaskName) {
+        assert null != proj.tasks.findByName(beforeTaskName)
+        // You can't just call tasks.findByName on afterTaskName - for certain tasks like 'assemble' for
+        // reasons unknown, the Java plugin creates - right there! - the task; this prevents
+        // later code from modifying binaries, sourceSets, etc.  If you see an error
+        // mentioning 'state GraphClosed' saying you can't mutate some object, see if you are magically
+        // causing Gradle to make the task by using findByName!  Issue #156
+
+        // tasks.all cleanly calls this closure on any existing elements and for all elements
+        // added in the future.
+        // TODO: Find a better way to have afterTask depend on beforeTask, without
+        // materializing afterTask early.
+        proj.tasks.all { Task task ->
+            if (task.name == afterTaskName) {
+                task.dependsOn beforeTaskName
+            }
         }
     }
 }

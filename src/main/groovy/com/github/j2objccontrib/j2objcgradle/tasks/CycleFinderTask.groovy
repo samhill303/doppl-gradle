@@ -16,7 +16,6 @@
 
 package com.github.j2objccontrib.j2objcgradle.tasks
 
-import com.github.j2objccontrib.j2objcgradle.DoppelDependency
 import com.github.j2objccontrib.j2objcgradle.J2objcConfig
 import groovy.transform.CompileStatic
 import org.gradle.api.DefaultTask
@@ -67,9 +66,9 @@ class CycleFinderTask extends DefaultTask {
     @InputFiles
     UnionFileCollection getAllInputFiles() {
         return new UnionFileCollection([
-                getSrcInputFiles(),
+                getSrcInputFiles()/*,
                 project.files(getTranslateClasspaths()),
-                project.files(getTranslateSourcepaths())
+                project.files(getTranslateSourcepaths())*/
         ])
     }
 
@@ -79,11 +78,11 @@ class CycleFinderTask extends DefaultTask {
     @Input
     List<String> getCycleFinderArgs() { return J2objcConfig.from(project).cycleFinderArgs }
 
-    @Input
+    /*@Input
     List<String> getTranslateClasspaths() { return J2objcConfig.from(project).translateClasspaths }
 
     @Input
-    List<String> getTranslateSourcepaths() { return J2objcConfig.from(project).translateSourcepaths }
+    List<String> getTranslateSourcepaths() { return J2objcConfig.from(project).translateSourcepaths }*/
 
     @Input
     List<String> getGeneratedSourceDirs() { return J2objcConfig.from(project).generatedSourceDirs }
@@ -94,17 +93,13 @@ class CycleFinderTask extends DefaultTask {
     @Input
     Map<String, String> getTranslateSourceMapping() { return J2objcConfig.from(project).translateSourceMapping }
 
-    //TODO: Java compile path logic is replicated between this and TranslateTask. Should consolidate.
+    /*//TODO: Java compile path logic is replicated between this and TranslateTask. Should consolidate.
     @Input
     String getDoppelHome() {
         def doppelDependencyExploded = J2objcConfig.from(project).doppelDependencyExploded
         return doppelDependencyExploded
     }
-    List<DoppelDependency> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }
-
-    @Input
-    boolean getFilenameCollisionCheck() { return J2objcConfig.from(project).getFilenameCollisionCheck() }
-
+    List<DoppelDependency> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }*/
 
     // Output required for task up-to-date checks
     @OutputFile
@@ -133,15 +128,15 @@ class CycleFinderTask extends DefaultTask {
         UnionFileCollection sourcepathDirs = new UnionFileCollection([
                 project.files(Utils.srcSet(project, 'main', 'java').getSrcDirs()),
 //                project.files(Utils.srcSet(project, 'test', 'java').getSrcDirs()),
-                project.files(getTranslateSourcepaths()),
+                /*project.files(getTranslateSourcepaths()),*/
                 project.files(getGeneratedSourceDirs())
         ])
         String sourcepathArg = Utils.joinedPathArg(sourcepathDirs)
 
         UnionFileCollection classpathFiles = new UnionFileCollection([
-                project.files(getTranslateClasspaths()),
-                project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs())),
-                project.files(Utils.doppelJarLibs(getTranslateDoppelLibs()))
+                /*project.files(getTranslateClasspaths()),*/
+                project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs()))/*,
+                project.files(Utils.doppelJarLibs(getTranslateDoppelLibs()))*/
         ])
         // TODO: comment explaining ${project.buildDir}/classes
         String classpathArg = Utils.joinedPathArg(classpathFiles) +

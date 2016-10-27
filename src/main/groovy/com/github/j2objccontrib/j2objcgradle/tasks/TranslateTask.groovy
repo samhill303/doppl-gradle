@@ -16,23 +16,23 @@
 
 package com.github.j2objccontrib.j2objcgradle.tasks
 
+import com.github.j2objccontrib.j2objcgradle.DependencyResolver
 import com.github.j2objccontrib.j2objcgradle.DoppelDependency
 import com.github.j2objccontrib.j2objcgradle.J2objcConfig
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
-import org.gradle.api.Project
-import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
+import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.internal.file.UnionFileCollection
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
@@ -88,9 +88,18 @@ class TranslateTask extends DefaultTask {
     String getJ2objcHome() { return Utils.j2objcHome(project) }
 
     @Input
+    String getDoppelHome() {
+        def doppelDependencyExploded = J2objcConfig.from(project).doppelDependencyExploded
+        return doppelDependencyExploded
+    }
+
+    @Input
     List<String> getTranslateArgs() {
         return J2objcConfig.from(project).processedTranslateArgs()
     }
+
+    @Input
+    List<String> getTranslateClasspaths() { return J2objcConfig.from(project).translateClasspaths }
 
     @Input
     FileCollection getMainSourceClasspath() {
@@ -134,8 +143,34 @@ class TranslateTask extends DefaultTask {
     @InputDirectory @Optional
     File srcTestObjcDir;
 
+    @Input String frameworkHeaderFilename() {
+        return frameworkName() + ".h"
+    }
+
+    @Input String frameworkName() {
+        J2objcConfig.from(project).frameworkName
+    }
+
+    @Input String frameworkMappingFilename() {
+        return J2objcConfig.from(project).frameworkName +".mappings"
+    }
+
+    @OutputFile
+    File outHeaderFile(){
+        return new File(srcGenMainDir, frameworkHeaderFilename())
+    }
+
+    @OutputFile
+    File outMappingFile(){
+        return new File(srcGenMainDir, frameworkMappingFilename())
+    }
+
+
     @TaskAction
     void translate(IncrementalTaskInputs inputs) {
+
+        new DependencyResolver(project, J2objcConfig.from(project)).configureAll()
+//        DependencyResolver.configureSourceSets(project)
 
         List<String> translateArgs = getTranslateArgs()
 
@@ -221,10 +256,26 @@ class TranslateTask extends DefaultTask {
 
             }
 
+
+        Set<File> mainJavaDirs = Utils.srcSet(project, 'main', 'java').getSrcDirs()
+
         UnionFileCollection sourcepathDirs = new UnionFileCollection([
-                project.files(Utils.srcSet(project, 'main', 'java').getSrcDirs()),
+                project.files(mainJavaDirs),
                 project.files(getGeneratedSourceDirs())
         ])
+
+        if(frameworkName() != null)
+        {
+            Set<File> allSourceDirs = new HashSet<>()
+            allSourceDirs.addAll(mainJavaDirs)
+
+            for (String genDir : getGeneratedSourceDirs()) {
+                allSourceDirs.add(project.file(genDir))
+            }
+
+            writeMasterHeader()
+            writeHeaderMappings(allSourceDirs)
+        }
 
         doTranslate(
                 sourcepathDirs,
@@ -248,7 +299,7 @@ class TranslateTask extends DefaultTask {
         testTranslateArgs.removeAll('--build-closure')
 
         sourcepathDirs = new UnionFileCollection([
-                project.files(Utils.srcSet(project, 'main', 'java').getSrcDirs()),
+                project.files(mainJavaDirs),
                 project.files(Utils.srcSet(project, 'test', 'java').getSrcDirs()),
                 project.files(getGeneratedSourceDirs()),
                 project.files(getGeneratedTestSourceDirs())
@@ -263,6 +314,58 @@ class TranslateTask extends DefaultTask {
                 testSrcFilesChanged,
                 "testSrcFilesArgFile",
                 true)
+    }
+
+    void writeMasterHeader(){
+        FileWriter headerWriter = new FileWriter(outHeaderFile())
+
+        headerWriter.append("#import <Foundation/Foundation.h>\n" +
+                            "\n" +
+                            "//! Project version number for "+ frameworkName() +".\n" +
+                            "FOUNDATION_EXPORT double "+ frameworkName() +"VersionNumber;\n" +
+                            "\n" +
+                            "//! Project version string for "+ frameworkName() +".\n" +
+                            "FOUNDATION_EXPORT const unsigned char "+ frameworkName() +"VersionString[];\n\n")
+
+        project.files(project.fileTree(
+                dir: srcGenMainDir, includes: ["**/*.h"])).each { File f ->
+
+            if(!outHeaderFile().equals(f)) {
+                String relativePath = f.getAbsolutePath().substring(srcGenMainDir.getAbsolutePath().length() + 1)
+
+                //You shouldn't be on windows, but if you are...
+                relativePath = relativePath.replace('\\', '/')
+
+                headerWriter.append("#import <" + frameworkName() + "/" + relativePath + ">\n")
+            }
+        }
+
+        headerWriter.close()
+    }
+
+    void writeHeaderMappings(Collection<File> dirs)
+    {
+        FileWriter mappingWriter = new FileWriter(outMappingFile())
+
+        dirs.each {File dir ->
+
+            project.fileTree(dir: dir, includes: ["**/*.java"]).each {File f ->
+                if (!f.isDirectory() && !outHeaderFile().equals(f)) {
+                    String relativePath = f.getAbsolutePath().substring(dir.getAbsolutePath().length() + 1)
+
+                    //You shouldn't be on windows, but if you are...
+                    relativePath = relativePath.replace('\\', '/')
+
+                    relativePath = relativePath.substring(0, relativePath.lastIndexOf('.'))
+
+                    String className = relativePath.replace('/', '.')
+
+                    mappingWriter.append(className + "=" + frameworkName() + "/" + outHeaderFile().getName() + "\n")
+                }
+            }
+        }
+
+        mappingWriter.close()
     }
 
     int deleteRemovedFiles(List<String> removedFileNames, File dir) {
@@ -306,10 +409,12 @@ class TranslateTask extends DefaultTask {
 
         String sourcepathArg = Utils.joinedPathArg(sourcepathDirs)
 
-        def libs = Utils.doppelJarLibs(getTranslateDoppelLibs())
+
+        List<DoppelDependency> dopplLibs = getTranslateDoppelLibs()
+        def libs = Utils.doppelJarLibs(dopplLibs)
 
         UnionFileCollection classpathFiles = new UnionFileCollection([
-                project.files(classpathCollection),
+                project.files(getTranslateClasspaths()),
                 project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs())),
                 project.files(libs)
         ])

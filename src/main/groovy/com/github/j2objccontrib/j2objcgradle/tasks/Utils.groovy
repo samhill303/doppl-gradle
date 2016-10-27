@@ -436,7 +436,7 @@ class Utils {
                 return file.getAbsolutePath()
             }
         }
-        return null
+        throw new IllegalArgumentException("No jar found in doppl directory")
     }
 
     // Convert FileCollection to joined path arg, e.g. "src/Some.java:src/Another.java"

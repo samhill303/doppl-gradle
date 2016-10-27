@@ -45,6 +45,31 @@ class J2objcConfig {
         destPodspecDir = new File(project.buildDir, 'j2objcOutputs').absolutePath
         destSrcMainDir = new File(project.buildDir, 'j2objcOutputs/src/main').absolutePath
         destSrcTestDir = new File(project.buildDir, 'j2objcOutputs/src/test').absolutePath
+
+
+        // Provide defaults for assembly output locations.
+        destLibDir = new File(project.buildDir, 'j2objcOutputs/lib').absolutePath
+        destJavaJarDir = new File(project.buildDir, 'libs').absolutePath
+
+        destDoppelFolder = new File(project.buildDir, 'doppel').absolutePath
+        doppelDependencyExploded = new File(project.buildDir, 'doppelDependencyExploded').absolutePath
+    }
+
+    /**
+     * Local exploded dir for doppel files
+     */
+    String destDoppelFolder = null
+
+    String doppelDependencyExploded = null
+
+    // Private helper methods
+    // Should use instead of accessing client set 'dest' strings
+    File getDestLibDirFile() {
+        return project.file(destLibDir)
+    }
+
+    File getDestDoppelDirFile(){
+        return project.file(destDoppelFolder)
     }
 
     /**
@@ -58,6 +83,17 @@ class J2objcConfig {
      * Defaults to $buildDir/j2objcOutputs
      */
     String destPodspecDir = null
+
+    /**
+     * Where to assemble generated main libraries.
+     * <p/>
+     * Defaults to $buildDir/j2objcOutputs/lib
+     */
+    String destLibDir = null
+
+    String destJavaJarDir = null;
+
+    String frameworkName = null
 
     /**
      * Where to assemble generated main source and resources files.
@@ -202,6 +238,22 @@ class J2objcConfig {
     }
 
     /**
+     *  Local jars for translation e.g.: "lib/json-20140107.jar", "lib/somelib.jar".
+     *  This will be added to j2objc as a '-classpath' argument.
+     */
+    List<String> translateClasspaths = new ArrayList<>()
+
+    /**
+     *  Local jars for translation e.g.: "lib/json-20140107.jar", "lib/somelib.jar".
+     *  This will be added to j2objc as a '-classpath' argument.
+     *
+     *  @param translateClasspaths add libraries for -classpath argument
+     */
+    void translateClasspaths(String... translateClasspaths) {
+        appendArgs(this.translateClasspaths, 'translateClasspaths', true, translateClasspaths)
+    }
+
+    /**
      * Additional Java libraries that are part of the j2objc distribution.
      * <p/>
      * For example:
@@ -220,6 +272,12 @@ class J2objcConfig {
             // Libraries that don't need CycleFinder fixes
             "javax.inject-1.jar", "jsr305-3.0.0.jar",
             "mockito-core-1.9.5.jar", "hamcrest-core-1.3.jar"/*, "protobuf_runtime.jar"*/]
+
+    /**
+     * Additional arguments to pass to the native linker.
+     */
+    // Native build accepts empty array but throws exception on empty List<String>
+    List<DoppelDependency> translateDoppelLibs = new ArrayList<>()
 
     /**
      * Sets the filter on files to translate.
