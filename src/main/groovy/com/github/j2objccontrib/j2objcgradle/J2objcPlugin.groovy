@@ -185,7 +185,7 @@ class J2objcPlugin implements Plugin<Project> {
                 group 'doppl'
                 description 'Depends on j2objc translation, create a Pod file link it to Xcode project'
             }*/
-            lateDependsOn(project, 'build', 'doppelArchive')
+//            lateDependsOn(project, 'build', 'doppelArchive')
         }
     }
 

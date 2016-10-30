@@ -28,6 +28,7 @@ import org.gradle.api.internal.file.UnionFileCollection
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
@@ -105,6 +106,14 @@ class TranslateTask extends DefaultTask {
         return sourceSetClasspath(SourceSet.MAIN_SOURCE_SET_NAME)
     }
 
+    @InputFile
+    File standardMappingFile(){
+        String homePath = Utils.j2objcHome(project)
+        File home = new File(homePath)
+        File frameworksDir = new File(home, "frameworks")
+        return new File(frameworksDir, "j2objc.mappings")
+    }
+
     @Input
     FileCollection getTestSourceClasspath() {
         return sourceSetClasspath(SourceSet.TEST_SOURCE_SET_NAME)
@@ -154,6 +163,14 @@ class TranslateTask extends DefaultTask {
         return J2objcConfig.from(project).frameworkName +".mappings"
     }
 
+    @Input String copyMainOutputPath() {
+        J2objcConfig.from(project).copyMainOutput
+    }
+
+    @Input String copyTestOutputPath() {
+        J2objcConfig.from(project).copyTestOutput
+    }
+
     @OutputFile
     File outHeaderFile(){
         return new File(srcGenMainDir, frameworkHeaderFilename())
@@ -162,6 +179,11 @@ class TranslateTask extends DefaultTask {
     @OutputFile
     File outMappingFile(){
         return new File(srcGenMainDir, frameworkMappingFilename())
+    }
+
+    @OutputFile
+    File outModulemapFile(){
+        return new File(srcGenMainDir, "module.modulemap")
     }
 
 
@@ -273,7 +295,8 @@ class TranslateTask extends DefaultTask {
                 translateArgs,
                 mainSrcFilesChanged,
                 "mainSrcFilesArgFile",
-                false)
+                false
+        )
 
         if(frameworkName() != null)
         {
@@ -286,6 +309,18 @@ class TranslateTask extends DefaultTask {
 
             writeMasterHeader()
             writeHeaderMappings(allSourceDirs)
+            writeModulemap()
+        }
+
+        if(copyMainOutputPath() != null){
+            Utils.projectCopy(project, {
+                from srcGenMainDir
+                into copyMainOutputPath()
+                include '**/*.h'
+                include '**/*.m'
+                include '**/*.java'
+                include '**/*.modulemap'
+            })
         }
 
         // Translate test code. Tests are never built with --build-closure; otherwise
@@ -314,7 +349,31 @@ class TranslateTask extends DefaultTask {
                 testTranslateArgs,
                 testSrcFilesChanged,
                 "testSrcFilesArgFile",
-                true)
+                true
+        )
+
+        if(copyTestOutputPath() != null){
+            Utils.projectCopy(project, {
+                from srcGenTestDir
+                into copyTestOutputPath()
+                include '**/*.h'
+                include '**/*.m'
+                include '**/*.java'
+            })
+        }
+    }
+
+    void writeModulemap(){
+        FileWriter moduleMapWriter = new FileWriter(outModulemapFile())
+
+        moduleMapWriter.append("module "+ frameworkName() +" {\n" +
+                               "  umbrella header \""+ frameworkHeaderFilename() +"\"\n" +
+                               "\n" +
+                               "  export *\n" +
+                               "  module * { export * }\n" +
+                               "}")
+
+        moduleMapWriter.close();
     }
 
     void writeMasterHeader(){
@@ -452,6 +511,13 @@ class TranslateTask extends DefaultTask {
 
 
         List<String> mappingFiles = new ArrayList<>()
+
+        File file = standardMappingFile()
+        if(file.exists())
+        {
+            mappingFiles.add(file.getPath())
+        }
+
         for (DoppelDependency lib : dopplLibs) {
 
             String mappingPath = Utils.findDoppelLibraryMappings(lib.dependencyFolderLocation())
@@ -500,5 +566,7 @@ class TranslateTask extends DefaultTask {
             // TODO: match on common failures and provide useful help
             throw exception
         }
+
+
     }
 }

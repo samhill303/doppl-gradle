@@ -114,6 +114,9 @@ class J2objcConfig {
 
     boolean checkJ2objcVersionExplicit = false;
 
+    String copyMainOutput = null;
+    String copyTestOutput = null;
+
     /*File getDestSrcDirFile(String sourceSetName, String fileType) {
         assert sourceSetName in ['main', 'test']
         assert fileType in ['objc', 'resources']
