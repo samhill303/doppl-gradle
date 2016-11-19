@@ -74,13 +74,18 @@ public class DependencyResolver {
 
         //Current "lazy" plan. Just copy all dependencies. If something is changed, will need to clean.
         //TODO: Fix the lazy
-        def dopplConfig = project.configurations.getByName('doppel')
+        configForConfig('doppel', j2objcConfig.translateDoppelLibs)
+        configForConfig('testDoppel', j2objcConfig.translateDoppelTestLibs)
+    }
+
+    void configForConfig(String configName, List<DoppelDependency> dopplDependencyList){
+        def dopplConfig = project.configurations.getByName(configName)
 
         //Add project dependencies
         dopplConfig.dependencies.each {
             if (it instanceof ProjectDependency) {
                 Project beforeProject = it.dependencyProject
-                j2objcConfig.translateDoppelLibs.add(new DoppelDependency(beforeProject.name, new File(J2objcConfig.from(beforeProject).getDestDoppelFolder())))
+                dopplDependencyList.add(new DoppelDependency(beforeProject.name, new File(J2objcConfig.from(beforeProject).getDestDoppelFolder())))
             }
         }
 
@@ -97,7 +102,7 @@ public class DependencyResolver {
                     cp.into dependency.dependencyFolderLocation()// j2objcConfig.doppelDependencyExploded + "/" + dependency.fullFolderName()
                 }
 
-                j2objcConfig.translateDoppelLibs.add(dependency)
+                dopplDependencyList.add(dependency)
             }
         }
     }

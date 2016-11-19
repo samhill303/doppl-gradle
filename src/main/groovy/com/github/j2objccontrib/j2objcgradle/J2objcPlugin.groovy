@@ -54,7 +54,7 @@ class J2objcPlugin implements Plugin<Project> {
 
         // This avoids a lot of "project." prefixes, such as "project.tasks.create"
         project.with {
-            getPluginManager().apply(JavaPlugin)
+//            Utils.throwIfNoJavaPlugin(project)
 
             extensions.create('j2objcConfig', J2objcConfig, project)
 
@@ -78,6 +78,10 @@ class J2objcPlugin implements Plugin<Project> {
                 doppel{
                     transitive = true
                     description = 'For doppel special packages'
+                }
+                testDoppel{
+                    transitive = true
+                    description = 'For doppel testing special packages'
                 }
             }
 

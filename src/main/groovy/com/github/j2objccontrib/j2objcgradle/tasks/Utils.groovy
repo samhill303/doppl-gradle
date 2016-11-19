@@ -607,6 +607,53 @@ class Utils {
         }
     }
 
+    public static void copyIfNewerRecursive(File from, File to, FileFilter filter)
+    {
+        if(!from.exists())
+            return;
+
+        Map<String, File> targetFiles = new HashMap<>()
+        File[] toFiles = to.listFiles()
+        for (File tf : toFiles) {
+            if(!tf.isDirectory()) {
+                targetFiles.put(tf.getName(), tf)
+            }
+        }
+
+        byte [] buf = new byte[2048]
+
+        File[] fromFiles = from.listFiles(filter)
+        for (File ff : fromFiles) {
+            if(ff.isDirectory())
+            {
+                copyIfNewerRecursive(ff, new File(to, ff.getName()), filter)
+            }
+            else {
+                File targetFile = targetFiles.get(ff.getName())
+                if (targetFile == null || targetFile.lastModified() < ff.lastModified()) {
+                    InputStream inp = new FileInputStream(ff)
+                    if(targetFile == null)
+                    {
+                        to.mkdirs();
+                        targetFile = new File(to, ff.getName());
+                    }
+                    OutputStream outp = new FileOutputStream(targetFile)
+
+                    try {
+                        int read;
+
+                        while ((read = inp.read(buf)) > -1) {
+                            outp.write(buf, 0, read)
+                        }
+                    } finally {
+                        outp.close()
+                        inp.close()
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * Delete a directory by calling project.delete(...)
      *

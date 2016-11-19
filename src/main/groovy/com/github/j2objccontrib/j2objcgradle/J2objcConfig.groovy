@@ -111,11 +111,16 @@ class J2objcConfig {
 //    String destSrcTestDir = null
 
     boolean useArc = false;
+    boolean includeJavaSource = false;
 
     boolean checkJ2objcVersionExplicit = false;
 
+    String mappingsInput = null;
     String copyMainOutput = null;
     String copyTestOutput = null;
+    boolean copyDependencies = false;
+
+    boolean ignoreWeakAnnotations = false;
 
     /*File getDestSrcDirFile(String sourceSetName, String fileType) {
         assert sourceSetName in ['main', 'test']
@@ -276,11 +281,9 @@ class J2objcConfig {
             "javax.inject-1.jar", "jsr305-3.0.0.jar",
             "mockito-core-1.9.5.jar", "hamcrest-core-1.3.jar"/*, "protobuf_runtime.jar"*/]
 
-    /**
-     * Additional arguments to pass to the native linker.
-     */
     // Native build accepts empty array but throws exception on empty List<String>
     List<DoppelDependency> translateDoppelLibs = new ArrayList<>()
+    List<DoppelDependency> translateDoppelTestLibs = new ArrayList<>()
 
     /**
      * Sets the filter on files to translate.
@@ -481,5 +484,6 @@ class J2objcConfig {
         // When testing we don't always want to apply the entire plugin
         // before calling finalConfigure.
         project.configurations.create('doppel')
+        project.configurations.create('testDoppel')
     }
 }

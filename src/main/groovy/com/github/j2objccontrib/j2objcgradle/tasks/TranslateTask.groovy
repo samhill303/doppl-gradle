@@ -28,7 +28,6 @@ import org.gradle.api.internal.file.UnionFileCollection
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
-import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
@@ -37,6 +36,7 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import org.gradle.api.tasks.incremental.InputFileDetails
+
 
 /**
  * Translation task for Java to Objective-C using j2objc tool.
@@ -106,13 +106,13 @@ class TranslateTask extends DefaultTask {
         return sourceSetClasspath(SourceSet.MAIN_SOURCE_SET_NAME)
     }
 
-    @InputFile
+    /*@InputFile
     File standardMappingFile(){
         String homePath = Utils.j2objcHome(project)
         File home = new File(homePath)
         File frameworksDir = new File(home, "frameworks")
         return new File(frameworksDir, "j2objc.mappings")
-    }
+    }*/
 
     @Input
     FileCollection getTestSourceClasspath() {
@@ -134,6 +134,7 @@ class TranslateTask extends DefaultTask {
     List<String> getTranslateJ2objcLibs() { return J2objcConfig.from(project).translateJ2objcLibs }
 
     List<DoppelDependency> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }
+    List<DoppelDependency> getTranslateDoppelTestLibs() { return J2objcConfig.from(project).translateDoppelTestLibs }
 
     @Input
     Map<String, String> getTranslateSourceMapping() { return J2objcConfig.from(project).translateSourceMapping }
@@ -151,46 +152,40 @@ class TranslateTask extends DefaultTask {
     @InputDirectory @Optional
     File srcTestObjcDir;
 
-    @Input String frameworkHeaderFilename() {
-        return frameworkName() + ".h"
-    }
-
     @Input String frameworkName() {
         J2objcConfig.from(project).frameworkName
     }
 
-    @Input String frameworkMappingFilename() {
-        return J2objcConfig.from(project).frameworkName +".mappings"
+    @Input String mappingsInputPath() {
+        J2objcConfig.from(project).mappingsInput
     }
 
-    @Input String copyMainOutputPath() {
-        J2objcConfig.from(project).copyMainOutput
+    @Input File copyMainOutputPath() {
+
+        String output = J2objcConfig.from(project).copyMainOutput
+        if(output == null)
+            return null
+        else
+            return project.file(output)
     }
 
-    @Input String copyTestOutputPath() {
-        J2objcConfig.from(project).copyTestOutput
+    @Input boolean copyDependencies() {
+        J2objcConfig.from(project).copyDependencies
     }
 
-    @OutputFile
-    File outHeaderFile(){
-        return new File(srcGenMainDir, frameworkHeaderFilename())
+    @Input File copyTestOutputPath() {
+        String output = J2objcConfig.from(project).copyTestOutput
+        if(output == null)
+            return null
+        else
+            return project.file(output)
     }
-
-    @OutputFile
-    File outMappingFile(){
-        return new File(srcGenMainDir, frameworkMappingFilename())
-    }
-
-    @OutputFile
-    File outModulemapFile(){
-        return new File(srcGenMainDir, "module.modulemap")
-    }
-
 
     @TaskAction
     void translate(IncrementalTaskInputs inputs) {
 
-        new DependencyResolver(project, J2objcConfig.from(project)).configureAll()
+        J2objcConfig j2objcConfig = J2objcConfig.from(project)
+        new DependencyResolver(project, j2objcConfig).configureAll()
 //        DependencyResolver.configureSourceSets(project)
 
         List<String> translateArgs = getTranslateArgs()
@@ -277,15 +272,12 @@ class TranslateTask extends DefaultTask {
 
             }
 
-
         Set<File> mainJavaDirs = Utils.srcSet(project, 'main', 'java').getSrcDirs()
 
         UnionFileCollection sourcepathDirs = new UnionFileCollection([
                 project.files(mainJavaDirs),
                 project.files(getGeneratedSourceDirs())
         ])
-
-
 
         doTranslate(
                 sourcepathDirs,
@@ -295,32 +287,53 @@ class TranslateTask extends DefaultTask {
                 translateArgs,
                 mainSrcFilesChanged,
                 "mainSrcFilesArgFile",
-                false
+                false,
+                j2objcConfig.ignoreWeakAnnotations
         )
 
-        if(frameworkName() != null)
-        {
-            Set<File> allSourceDirs = new HashSet<>()
-            allSourceDirs.addAll(mainJavaDirs)
-
-            for (String genDir : getGeneratedSourceDirs()) {
-                allSourceDirs.add(project.file(genDir))
+        Utils.projectCopy(project, {
+            from mainJavaDirs
+            into srcGenMainDir
+            if(j2objcConfig.includeJavaSource)
+            {
+                include '**/*.java'
             }
+            include '**/*.mappings'
+        })
 
-            writeMasterHeader()
-            writeHeaderMappings(allSourceDirs)
-            writeModulemap()
+        FileFilter extensionFilter = new FileFilter() {
+            @Override
+            boolean accept(File pathname) {
+                String name = pathname.getName()
+                return pathname.isDirectory() ||
+                       name.endsWith(".h") ||
+                       name.endsWith(".m") ||
+                       name.endsWith(".java") ||
+                       name.endsWith(".modulemap")
+            }
         }
 
         if(copyMainOutputPath() != null){
-            Utils.projectCopy(project, {
-                from srcGenMainDir
-                into copyMainOutputPath()
-                include '**/*.h'
-                include '**/*.m'
-                include '**/*.java'
-                include '**/*.modulemap'
-            })
+
+            File mainOut = copyMainOutputPath()
+
+            Utils.copyIfNewerRecursive(srcGenMainDir, mainOut, extensionFilter)
+
+            if(copyDependencies()){
+                List<DoppelDependency> dopplLibs = getTranslateDoppelLibs()
+
+                for (DoppelDependency lib : dopplLibs) {
+                    File depSource = new File(lib.dependencyFolderLocation(), "src")
+
+                    Utils.copyIfNewerRecursive(depSource, new File(mainOut, lib.name), extensionFilter)
+                }
+            }
+
+            //TODO: Figure out
+            /*if(frameworkName() != null)
+            {
+                writeModulemap(mainOut, frameworkName())
+            }*/
         }
 
         // Translate test code. Tests are never built with --build-closure; otherwise
@@ -349,83 +362,84 @@ class TranslateTask extends DefaultTask {
                 testTranslateArgs,
                 testSrcFilesChanged,
                 "testSrcFilesArgFile",
-                true
+                true,
+                j2objcConfig.ignoreWeakAnnotations
         )
 
-        if(copyTestOutputPath() != null){
-            Utils.projectCopy(project, {
-                from srcGenTestDir
-                into copyTestOutputPath()
-                include '**/*.h'
-                include '**/*.m'
+        Utils.projectCopy(project, {
+            from Utils.srcSet(project, 'test', 'java').getSrcDirs()
+            into srcGenTestDir
+            if(j2objcConfig.includeJavaSource)
+            {
                 include '**/*.java'
-            })
+            }
+            include '**/*.mappings'
+        })
+
+        if(copyTestOutputPath() != null){
+            File testOut = copyTestOutputPath()
+            Utils.copyIfNewerRecursive(srcGenTestDir, testOut, extensionFilter)
+            if(copyDependencies()){
+                List<DoppelDependency> dopplLibs = getTranslateDoppelTestLibs()
+
+                for (DoppelDependency lib : dopplLibs) {
+                    File depSource = new File(lib.dependencyFolderLocation(), "src")
+
+                    Utils.copyIfNewerRecursive(depSource, new File(testOut, lib.name), extensionFilter)
+                }
+            }
         }
     }
 
-    void writeModulemap(){
-        FileWriter moduleMapWriter = new FileWriter(outModulemapFile())
 
-        moduleMapWriter.append("module "+ frameworkName() +" {\n" +
-                               "  umbrella header \""+ frameworkHeaderFilename() +"\"\n" +
+
+    //TODO: Figure out
+    void writeModulemap(File mainOut, String frameworkName){
+
+        //not writing to correct directory?
+        def modulemapFile = new File(mainOut, "module.modulemap")
+
+        FileWriter moduleMapWriter = new FileWriter(modulemapFile)
+
+        String frameworkHeaderFilename = frameworkName + ".h"
+
+        moduleMapWriter.append("module "+ frameworkName +" {\n" +
+                               "  umbrella header \""+ frameworkHeaderFilename +"\"\n" +
                                "\n" +
                                "  export *\n" +
                                "  module * { export * }\n" +
                                "}")
 
         moduleMapWriter.close();
-    }
 
-    void writeMasterHeader(){
-        FileWriter headerWriter = new FileWriter(outHeaderFile())
+        File frameworkHeaderFile = new File(mainOut, frameworkHeaderFilename)
+        FileWriter headerWriter = new FileWriter(frameworkHeaderFile)
 
         headerWriter.append("#import <Foundation/Foundation.h>\n" +
                             "\n" +
-                            "//! Project version number for "+ frameworkName() +".\n" +
-                            "FOUNDATION_EXPORT double "+ frameworkName() +"VersionNumber;\n" +
+                            "//! Project version number for "+ frameworkName +".\n" +
+                            "FOUNDATION_EXPORT double "+ frameworkName +"VersionNumber;\n" +
                             "\n" +
-                            "//! Project version string for "+ frameworkName() +".\n" +
-                            "FOUNDATION_EXPORT const unsigned char "+ frameworkName() +"VersionString[];\n\n")
+                            "//! Project version string for "+ frameworkName +".\n" +
+                            "FOUNDATION_EXPORT const unsigned char "+ frameworkName +"VersionString[];\n\n")
+
+        def preTrimStart = mainOut.getAbsolutePath().length() + 1
 
         project.files(project.fileTree(
-                dir: srcGenMainDir, includes: ["**/*.h"])).each { File f ->
+                dir: mainOut, includes: ["**/*.h"])).each { File f ->
 
-            if(!outHeaderFile().equals(f)) {
-                String relativePath = f.getAbsolutePath().substring(srcGenMainDir.getAbsolutePath().length() + 1)
+            if(!frameworkHeaderFile.equals(f)) {
+
+                String relativePath = f.getAbsolutePath().substring(preTrimStart)
 
                 //You shouldn't be on windows, but if you are...
                 relativePath = relativePath.replace('\\', '/')
 
-                headerWriter.append("#import <" + frameworkName() + "/" + relativePath + ">\n")
+                headerWriter.append("#import <"+ relativePath + ">\n")
             }
         }
 
         headerWriter.close()
-    }
-
-    void writeHeaderMappings(Collection<File> dirs)
-    {
-        FileWriter mappingWriter = new FileWriter(outMappingFile())
-
-        dirs.each {File dir ->
-
-            project.fileTree(dir: dir, includes: ["**/*.java"]).each {File f ->
-                if (!f.isDirectory() && !outHeaderFile().equals(f)) {
-                    String relativePath = f.getAbsolutePath().substring(dir.getAbsolutePath().length() + 1)
-
-                    //You shouldn't be on windows, but if you are...
-                    relativePath = relativePath.replace('\\', '/')
-
-                    relativePath = relativePath.substring(0, relativePath.lastIndexOf('.'))
-
-                    String className = relativePath.replace('/', '.')
-
-                    mappingWriter.append(className + "=" + frameworkName() + "/" + outHeaderFile().getName() + "\n")
-                }
-            }
-        }
-
-        mappingWriter.close()
     }
 
     int deleteRemovedFiles(List<String> removedFileNames, File dir) {
@@ -448,7 +462,7 @@ class TranslateTask extends DefaultTask {
     }
 
     void doTranslate(FileCollection sourcepathDirs, FileCollection classpathCollection, File nativeSourceDir, File srcDir, List<String> translateArgs,
-                     FileCollection srcFilesToTranslate, String srcFilesArgFilename, boolean testTranslate) {
+                     FileCollection srcFilesToTranslate, String srcFilesArgFilename, boolean testTranslate, boolean ignoreWeakAnnotations) {
 
         if(nativeSourceDir != null && nativeSourceDir.exists()){
             Utils.projectCopy(project, {
@@ -471,6 +485,9 @@ class TranslateTask extends DefaultTask {
 
 
         List<DoppelDependency> dopplLibs = getTranslateDoppelLibs()
+        if(testTranslate){
+            dopplLibs.addAll(getTranslateDoppelTestLibs())
+        }
         def libs = Utils.doppelJarLibs(dopplLibs)
 
         UnionFileCollection classpathFiles = new UnionFileCollection([
@@ -512,10 +529,17 @@ class TranslateTask extends DefaultTask {
 
         List<String> mappingFiles = new ArrayList<>()
 
-        File file = standardMappingFile()
+        /*File file = standardMappingFile()
         if(file.exists())
         {
             mappingFiles.add(file.getPath())
+        }*/
+
+
+        String path = mappingsInputPath()
+        if(path != null)
+        {
+            mappingFiles.add(path);
         }
 
         for (DoppelDependency lib : dopplLibs) {
@@ -542,6 +566,10 @@ class TranslateTask extends DefaultTask {
                     args "-use-arc", ''
                 }*/
                 args "--package-prefixed-filenames", ''
+                if(ignoreWeakAnnotations)
+                {
+                    args "--ignore-weak-annotation", ''
+                }
                 if(mappingFiles.size() > 0)
                 {
                     args "--header-mapping", mappingFiles.join(",")
@@ -566,7 +594,5 @@ class TranslateTask extends DefaultTask {
             // TODO: match on common failures and provide useful help
             throw exception
         }
-
-
     }
 }
