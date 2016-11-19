@@ -272,7 +272,7 @@ class TranslateTask extends DefaultTask {
 
             }
 
-        Set<File> mainJavaDirs = Utils.srcSet(project, 'main', 'java').getSrcDirs()
+        Set<File> mainJavaDirs = Utils.srcDirs(project, 'main', 'java')
 
         UnionFileCollection sourcepathDirs = new UnionFileCollection([
                 project.files(mainJavaDirs),
@@ -349,7 +349,7 @@ class TranslateTask extends DefaultTask {
 
         sourcepathDirs = new UnionFileCollection([
                 project.files(mainJavaDirs),
-                project.files(Utils.srcSet(project, 'test', 'java').getSrcDirs()),
+                project.files(Utils.srcDirs(project, 'test', 'java')),
                 project.files(getGeneratedSourceDirs()),
                 project.files(getGeneratedTestSourceDirs())
         ])
@@ -367,7 +367,7 @@ class TranslateTask extends DefaultTask {
         )
 
         Utils.projectCopy(project, {
-            from Utils.srcSet(project, 'test', 'java').getSrcDirs()
+            from Utils.srcDirs(project, 'test', 'java')
             into srcGenTestDir
             if(j2objcConfig.includeJavaSource)
             {

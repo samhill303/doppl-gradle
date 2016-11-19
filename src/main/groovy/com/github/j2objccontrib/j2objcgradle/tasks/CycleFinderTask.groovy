@@ -126,7 +126,7 @@ class CycleFinderTask extends DefaultTask {
         // they are only on the translate source path (meaning they will only be translated with --build-closure).
 
         UnionFileCollection sourcepathDirs = new UnionFileCollection([
-                project.files(Utils.srcSet(project, 'main', 'java').getSrcDirs()),
+                project.files(Utils.srcDirs(project, 'main', 'java')),
 //                project.files(Utils.srcSet(project, 'test', 'java').getSrcDirs()),
                 /*project.files(getTranslateSourcepaths()),*/
                 project.files(getGeneratedSourceDirs())

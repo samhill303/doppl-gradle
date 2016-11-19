@@ -149,7 +149,7 @@ class J2objcConfig {
     // per sourceSets.main.output.classesDir.
     // However, we cannot actually access sourceSets.main.output.classesDir here, because
     // the Java plugin convention may not be applied at this time.
-    List<String> generatedSourceDirs = ['build/classes/main', 'build/generated/source/apt/main']
+    List<String> generatedSourceDirs = ['build/classes/main', 'build/generated/source/apt/main', 'build/generated/source/sqldelight']
 
     /**
      * Add generated source files directories, e.g. from dagger annotations.

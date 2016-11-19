@@ -15,25 +15,17 @@
  */
 
 package com.github.j2objccontrib.j2objcgradle
+
 import groovy.transform.CompileStatic
-import groovy.transform.PackageScope
-import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Project
-import org.gradle.api.Task
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedArtifact
-import org.gradle.api.artifacts.SelfResolvingDependency
 import org.gradle.api.file.CopySpec
 import org.gradle.api.file.DuplicatesStrategy
-import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
-import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.SourceSet
-import org.gradle.api.tasks.bundling.AbstractArchiveTask
-import org.gradle.api.tasks.util.PatternSet
+
 /**
  * Resolves `j2objc*` dependencies into their `j2objc` constructs:
  * <p/>
