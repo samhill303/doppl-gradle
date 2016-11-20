@@ -394,7 +394,17 @@ class Utils {
     }
 
     static Set<File> srcDirs(Project proj, String sourceSetName, String fileType){
-        return (Set<File>)srcSet(proj, sourceSetName, fileType)['srcDirs']
+        assert fileType == 'java' || fileType == 'resources'
+        assert sourceSetName == 'main' || sourceSetName == 'test'
+
+        boolean javaTypeProject = proj.plugins.hasPlugin('java')
+
+        if(javaTypeProject){
+            return javaGetSet(proj, sourceSetName, fileType).srcDirs
+        }else{
+            def asdf = proj['android']['sourceSets'][sourceSetName][fileType]
+            return (Set<File>)asdf['srcDirs']
+        }
     }
 
     // Retrieves the configured source directories from the Java plugin SourceSets.
@@ -408,85 +418,23 @@ class Utils {
         boolean javaTypeProject = proj.plugins.hasPlugin('java')
 
         if(javaTypeProject){
-            throwIfNoJavaPlugin(proj)
-            JavaPluginConvention javaConvention = proj.getConvention().getPlugin(JavaPluginConvention)
-            SourceSet sourceSet = javaConvention.sourceSets.findByName(sourceSetName)
-            // For standard fileTypes 'java' and 'resources,' per contract this cannot be null.
-            SourceDirectorySet srcDirSet = fileType == 'java' ? sourceSet.java : sourceSet.resources
-            return srcDirSet
+            return javaGetSet(proj, sourceSetName, fileType)
         }else{
-            /*def plugins = proj.plugins
-            def hasAppPlugin = proj.plugins.hasPlugin("com.android.application") || proj.plugins.hasPlugin("android") ||
-                               proj.plugins.hasPlugin("com.android.test")
-            def hasLibraryPlugin = proj.plugins.hasPlugin("com.android.library") || proj.plugins.hasPlugin("android-library")
-            def androidPlugin
-
-            if (proj.plugins.findPlugin("com.android.application") || proj.plugins.findPlugin("android") ||
-                proj.plugins.findPlugin("com.android.test")) {
-//                variants = "applicationVariants";
-            } else if (proj.plugins.findPlugin("com.android.library") || proj.plugins.findPlugin("android-library")) {
-//                variants = "libraryVariants";
-            } else {
-                throw new IllegalStateException("${proj.name} is not an android project.")
-            }
-
-            if (hasAppPlugin) {
-                androidPlugin = proj.plugins.findPlugin("com.android.application")
-                if(androidPlugin == null)
-                {
-                    androidPlugin = proj.plugins.findPlugin("android")
-                }
-                if(androidPlugin == null)
-                {
-                    androidPlugin = proj.plugins.findPlugin("com.android.test")
-                }
-
-            } else if (hasLibraryPlugin) {
-                androidPlugin = proj.plugins.findPlugin("com.android.library")
-                if(androidPlugin == null)
-                {
-                    androidPlugin = proj.plugins.findPlugin("android-library")
-                }
-            } else {
-                throw new IllegalStateException("${proj.name} is not an android project.")
-            }*/
-
             def asdf = proj['android']['sourceSets'][sourceSetName][fileType]
-            def srcDirs = asdf['srcDirs']//fuckingTypes.android.sourceSets[sourceSetName][fileType].srcDirs
+            def srcDirs = asdf['srcDirs']
 
-            println srcDirs.toString()
-
-            return (FileTree)asdf
-            /*proj.extensions.findByName("android").sourceSets[]
-            def variants = null;
-            if (proj.plugins.findPlugin("com.android.application") || proj.plugins.findPlugin("android") ||
-                proj.plugins.findPlugin("com.android.test")) {
-                variants = "applicationVariants";
-            } else if (proj.plugins.findPlugin("com.android.library") || proj.plugins.findPlugin("android-library")) {
-                variants = "libraryVariants";
-            } else {
-                throw new RuntimeException("The android or android-library plugin must be applied to the project", null)
-            }*/
-
-//            proj.android[variants].all { variant ->
-//                variant.getSourceSets().each{ }
-//                configureVariant(project, variant, aptConfiguration, project.apt)
-                /*if (variant.testVariant && aptTestConfiguration) {
-                    configureVariant(project, variant.testVariant, aptTestConfiguration, project.apt)
-                }
-                if (variant.hasProperty("unitTestVariant") && aptUnitTestConfiguration) {
-                    configureVariant(project, variant.unitTestVariant, aptUnitTestConfiguration, project.apt)
-                }*/
-//            }
-            /*HashSet<File> files = new HashSet<File>()
-
-            File file = proj.file("src/" + sourceSetName + "/" + fileType)
-            if(file != null && file.exists())
-            {
-                files.add(file)
-            }
-            return files*/
+            return (FileTree)asdf['sourceFiles']
         }
+    }
+
+    static SourceDirectorySet javaGetSet(Project proj, String sourceSetName, String fileType)
+    {
+        throwIfNoJavaPlugin(proj)
+        JavaPluginConvention javaConvention = proj.getConvention().getPlugin(JavaPluginConvention)
+        SourceSet sourceSet = javaConvention.sourceSets.findByName(sourceSetName)
+        // For standard fileTypes 'java' and 'resources,' per contract this cannot be null.
+        SourceDirectorySet srcDirSet = fileType == 'java' ? sourceSet.java : sourceSet.resources
+        return srcDirSet
     }
 
     // Add list of java path to a FileCollection as a FileTree

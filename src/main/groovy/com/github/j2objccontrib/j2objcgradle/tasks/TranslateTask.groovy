@@ -63,13 +63,12 @@ class TranslateTask extends DefaultTask {
 
     private FileCollection allSourceFor(String sourceSetName, List<String> generatedSourceDirs) {
         FileTree allFiles = Utils.srcSet(project, sourceSetName, 'java')
+        allFiles = allFiles.plus(Utils.javaTrees(project, generatedSourceDirs))
         if (J2objcConfig.from(project).translatePattern != null) {
             allFiles = allFiles.matching(J2objcConfig.from(project).translatePattern)
         }
 
-        FileCollection ret = allFiles.plus(Utils.javaTrees(project, generatedSourceDirs))
-        ret = Utils.mapSourceFiles(project, ret, getTranslateSourceMapping())
-        return ret
+        return Utils.mapSourceFiles(project, allFiles, getTranslateSourceMapping())
     }
 
     // Property is never used, however it is an input value as
@@ -100,29 +99,6 @@ class TranslateTask extends DefaultTask {
 
     @Input
     List<String> getTranslateClasspaths() { return J2objcConfig.from(project).translateClasspaths }
-
-    @Input
-    FileCollection getMainSourceClasspath() {
-        return sourceSetClasspath(SourceSet.MAIN_SOURCE_SET_NAME)
-    }
-
-    /*@InputFile
-    File standardMappingFile(){
-        String homePath = Utils.j2objcHome(project)
-        File home = new File(homePath)
-        File frameworksDir = new File(home, "frameworks")
-        return new File(frameworksDir, "j2objc.mappings")
-    }*/
-
-    @Input
-    FileCollection getTestSourceClasspath() {
-        return sourceSetClasspath(SourceSet.TEST_SOURCE_SET_NAME)
-    }
-
-    private FileCollection sourceSetClasspath(String sourceSetName) {
-        JavaPluginConvention javaConvention = project.getConvention().getPlugin(JavaPluginConvention)
-        return javaConvention.sourceSets.findByName(sourceSetName).compileClasspath
-    }
 
     @Input
     List<String> getGeneratedSourceDirs() { return J2objcConfig.from(project).generatedSourceDirs }
@@ -281,7 +257,6 @@ class TranslateTask extends DefaultTask {
 
         doTranslate(
                 sourcepathDirs,
-                getMainSourceClasspath(),
                 srcMainObjcDir,
                 srcGenMainDir,
                 translateArgs,
@@ -356,7 +331,6 @@ class TranslateTask extends DefaultTask {
 
         doTranslate(
                 sourcepathDirs,
-                getTestSourceClasspath(),
                 srcTestObjcDir,
                 srcGenTestDir,
                 testTranslateArgs,
@@ -461,7 +435,7 @@ class TranslateTask extends DefaultTask {
         return destFiles.getFiles().size()
     }
 
-    void doTranslate(FileCollection sourcepathDirs, FileCollection classpathCollection, File nativeSourceDir, File srcDir, List<String> translateArgs,
+    void doTranslate(FileCollection sourcepathDirs, File nativeSourceDir, File srcDir, List<String> translateArgs,
                      FileCollection srcFilesToTranslate, String srcFilesArgFilename, boolean testTranslate, boolean ignoreWeakAnnotations) {
 
         if(nativeSourceDir != null && nativeSourceDir.exists()){
