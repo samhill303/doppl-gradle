@@ -14,6 +14,28 @@
  * limitations under the License.
  */
 // Based on https://plugins.gradle.org/docs/publish-plugin
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven { url 'http://oss.jfrog.org/artifactory/oss-snapshot-local' }
+        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
+        maven { url 'https://plugins.gradle.org/m2/' }
+        maven {
+            // change to point to your repo, e.g. http://my.org/repo
+//            url "http://dopplmaven.s3-website-us-east-1.amazonaws.com/"
+            url dopplMavenDeploy
+        }
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.1.0'
+        classpath 'net.ltgt.gradle:gradle-apt-plugin:0.5'
+        classpath 'co.touchlab.doppel:doppelgradle:0.4.0-SNAPSHOT'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.0.5'
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
 
 plugins {
     id "com.gradle.plugin-publish" version "0.9.0"
@@ -25,12 +47,32 @@ plugins {
 }
 apply plugin: 'groovy'
 apply plugin: 'maven-publish'
+apply plugin: 'kotlin'
+
+allprojects {
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven { url 'https://raw.github.com/Raizlabs/maven-releases/master/releases' }
+        maven { url 'http://oss.jfrog.org/artifactory/oss-snapshot-local' }
+        maven {
+            // change to point to your repo, e.g. http://my.org/repo
+//            url "http://dopplmaven.s3-website-us-east-1.amazonaws.com/"
+            url dopplMavenDeploy
+        }
+    }
+}
 
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 dependencies {
     compile gradleApi()
+    compile localGroovy()
+    compile 'com.android.tools.build:gradle:2.2.1'
+    compile 'org.codehaus.groovy:groovy-android-gradle-plugin:1.1.0'
+    compile  "org.jetbrains.kotlin:kotlin-stdlib:1.0.5"
+    compile  "org.jetbrains.kotlin:kotlin-reflect:1.0.5"
 }
 
 task wrapper(type: Wrapper) {

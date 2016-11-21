@@ -16,27 +16,32 @@
 
 package com.github.j2objccontrib.j2objcgradle.tasks
 
+import com.android.build.gradle.api.ApplicationVariant
+import com.android.build.gradle.api.BaseVariant
+import com.android.builder.model.AndroidProject
 import com.github.j2objccontrib.j2objcgradle.DependencyResolver
 import com.github.j2objccontrib.j2objcgradle.DoppelDependency
 import com.github.j2objccontrib.j2objcgradle.J2objcConfig
+import com.github.j2objccontrib.j2objcgradle.PlatformSpecificProvider
+import com.github.j2objccontrib.j2objcgradle.TryThingsPlugin
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileCollection
-import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import org.gradle.api.tasks.incremental.InputFileDetails
 
+import com.android.build.gradle.AppExtension
+import org.gradle.api.Plugin
+import org.gradle.api.Project
 
 /**
  * Translation task for Java to Objective-C using j2objc tool.
@@ -61,14 +66,58 @@ class TranslateTask extends DefaultTask {
         return allSourceFor('test', getGeneratedTestSourceDirs())
     }
 
+    HashSet<File> getExtraGeneratedSourceFolders(){
+        return platformSpecificProvider.findGeneratedSourceDirs(project)
+    }
+
+    PlatformSpecificProvider platformSpecificProvider = new TryThingsPlugin()
+
     private FileCollection allSourceFor(String sourceSetName, List<String> generatedSourceDirs) {
+
+        playWithAndroid()
         FileTree allFiles = Utils.srcSet(project, sourceSetName, 'java')
         allFiles = allFiles.plus(Utils.javaTrees(project, generatedSourceDirs))
+
+        def folders = getExtraGeneratedSourceFolders()
+        for (File folder : folders) {
+            allFiles = allFiles.plus(project.fileTree(folder))
+        }
+
         if (J2objcConfig.from(project).translatePattern != null) {
             allFiles = allFiles.matching(J2objcConfig.from(project).translatePattern)
         }
 
         return Utils.mapSourceFiles(project, allFiles, getTranslateSourceMapping())
+    }
+
+    private void playWithAndroid()
+    {
+        def variants = null;
+        if (project.plugins.findPlugin("com.android.application") || project.plugins.findPlugin("android") ||
+            project.plugins.findPlugin("com.android.test")) {
+            variants = "applicationVariants";
+        } else if (project.plugins.findPlugin("com.android.library") || project.plugins.findPlugin("android-library")) {
+            variants = "libraryVariants";
+        } else {
+            throw new RuntimeException("The android or android-library plugin must be applied to the project", null)
+        }
+
+        project.afterEvaluate {
+
+            List<BaseVariant> baseVar = (List<BaseVariant>) (project['android']['applicationVariants'])
+            def asdf = ((ApplicationVariant) baseVar[0])
+            println asdf.toString()
+//            ((AndroidProject)project).getVariants().each { variant ->
+//                println variant.displayName
+////                configureVariant(project, variant, aptConfiguration, project.apt)
+////                if (variant.testVariant && aptTestConfiguration) {
+////                    configureVariant(project, variant.testVariant, aptTestConfiguration, project.apt)
+////                }
+////                if (variant.hasProperty("unitTestVariant") && aptUnitTestConfiguration) {
+////                    configureVariant(project, variant.unitTestVariant, aptUnitTestConfiguration, project.apt)
+////                }
+//            }
+        }
     }
 
     // Property is never used, however it is an input value as

@@ -101,6 +101,8 @@ class J2objcPlugin implements Plugin<Project> {
 
             if(javaTypeProject) {
                 prebuildTask.dependsOn('jar')
+            }else{
+                prebuildTask.dependsOn('assemble')
             }
 
             // TODO @Bruno "build/source/apt" must be project.j2objcConfig.generatedSourceDirs no idea how to set it
