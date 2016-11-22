@@ -53,6 +53,28 @@ class TranslateTask extends DefaultTask {
         return allSourceFor('main', J2objcConfig.from(project).generatedSourceDirs)
     }
 
+    Set<File> getMainSrcDirs(){
+        Set<File> allFiles = new HashSet<>()
+        for (String genPath : J2objcConfig.from(project).generatedSourceDirs) {
+            allFiles.add(project.file(genPath))
+        }
+        allFiles.addAll(Utils.srcDirs(project, 'main', 'java'))
+        allFiles.addAll(getExtraGeneratedSourceFolders())
+        return allFiles
+    }
+
+    Set<File> getTestSrcDirs(){
+        Set<File> allFiles = new HashSet<>()
+        allFiles.addAll(getMainSrcDirs())
+
+        for (String genPath : J2objcConfig.from(project).generatedTestSourceDirs) {
+            allFiles.add(project.file(genPath))
+        }
+        allFiles.addAll(Utils.srcDirs(project, 'test', 'java'))
+
+        return allFiles
+    }
+
     // Source files part of the Java test sourceSet.
     @InputFiles
     FileCollection getTestSrcFiles() {
@@ -110,21 +132,12 @@ class TranslateTask extends DefaultTask {
     String getJ2objcHome() { return Utils.j2objcHome(project) }
 
     @Input
-    String getDoppelHome() {
-        def doppelDependencyExploded = J2objcConfig.from(project).doppelDependencyExploded
-        return doppelDependencyExploded
-    }
-
-    @Input
     List<String> getTranslateArgs() {
         return J2objcConfig.from(project).processedTranslateArgs()
     }
 
     @Input
     List<String> getTranslateClasspaths() { return J2objcConfig.from(project).translateClasspaths }
-
-//    @Input
-//    List<String> getGeneratedTestSourceDirs() { return J2objcConfig.from(project).generatedTestSourceDirs }
 
     @Input
     List<String> getTranslateJ2objcLibs() { return J2objcConfig.from(project).translateJ2objcLibs }
@@ -269,7 +282,7 @@ class TranslateTask extends DefaultTask {
             }
 
         doTranslate(
-                originalMainSrcFiles,
+                project.files(getMainSrcDirs().toArray()),
                 srcMainObjcDir,
                 srcGenMainDir,
                 translateArgs,
@@ -335,15 +348,8 @@ class TranslateTask extends DefaultTask {
         List<String> testTranslateArgs = new ArrayList<>(translateArgs)
         testTranslateArgs.removeAll('--build-closure')
 
-        /*sourcepathDirs = new UnionFileCollection([
-                project.files(mainJavaDirs),
-                project.files(Utils.srcDirs(project, 'test', 'java')),
-                project.files(getGeneratedSourceDirs()),
-                project.files(getGeneratedTestSourceDirs())
-        ])*/
-
         doTranslate(
-                originalMainSrcFiles + originalTestSrcFiles,
+                project.files(getTestSrcDirs().toArray()),
                 srcTestObjcDir,
                 srcGenTestDir,
                 testTranslateArgs,
