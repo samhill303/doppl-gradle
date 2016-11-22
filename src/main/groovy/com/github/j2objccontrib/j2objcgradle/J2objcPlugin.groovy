@@ -23,6 +23,7 @@ import com.github.j2objccontrib.j2objcgradle.tasks.Utils
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.ProjectConfigurationException
 import org.gradle.api.Task
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.bundling.Jar
@@ -32,10 +33,30 @@ import org.gradle.api.tasks.bundling.Jar
  */
 class J2objcPlugin implements Plugin<Project> {
 
+    boolean hasOneOfTheFollowingPlugins(Project project, String... pluginIds)
+    {
+        for (String pluginId : pluginIds) {
+            if(project.plugins.hasPlugin(pluginId))
+                return true;
+        }
+
+        return false;
+    }
+
     @Override
     void apply(Project project) {
 
-        boolean javaTypeProject = project.plugins.hasPlugin('java')
+        //TODO: Figure out which plugin we're playing with an run it
+        //currently you *need* to run the other one first, physically
+        //getPluginManager().apply(JavaPlugin)
+
+        boolean javaTypeProject = hasOneOfTheFollowingPlugins(project, 'java')
+
+        boolean androidTypeProject = hasOneOfTheFollowingPlugins(project, "com.android.application", "android", "com.android.test", "android-library", "com.android.library")
+
+        if(!javaTypeProject && !androidTypeProject) {
+            throw new ProjectConfigurationException("Doppl depends on running java or one of the Android gradle plugins. None of those were found. If you have one, please make sure to apply doppl AFTER the other plugin(s)", null)
+        }
 
         if(javaTypeProject) {
             project.configurations {

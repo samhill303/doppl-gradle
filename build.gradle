@@ -85,7 +85,7 @@ group = 'co.touchlab.doppel'
 // A suffix of -SNAPSHOT means this is not an official release of the
 // system, but built from an intermediate source tree.  Instructions:
 // https://github.com/j2objc-contrib/j2objc-gradle/blob/master/CONTRIBUTING.md#publishing-and-versioning
-version = "0.4.0-SNAPSHOT"
+version = "0.4.1-SNAPSHOT"
 
 test {
     testLogging {

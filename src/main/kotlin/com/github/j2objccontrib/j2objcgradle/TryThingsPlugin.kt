@@ -22,40 +22,29 @@ class TryThingsPlugin : PlatformSpecificProvider {
         project.plugins.all {
             when (it) {
                 is AppPlugin -> {
-                    println(it.toString())
-                    val byType = project.extensions.getByType(AppExtension::class.java)
-                    theFolders.addAll(configureAndroid(project,
-                            byType.applicationVariants))
+                                        val byType = project.extensions.getByType(AppExtension::class.java)
+                                        theFolders.addAll(configureAndroid(
+                                                byType.applicationVariants))
+
+//                    theFolders.addAll(configureAndroid(project.extensions.getByType(AppExtension::class.java).applicationVariants))
                 }
-                is LibraryPlugin -> configureAndroid(project,
-                        project.extensions.getByType(LibraryExtension::class.java).libraryVariants)
+                is LibraryPlugin -> {
+                    theFolders.addAll(configureAndroid(project.extensions.getByType(LibraryExtension::class.java).libraryVariants))
+                }
             }
         }
         return theFolders
     }
 
-    private fun <T : BaseVariant> configureAndroid(project: Project, variants: DomainObjectSet<T>): List<File> {
-//        val generateSqlDelight = project.task("generateSqlDelightInterface")
-
-        val compileDeps = project.configurations.getByName("compile").dependencies
-        project.gradle.addListener(object : DependencyResolutionListener {
-            override fun beforeResolve(dependencies: ResolvableDependencies?) {
-                /*if (System.getProperty("sqldelight.skip.runtime") != "true") {
-                    compileDeps.add(project.dependencies.create("com.squareup.sqldelight:runtime:$VERSION"))
-                }*/
-                compileDeps.add(
-                        project.dependencies.create("com.android.support:support-annotations:23.1.1"))
-
-                project.gradle.removeListener(this)
-            }
-
-            override fun afterResolve(dependencies: ResolvableDependencies?) { }
-        })
-
+    private fun <T : BaseVariant> configureAndroid(variants: DomainObjectSet<T>): List<File> {
         var rets = ArrayList<File>()
         variants.all {
 
-            val taskName = "generate${it.name.capitalize()}SqlDelightInterface"
+//            val testDirs = ArrayList<File>()
+//
+//            it.sourceSets.all {
+//                testDirs.addAll(it.javaDirectories)
+//            }
 
             val jc = it.javaClass
             val declaredField = jc.getDeclaredMethod("getVariantData")
@@ -63,18 +52,8 @@ class TryThingsPlugin : PlatformSpecificProvider {
             declaredField.isAccessible = true
             val variantData = declaredField.invoke(it) as BaseVariantData<*>
             val extraGeneratedSourceFolders = variantData.extraGeneratedSourceFolders
-            rets.addAll(extraGeneratedSourceFolders)
-
-            /*val task = project.tasks.create(taskName, SqlDelightTask::class.java)
-            task.group = "sqldelight"
-            task.buildDirectory = project.buildDir
-            task.description = "Generate Android interfaces for working with ${it.name} database tables"
-            task.source("src")
-            task.include("**${File.separatorChar}*.$FILE_EXTENSION")
-
-            generateSqlDelight.dependsOn(task)
-
-            it.registerJavaGeneratingTask(task, task.outputDirectory)*/
+            if(extraGeneratedSourceFolders != null)
+                rets.addAll(extraGeneratedSourceFolders)
         }
 
         return rets
