@@ -359,40 +359,6 @@ class Utils {
         return proj.file("${j2objcHome(proj)}/lib/macosx").exists()
     }
 
-    // Reads properties file and arguments from translateArgs (last argument takes precedence)
-    //   --prefixes dir/prefixes.properties --prefix com.ex.dir=Short --prefix com.ex.dir2=Short2
-    // TODO: separate this out to a distinct argument that's added to translateArgs
-    // TODO: @InputFile conversion for this
-    static Properties packagePrefixes(Project proj, List<String> translateArgs) {
-        Properties props = new Properties()
-        String joinedTranslateArgs = translateArgs.join(' ')
-        Matcher matcher = (joinedTranslateArgs =~ /--prefix(|es)\s+(\S+)/)
-        int start = 0
-        while (matcher.find(start)) {
-            start = matcher.end()
-            Properties newProps = new Properties()
-            String argValue = matcher.group(2)
-            if (matcher.group(1) == "es") {
-                // --prefixes prefixes.properties
-                // trailing space confuses FileInputStream
-                String prefixesPath = argValue.trim()
-                log.debug "Loading prefixesPath: $prefixesPath"
-                newProps.load(new FileInputStream(proj.file(prefixesPath).path))
-            } else {
-                // --prefix com.example.dir=CED
-                newProps.load(new StringReader(argValue.trim()))
-            }
-            props.putAll(newProps)
-        }
-
-        log.debug 'Package Prefixes: http://j2objc.org/docs/Package-Prefixes.html'
-        for (key in props.keys()) {
-            log.debug "Package Prefix Property: $key : ${props.getProperty((String) key)}"
-        }
-
-        return props
-    }
-
     static Set<File> srcDirs(Project proj, String sourceSetName, String fileType){
         assert fileType == 'java' || fileType == 'resources'
         assert sourceSetName == 'main' || sourceSetName == 'test'
@@ -475,6 +441,17 @@ class Utils {
         for (File file : files) {
             if (!file.isDirectory() && file.getName().endsWith(".mappings")) {
                 return file.getAbsolutePath()
+            }
+        }
+        return null
+    }
+
+    public static File findDoppelLibraryPrefixes(File dopplDir) {
+
+        def files = dopplDir.listFiles()
+        for (File file : files) {
+            if (!file.isDirectory() && file.getName().endsWith("prefixes.properties")) {
+                return file
             }
         }
         return null

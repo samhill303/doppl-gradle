@@ -8,8 +8,6 @@ import com.android.build.gradle.api.BaseVariant
 import com.android.build.gradle.internal.variant.BaseVariantData
 import org.gradle.api.DomainObjectSet
 import org.gradle.api.Project
-import org.gradle.api.artifacts.DependencyResolutionListener
-import org.gradle.api.artifacts.ResolvableDependencies
 import java.io.File
 import java.util.*
 
@@ -25,8 +23,6 @@ class TryThingsPlugin : PlatformSpecificProvider {
                                         val byType = project.extensions.getByType(AppExtension::class.java)
                                         theFolders.addAll(configureAndroid(
                                                 byType.applicationVariants))
-
-//                    theFolders.addAll(configureAndroid(project.extensions.getByType(AppExtension::class.java).applicationVariants))
                 }
                 is LibraryPlugin -> {
                     theFolders.addAll(configureAndroid(project.extensions.getByType(LibraryExtension::class.java).libraryVariants))
@@ -37,25 +33,23 @@ class TryThingsPlugin : PlatformSpecificProvider {
     }
 
     private fun <T : BaseVariant> configureAndroid(variants: DomainObjectSet<T>): List<File> {
-        var rets = ArrayList<File>()
+        var variant = variants.iterator().next()
+
         variants.all {
-
-//            val testDirs = ArrayList<File>()
-//
-//            it.sourceSets.all {
-//                testDirs.addAll(it.javaDirectories)
-//            }
-
-            val jc = it.javaClass
-            val declaredField = jc.getDeclaredMethod("getVariantData")
-
-            declaredField.isAccessible = true
-            val variantData = declaredField.invoke(it) as BaseVariantData<*>
-            val extraGeneratedSourceFolders = variantData.extraGeneratedSourceFolders
-            if(extraGeneratedSourceFolders != null)
-                rets.addAll(extraGeneratedSourceFolders)
+            if(it.name == "debug") {
+                variant = it
+            }
         }
 
-        return rets
+        val jc = variant.javaClass
+        val declaredField = jc.getDeclaredMethod("getVariantData")
+
+        declaredField.isAccessible = true
+        val variantData = declaredField.invoke(variant) as BaseVariantData<*>
+        val extraGeneratedSourceFolders = variantData.extraGeneratedSourceFolders
+        if(extraGeneratedSourceFolders != null)
+            return extraGeneratedSourceFolders
+        else
+            return ArrayList<File>()
     }
 }

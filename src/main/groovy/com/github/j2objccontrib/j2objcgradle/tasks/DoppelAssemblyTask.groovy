@@ -42,7 +42,7 @@ class DoppelAssemblyTask extends DefaultTask {
 
     @InputFiles
     FileTree getSrcLibs() {
-        return project.fileTree(dir: srcGenMainDir, include: ['**/*.h', '**/*.m', '**/*.java', '*.mappings'] ) +
+        return project.fileTree(dir: srcGenMainDir, include: ['**/*.h', '**/*.m', '**/*.java', '*.mappings', 'prefixes.properties'] ) +
                project.fileTree(dir: inputJavaJarFile())
     }
 
@@ -72,6 +72,7 @@ class DoppelAssemblyTask extends DefaultTask {
             from srcGenMainDir
             into getDestDoppelDirFile().absolutePath
             include '*.mappings'
+            include 'prefixes.properties'
         })
 
         /*Utils.projectCopy(project, {

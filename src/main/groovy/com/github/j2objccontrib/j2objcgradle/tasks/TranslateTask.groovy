@@ -116,16 +116,10 @@ class TranslateTask extends DefaultTask {
         return Utils.mapSourceFiles(project, allFiles, getTranslateSourceMapping())
     }
 
-    // Property is never used, however it is an input value as
-    // the contents of the prefixes, including a prefix file, affect all translation
-    // output.  We don't care about the prefix file (if any) per se, but we care about
-    // the final set of prefixes.
-    // NOTE: As long as all other tasks have the output of TranslateTask as its own inputs,
-    // they do not also need to have the packagePrefixes as a direct input in order to
-    // have correct up-to-date checks.
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    @Input Properties getPackagePrefixes() {
-        return Utils.packagePrefixes(project, translateArgs)
+    @Input
+    Map<String, String> getPrefixes()
+    {
+        J2objcConfig.from(project).translatedPathPrefix
     }
 
     @Input
@@ -277,15 +271,15 @@ class TranslateTask extends DefaultTask {
                 if (srcGenTestDir.exists()) {
                     translatedFiles += deleteRemovedFiles(removedTestFileNames, srcGenTestDir)
                 }
-
-
             }
 
+        def prefixMap = getPrefixes()
         doTranslate(
                 project.files(getMainSrcDirs().toArray()),
                 srcMainObjcDir,
                 srcGenMainDir,
                 translateArgs,
+                prefixMap,
                 mainSrcFilesChanged,
                 "mainSrcFilesArgFile",
                 false,
@@ -301,6 +295,17 @@ class TranslateTask extends DefaultTask {
             }
             include '**/*.mappings'
         })
+
+        if(prefixMap.size() > 0) {
+            def prefixes = new File(srcGenMainDir, "prefixes.properties")
+            def writer = new FileWriter(prefixes)
+
+            for (String prefix : prefixMap.keySet() ) {
+                writer.append(prefix).append("=").append(prefixMap.get(prefix))
+            }
+
+            writer.close()
+        }
 
         FileFilter extensionFilter = new FileFilter() {
             @Override
@@ -353,6 +358,7 @@ class TranslateTask extends DefaultTask {
                 srcTestObjcDir,
                 srcGenTestDir,
                 testTranslateArgs,
+                prefixMap,
                 testSrcFilesChanged,
                 "testSrcFilesArgFile",
                 true,
@@ -454,7 +460,7 @@ class TranslateTask extends DefaultTask {
         return destFiles.getFiles().size()
     }
 
-    void doTranslate(FileCollection sourcepathDirs, File nativeSourceDir, File srcDir, List<String> translateArgs,
+    void doTranslate(FileCollection sourcepathDirs, File nativeSourceDir, File srcDir, List<String> translateArgs, Map<String, String> prefixMap,
                      FileCollection srcFilesToTranslate, String srcFilesArgFilename, boolean testTranslate, boolean ignoreWeakAnnotations) {
 
         if(nativeSourceDir != null && nativeSourceDir.exists()){
@@ -535,12 +541,29 @@ class TranslateTask extends DefaultTask {
             mappingFiles.add(path);
         }
 
+        Map<String, String> allPrefixes = new HashMap<>(prefixMap)
+
         for (DoppelDependency lib : dopplLibs) {
 
             String mappingPath = Utils.findDoppelLibraryMappings(lib.dependencyFolderLocation())
             if(mappingPath != null && !mappingPath.isEmpty())
             {
                 mappingFiles.add(mappingPath)
+            }
+
+            def prefixFile = Utils.findDoppelLibraryPrefixes(lib.dependencyFolderLocation())
+            if(prefixFile != null)
+            {
+
+                def properties = new Properties()
+
+                def fileReader = new FileReader(prefixFile)
+                properties.load(fileReader)
+                fileReader.close()
+
+                for (String name : properties.propertyNames()) {
+                    allPrefixes.put(name, (String)properties.get(name))
+                }
             }
         }
 
@@ -559,6 +582,10 @@ class TranslateTask extends DefaultTask {
                     args "-use-arc", ''
                 }*/
                 args "--package-prefixed-filenames", ''
+                if(!testTranslate)
+                {
+                    args "--output-header-mapping", new File(srcDir, project.name + ".mappings").absolutePath
+                }
                 if(ignoreWeakAnnotations)
                 {
                     args "--ignore-weak-annotation", ''
@@ -571,6 +598,10 @@ class TranslateTask extends DefaultTask {
                 args "-classpath", classpathArg
                 translateArgs.each { String translateArg ->
                     args translateArg
+                }
+
+                allPrefixes.keySet().each { String packageString ->
+                    args "--prefix", packageString + "=" + allPrefixes.get(packageString)
                 }
 
                 // File Inputs
