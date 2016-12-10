@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.Properties;
 
 /**
+ * Temporary class. Helps build a mapping header file for android extensions in core-doppl.
+ *
  * Created by kgalligan on 10/27/16.
  */
 public class HeaderMappingBuilder {

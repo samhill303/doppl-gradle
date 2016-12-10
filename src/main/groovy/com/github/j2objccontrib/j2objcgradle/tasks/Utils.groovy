@@ -323,7 +323,7 @@ class Utils {
         String propFile = "${proj.rootDir.absolutePath}/local.properties"
         // This can be null in tests!
         J2objcConfig config = J2objcConfig.from(proj)
-        String ver = config == null ? '(unknown version)' : config.j2objcVersion
+        String ver = config == null ? '(unknown version)' : config.explicitJ2objcVersion
         String message = ">>>>>>>>>>>>>>>> J2ObjC Tool Configuration Failure <<<<<<<<<<<<<<<<\n" +
                          "$preamble\n" +
                          "\n" +

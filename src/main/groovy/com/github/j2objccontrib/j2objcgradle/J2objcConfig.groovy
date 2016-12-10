@@ -41,18 +41,14 @@ class J2objcConfig {
         assert project != null
         this.project = project
 
-        // Can't be in subdirectory as podspec paths must be relative and not traverse parent ('..')
-//        destPodspecDir = new File(project.buildDir, 'j2objcOutputs').absolutePath
-//        destSrcMainDir = new File(project.buildDir, 'j2objcOutputs/src/main').absolutePath
-//        destSrcTestDir = new File(project.buildDir, 'j2objcOutputs/src/test').absolutePath
-
-
         // Provide defaults for assembly output locations.
         destLibDir = new File(project.buildDir, 'j2objcOutputs/lib').absolutePath
         destJavaJarDir = new File(project.buildDir, 'libs').absolutePath
 
         destDoppelFolder = new File(project.buildDir, 'doppel').absolutePath
         doppelDependencyExploded = new File(project.buildDir, 'doppelDependencyExploded').absolutePath
+
+        foundJ2objcVersion = findVersionString(Utils.j2objcHome(project))
     }
 
     /**
@@ -62,27 +58,12 @@ class J2objcConfig {
 
     String doppelDependencyExploded = null
 
-    // Private helper methods
-    // Should use instead of accessing client set 'dest' strings
-    File getDestLibDirFile() {
-        return project.file(destLibDir)
-    }
-
-    File getDestDoppelDirFile(){
-        return project.file(destDoppelFolder)
-    }
-
     /**
      * Exact required version of j2objc.
      */
-    String j2objcVersion = '1.2'
+    String explicitJ2objcVersion = '1.2'
 
-    /**
-     * Where to assemble generated main libraries.
-     * <p/>
-     * Defaults to $buildDir/j2objcOutputs
-     */
-//    String destPodspecDir = null
+    String foundJ2objcVersion = null;
 
     /**
      * Where to assemble generated main libraries.
@@ -92,23 +73,6 @@ class J2objcConfig {
     String destLibDir = null
 
     String destJavaJarDir = null;
-
-    String frameworkName = null
-
-    /**
-     * Where to assemble generated main source and resources files.
-     * <p/>
-     * Defaults to $buildDir/j2objcOutputs/src/main
-     */
-//    String destSrcMainDir = null
-
-    /**
-     * Where to assemble generated test source and resources files.
-     * <p/>
-     * Can be the same directory as destDir
-     * Defaults to $buildDir/j2objcOutputs/src/test
-     */
-//    String destSrcTestDir = null
 
     boolean useArc = false;
     boolean includeJavaSource = false;
@@ -122,26 +86,6 @@ class J2objcConfig {
 
     boolean ignoreWeakAnnotations = false;
 
-    /*File getDestSrcDirFile(String sourceSetName, String fileType) {
-        assert sourceSetName in ['main', 'test']
-        assert fileType in ['objc', 'resources']
-
-        File destSrcDir = null
-        if (sourceSetName == 'main') {
-            destSrcDir = project.file(destSrcMainDir)
-        } else if (sourceSetName == 'test') {
-            destSrcDir = project.file(destSrcTestDir)
-        } else {
-            assert false, "Unsupported sourceSetName: $sourceSetName"
-        }
-
-        return project.file(new File(destSrcDir, fileType))
-    }*/
-
-    /*File getDestPodspecDirFile() {
-        return project.file(destPodspecDir)
-    }*/
-
     /**
      * Generated source files directories, e.g. from dagger annotations.
      */
@@ -150,6 +94,90 @@ class J2objcConfig {
     // However, we cannot actually access sourceSets.main.output.classesDir here, because
     // the Java plugin convention may not be applied at this time.
     List<String> generatedSourceDirs = ['build/classes/main', 'build/generated/source/apt/main', 'build/generated/source/apt/debug']
+    List<String> generatedTestSourceDirs = ['build/classes/test', 'build/generated/source/apt/test']
+
+    /**
+     * Command line arguments for j2objc cycle_finder.
+     * <p/>
+     * A list of all possible arguments can be found here:
+     * http://j2objc.org/docs/cycle_finder.html
+     */
+    List<String> cycleFinderArgs = new ArrayList<>()
+
+    /**
+     * Command line arguments for j2objc translate.
+     * <p/>
+     * A list of all possible arguments can be found here:
+     * http://j2objc.org/docs/j2objc.html
+     */
+    List<String> translateArgs = new ArrayList<>()
+
+    Map<String, String> translatedPathPrefix = new HashMap<>()
+
+    /**
+     *  Local jars for translation e.g.: "lib/json-20140107.jar", "lib/somelib.jar".
+     *  This will be added to j2objc as a '-classpath' argument.
+     */
+    List<String> translateClasspaths = new ArrayList<>()
+
+    /**
+     * Additional Java libraries that are part of the j2objc distribution.
+     * <p/>
+     * For example:
+     * <pre>
+     * translateJ2objcLibs = ["j2objc_junit.jar", "jre_emul.jar"]
+     * </pre>
+     */
+    // J2objc default libraries, from $J2OBJC_HOME/lib/...
+    // TODO: auto add libraries based on java dependencies, warn on version differences
+    List<String> translateJ2objcLibs = [
+            // Comments indicate difference compared to standard libraries...
+            // Memory annotations, e.g. @Weak, @AutoreleasePool
+            "j2objc_annotations.jar",
+            // Libraries that have CycleFinder fixes, e.g. @Weak and code removal
+            "guava-19.0.jar", "j2objc_junit.jar", "jre_emul.jar",
+            // Libraries that don't need CycleFinder fixes
+            "javax.inject-1.jar", "jsr305-3.0.0.jar",
+            "mockito-core-1.9.5.jar", "hamcrest-core-1.3.jar"/*, "protobuf_runtime.jar"*/]
+
+    // Native build accepts empty array but throws exception on empty List<String>
+    List<DoppelDependency> translateDoppelLibs = new ArrayList<>()
+    List<DoppelDependency> translateDoppelTestLibs = new ArrayList<>()
+
+    /**
+     * Sets the filter on files to translate.
+     * <p/>
+     * If no pattern is specified, all files within the sourceSets are translated.
+     * <p/>
+     * This filter is applied on top of all files within the 'main' and 'test'
+     * java sourceSets.  Use {@link #translatePattern(groovy.lang.Closure)} to
+     * configure.
+     */
+    PatternSet translatePattern = null
+
+    //KPG: Review if this is still useful
+    /**
+     * A mapping from source file names (in the project Java sourcesets) to alternate
+     * source files.
+     * Both before and after names (keys and values) are evaluated using project.file(...).
+     * <p/>
+     * Mappings can be used to have completely different implementations in your Java
+     * jar vs. your Objective-C library.  This can be especially useful when compiling
+     * a third-party library and you need to provide non-trivial OCNI implementations
+     * in Objective-C.
+     */
+    Map<String, String> translateSourceMapping = [:]
+    Map<String, String> pathToTranslatedFileMap = new TreeMap<>()
+
+    // Private helper methods
+    // Should use instead of accessing client set 'dest' strings
+    File getDestLibDirFile() {
+        return project.file(destLibDir)
+    }
+
+    File getDestDoppelDirFile(){
+        return project.file(destDoppelFolder)
+    }
 
     /**
      * Add generated source files directories, e.g. from dagger annotations.
@@ -160,8 +188,6 @@ class J2objcConfig {
         appendArgs(this.generatedSourceDirs, 'generatedSourceDirs', true, generatedSourceDirs)
     }
 
-    List<String> generatedTestSourceDirs = ['build/classes/test', 'build/generated/source/apt/test']
-
     /**
      * Add generated source files directories, e.g. from dagger annotations.
      *
@@ -170,14 +196,6 @@ class J2objcConfig {
     void generatedTestSourceDirs(String... generatedTestSourceDirs) {
         appendArgs(this.generatedTestSourceDirs, 'generatedTestSourceDirs', true, generatedTestSourceDirs)
     }
-
-    /**
-     * Command line arguments for j2objc cycle_finder.
-     * <p/>
-     * A list of all possible arguments can be found here:
-     * http://j2objc.org/docs/cycle_finder.html
-     */
-    List<String> cycleFinderArgs = new ArrayList<>()
 
     /**
      * Add command line arguments for j2objc cycle_finder.
@@ -190,16 +208,6 @@ class J2objcConfig {
     void cycleFinderArgs(String... cycleFinderArgs) {
         appendArgs(this.cycleFinderArgs, 'cycleFinderArgs', true, cycleFinderArgs)
     }
-
-    /**
-     * Command line arguments for j2objc translate.
-     * <p/>
-     * A list of all possible arguments can be found here:
-     * http://j2objc.org/docs/j2objc.html
-     */
-    List<String> translateArgs = new ArrayList<>()
-
-    Map<String, String> translatedPathPrefix = new HashMap<>()
 
     /**
      * Add command line arguments for j2objc translate.
@@ -248,53 +256,12 @@ class J2objcConfig {
     /**
      *  Local jars for translation e.g.: "lib/json-20140107.jar", "lib/somelib.jar".
      *  This will be added to j2objc as a '-classpath' argument.
-     */
-    List<String> translateClasspaths = new ArrayList<>()
-
-    /**
-     *  Local jars for translation e.g.: "lib/json-20140107.jar", "lib/somelib.jar".
-     *  This will be added to j2objc as a '-classpath' argument.
      *
      *  @param translateClasspaths add libraries for -classpath argument
      */
     void translateClasspaths(String... translateClasspaths) {
         appendArgs(this.translateClasspaths, 'translateClasspaths', true, translateClasspaths)
     }
-
-    /**
-     * Additional Java libraries that are part of the j2objc distribution.
-     * <p/>
-     * For example:
-     * <pre>
-     * translateJ2objcLibs = ["j2objc_junit.jar", "jre_emul.jar"]
-     * </pre>
-     */
-    // J2objc default libraries, from $J2OBJC_HOME/lib/...
-    // TODO: auto add libraries based on java dependencies, warn on version differences
-    List<String> translateJ2objcLibs = [
-            // Comments indicate difference compared to standard libraries...
-            // Memory annotations, e.g. @Weak, @AutoreleasePool
-            "j2objc_annotations.jar",
-            // Libraries that have CycleFinder fixes, e.g. @Weak and code removal
-            "guava-19.0.jar", "j2objc_junit.jar", "jre_emul.jar",
-            // Libraries that don't need CycleFinder fixes
-            "javax.inject-1.jar", "jsr305-3.0.0.jar",
-            "mockito-core-1.9.5.jar", "hamcrest-core-1.3.jar"/*, "protobuf_runtime.jar"*/]
-
-    // Native build accepts empty array but throws exception on empty List<String>
-    List<DoppelDependency> translateDoppelLibs = new ArrayList<>()
-    List<DoppelDependency> translateDoppelTestLibs = new ArrayList<>()
-
-    /**
-     * Sets the filter on files to translate.
-     * <p/>
-     * If no pattern is specified, all files within the sourceSets are translated.
-     * <p/>
-     * This filter is applied on top of all files within the 'main' and 'test'
-     * java sourceSets.  Use {@link #translatePattern(groovy.lang.Closure)} to
-     * configure.
-     */
-    PatternSet translatePattern = null
 
     /**
      * Configures the {@link #translatePattern}.
@@ -320,19 +287,6 @@ class J2objcConfig {
         return ConfigureUtil.configure(cl, translatePattern)
     }
 
-    //KPG: Review if this is still useful
-    /**
-     * A mapping from source file names (in the project Java sourcesets) to alternate
-     * source files.
-     * Both before and after names (keys and values) are evaluated using project.file(...).
-     * <p/>
-     * Mappings can be used to have completely different implementations in your Java
-     * jar vs. your Objective-C library.  This can be especially useful when compiling
-     * a third-party library and you need to provide non-trivial OCNI implementations
-     * in Objective-C.
-     */
-    Map<String, String> translateSourceMapping = [:]
-
     /**
      * Adds a new source mapping.
      * @see #translateSourceMapping
@@ -340,48 +294,6 @@ class J2objcConfig {
     void translateSourceMapping(String before, String after) {
         translateSourceMapping.put(before, after)
     }
-
-    /**
-     * The minimum iOS version to build against.  You cannot use APIs that are not supported
-     * in this version.
-     * <p/>
-     * See https://developer.apple.com/library/ios/documentation/DeveloperTools/Conceptual/cross_development/Configuring/configuring.html#//apple_ref/doc/uid/10000163i-CH1-SW2
-     */
-    // Chosen to broaden compatibility for initial use
-    // Maintain at one version behind current
-    String minVersionIos = '8.3'
-
-    /**
-     * The minimum OS X version to build against.  You cannot use APIs that are not supported
-     * in this version.
-     * <p/>
-     * See https://developer.apple.com/library/ios/documentation/DeveloperTools/Conceptual/cross_development/Configuring/configuring.html#//apple_ref/doc/uid/10000163i-CH1-SW2
-     */
-    // Oldest OS X version that supports automatic reference counting (2009 onwards)
-    // Prevents Xcode error: "-fobjc-arc is not supported on versions of OS X prior to 10.6"
-    String minVersionOsx = '10.6'
-
-    /**
-     * The minimum Watch OS version to build against.  You cannot use APIs that are not supported
-     * in this version.
-     * <p/>
-     * See https://developer.apple.com/library/ios/documentation/DeveloperTools/Conceptual/cross_development/Configuring/configuring.html#//apple_ref/doc/uid/10000163i-CH1-SW2
-     */
-    // Chosen to broaden compatibility for initial use
-    // Maintain at one version behind current
-    String minVersionWatchos = '2.0'
-
-    /**
-     * Final objc source file push directory
-     */
-    String xcodeMainOutDir = null
-
-    /**
-     * Final objc test source file push directory
-     */
-    String xcodeTestOutDir = null
-
-    Map<String, String> pathToTranslatedFileMap = new TreeMap<>()
 
     //KPG: Find place to call this
     protected void verifyJ2objcRequirements() {
@@ -413,6 +325,14 @@ class J2objcConfig {
     }
 
     private void checkJ2objcVersion(String j2objcHome) {
+        if (foundJ2objcVersion != "j2objc $explicitJ2objcVersion".toString()) {
+            // Note that actualVersionString will usually already have the word 'j2objc' in it.
+            Utils.throwJ2objcConfigFailure(project,
+                    "Found $foundJ2objcVersion at $j2objcHome, J2ObjC v$explicitJ2objcVersion required.")
+        }
+    }
+
+    private String findVersionString(String j2objcHome) {
         String j2objcExecutable = "$j2objcHome/j2objc"
 
         ByteArrayOutputStream stdout = new ByteArrayOutputStream()
@@ -434,15 +354,11 @@ class J2objcConfig {
             // Likely too old to understand -version,
             // but include the error since it could be something else.
             Utils.throwJ2objcConfigFailure(project, exception.toString() + "\n\n" +
-                                                    "J2ObjC binary at $j2objcHome too old, v$j2objcVersion required.")
+                                                    "J2ObjC binary at $j2objcHome failed version call.")
         }
         // Yes, J2ObjC uses stderr to output the version.
         String actualVersionString = stderr.toString().trim()
-        if (actualVersionString != "j2objc $j2objcVersion".toString()) {
-            // Note that actualVersionString will usually already have the word 'j2objc' in it.
-            Utils.throwJ2objcConfigFailure(project,
-                    "Found $actualVersionString at $j2objcHome, J2ObjC v$j2objcVersion required.")
-        }
+        actualVersionString
     }
 
     // Provides a subset of "args" interface from project.exec as implemented by ExecHandleBuilder:

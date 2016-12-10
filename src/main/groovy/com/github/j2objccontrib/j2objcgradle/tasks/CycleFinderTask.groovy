@@ -44,11 +44,6 @@ class CycleFinderTask extends DefaultTask {
         return Utils.cycleFinderJar(project)
     }
 
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    @Input String getJ2objcVersion() {
-        return J2objcConfig.from(project).j2objcVersion
-    }
-
     @InputFiles
     FileCollection getSrcInputFiles() {
         // Note that translatePattern does not need to be an @Input because it is
@@ -78,12 +73,6 @@ class CycleFinderTask extends DefaultTask {
     @Input
     List<String> getCycleFinderArgs() { return J2objcConfig.from(project).cycleFinderArgs }
 
-    /*@Input
-    List<String> getTranslateClasspaths() { return J2objcConfig.from(project).translateClasspaths }
-
-    @Input
-    List<String> getTranslateSourcepaths() { return J2objcConfig.from(project).translateSourcepaths }*/
-
     @Input
     List<String> getGeneratedSourceDirs() { return J2objcConfig.from(project).generatedSourceDirs }
 
@@ -93,18 +82,9 @@ class CycleFinderTask extends DefaultTask {
     @Input
     Map<String, String> getTranslateSourceMapping() { return J2objcConfig.from(project).translateSourceMapping }
 
-    /*//TODO: Java compile path logic is replicated between this and TranslateTask. Should consolidate.
-    @Input
-    String getDoppelHome() {
-        def doppelDependencyExploded = J2objcConfig.from(project).doppelDependencyExploded
-        return doppelDependencyExploded
-    }
-    List<DoppelDependency> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }*/
-
     // Output required for task up-to-date checks
     @OutputFile
     File getReportFile() { project.file("${project.buildDir}/reports/${name}.out") }
-
 
     @TaskAction
     void cycleFinder() {

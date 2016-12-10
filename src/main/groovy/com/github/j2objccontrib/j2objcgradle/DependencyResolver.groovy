@@ -98,31 +98,4 @@ public class DependencyResolver {
             }
         }
     }
-
-    private static final String MAIN_EXTRACTION_TASK_NAME = 'j2objcTranslatedMainLibraryExtraction'
-    private static final String TEST_EXTRACTION_TASK_NAME = 'j2objcTranslatedTestLibraryExtraction'
-
-    /**
-     * Adds to the main java sourceSet a to-be-generated directory that contains the contents
-     * of `j2objcTranslation` dependency libraries (if any).
-     */
-    static void configureSourceSets(Project project) {
-        configureSourceSet(project, "${project.buildDir}/mainTranslationExtraction", SourceSet.MAIN_SOURCE_SET_NAME,
-                MAIN_EXTRACTION_TASK_NAME)
-        configureSourceSet(project, "${project.buildDir}/testTranslationExtraction", SourceSet.TEST_SOURCE_SET_NAME,
-                TEST_EXTRACTION_TASK_NAME)
-    }
-
-    protected static void configureSourceSet(Project project, String dir, String sourceSetName, String taskName) {
-        JavaPluginConvention javaConvention = project.getConvention().getPlugin(JavaPluginConvention)
-        SourceSet sourceSet = javaConvention.sourceSets.findByName(sourceSetName)
-        sourceSet.java.srcDirs(project.file(dir))
-        Copy copy = project.tasks.create(taskName, Copy,
-                { Copy task ->
-                    task.into(project.file(dir))
-                    // If two libraries define the same file, fail early.
-                    task.duplicatesStrategy = DuplicatesStrategy.FAIL
-                })
-        project.tasks.getByName(sourceSet.compileJavaTaskName).dependsOn(copy)
-    }
 }

@@ -44,7 +44,7 @@ class TranslateTask extends DefaultTask {
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Input String getJ2objcVersion() {
-        return J2objcConfig.from(project).j2objcVersion
+        return J2objcConfig.from(project).foundJ2objcVersion
     }
 
     // Source files part of the Java main sourceSet.
@@ -53,7 +53,7 @@ class TranslateTask extends DefaultTask {
         return allSourceFor('main', J2objcConfig.from(project).generatedSourceDirs)
     }
 
-    Set<File> getMainSrcDirs(){
+    Set<File> getMainSrcDirs() {
         Set<File> allFiles = new HashSet<>()
         for (String genPath : J2objcConfig.from(project).generatedSourceDirs) {
             allFiles.add(project.file(genPath))
@@ -63,7 +63,7 @@ class TranslateTask extends DefaultTask {
         return allFiles
     }
 
-    Set<File> getTestSrcDirs(){
+    Set<File> getTestSrcDirs() {
         Set<File> allFiles = new HashSet<>()
         allFiles.addAll(getMainSrcDirs())
 
@@ -81,20 +81,85 @@ class TranslateTask extends DefaultTask {
         return allSourceFor('test', J2objcConfig.from(project).generatedTestSourceDirs)
     }
 
-    HashSet<File> getExtraGeneratedSourceFolders(){
-        return platformSpecificProvider == null ? new HashSet<File>() : platformSpecificProvider.findGeneratedSourceDirs(project)
+    HashSet<File> getExtraGeneratedSourceFolders() {
+        return platformSpecificProvider == null ? new HashSet<File>() : platformSpecificProvider
+                .findGeneratedSourceDirs(project)
+    }
+
+    @Input
+    Map<String, String> getPrefixes() {
+        J2objcConfig.from(project).translatedPathPrefix
+    }
+
+    @Input
+    String getJ2objcHome() { return Utils.j2objcHome(project) }
+
+    @Input
+    List<String> getTranslateArgs() {
+        return J2objcConfig.from(project).processedTranslateArgs()
+    }
+
+    @Input
+    List<String> getTranslateClasspaths() { return J2objcConfig.from(project).translateClasspaths }
+
+    @Input
+    List<String> getTranslateJ2objcLibs() { return J2objcConfig.from(project).translateJ2objcLibs }
+
+    @Input
+    boolean getIgnoreWeakAnnotations() { return J2objcConfig.from(project).ignoreWeakAnnotations }
+
+    List<DoppelDependency> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }
+
+    List<DoppelDependency> getTranslateDoppelTestLibs() { return J2objcConfig.from(project).translateDoppelTestLibs }
+
+    @Input
+    Map<String, String> getTranslateSourceMapping() { return J2objcConfig.from(project).translateSourceMapping }
+
+    // Generated ObjC files
+    @OutputDirectory
+    File srcGenMainDir
+
+    @OutputDirectory
+    File srcGenTestDir
+
+    @InputDirectory @Optional
+    File srcMainObjcDir;
+
+    @InputDirectory @Optional
+    File srcTestObjcDir;
+
+    @Input String mappingsInputPath() {
+        J2objcConfig.from(project).mappingsInput
+    }
+
+    @OutputDirectory File copyMainOutputPath() {
+
+        String output = J2objcConfig.from(project).copyMainOutput
+        if (output == null)
+            return null
+        else
+            return project.file(output)
+    }
+
+    @Input boolean copyDependencies() {
+        J2objcConfig.from(project).copyDependencies
+    }
+
+    @OutputDirectory File copyTestOutputPath() {
+        String output = J2objcConfig.from(project).copyTestOutput
+        if (output == null)
+            return null
+        else
+            return project.file(output)
     }
 
     PlatformSpecificProvider platformSpecificProvider
 
     TranslateTask() {
         boolean javaTypeProject = project.plugins.hasPlugin('java')
-        if(javaTypeProject)
-        {
+        if (javaTypeProject) {
             platformSpecificProvider = null
-        }
-        else
-        {
+        } else {
             platformSpecificProvider = new TryThingsPlugin()
         }
     }
@@ -116,73 +181,7 @@ class TranslateTask extends DefaultTask {
         return Utils.mapSourceFiles(project, allFiles, getTranslateSourceMapping())
     }
 
-    @Input
-    Map<String, String> getPrefixes()
-    {
-        J2objcConfig.from(project).translatedPathPrefix
-    }
 
-    @Input
-    String getJ2objcHome() { return Utils.j2objcHome(project) }
-
-    @Input
-    List<String> getTranslateArgs() {
-        return J2objcConfig.from(project).processedTranslateArgs()
-    }
-
-    @Input
-    List<String> getTranslateClasspaths() { return J2objcConfig.from(project).translateClasspaths }
-
-    @Input
-    List<String> getTranslateJ2objcLibs() { return J2objcConfig.from(project).translateJ2objcLibs }
-
-    List<DoppelDependency> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }
-    List<DoppelDependency> getTranslateDoppelTestLibs() { return J2objcConfig.from(project).translateDoppelTestLibs }
-
-    @Input
-    Map<String, String> getTranslateSourceMapping() { return J2objcConfig.from(project).translateSourceMapping }
-
-    // Generated ObjC files
-    @OutputDirectory
-    File srcGenMainDir
-
-    @OutputDirectory
-    File srcGenTestDir
-
-    @InputDirectory @Optional
-    File srcMainObjcDir;
-
-    @InputDirectory @Optional
-    File srcTestObjcDir;
-
-    @Input String frameworkName() {
-        J2objcConfig.from(project).frameworkName
-    }
-
-    @Input String mappingsInputPath() {
-        J2objcConfig.from(project).mappingsInput
-    }
-
-    @Input File copyMainOutputPath() {
-
-        String output = J2objcConfig.from(project).copyMainOutput
-        if(output == null)
-            return null
-        else
-            return project.file(output)
-    }
-
-    @Input boolean copyDependencies() {
-        J2objcConfig.from(project).copyDependencies
-    }
-
-    @Input File copyTestOutputPath() {
-        String output = J2objcConfig.from(project).copyTestOutput
-        if(output == null)
-            return null
-        else
-            return project.file(output)
-    }
 
     @TaskAction
     void translate(IncrementalTaskInputs inputs) {
@@ -202,76 +201,76 @@ class TranslateTask extends DefaultTask {
 
         FileCollection mainSrcFilesChanged, testSrcFilesChanged
 
-            boolean nonSourceFileChanged = false
-            mainSrcFilesChanged = project.files()
-            testSrcFilesChanged = project.files()
+        boolean nonSourceFileChanged = false
+        mainSrcFilesChanged = project.files()
+        testSrcFilesChanged = project.files()
 
-            inputs.outOfDate(new Action<InputFileDetails>() {
-                @Override
-                void execute(InputFileDetails details) {
-                    // We must filter by srcFiles, since all possible input files are @InputFiles to this task.
-                    if (originalMainSrcFiles.contains(details.file)) {
-                        getLogger().debug("New or Updated main file: " + details.file)
-                        mainSrcFilesChanged += project.files(details.file)
-                    } else if (originalTestSrcFiles.contains(details.file)) {
-                        getLogger().debug("New or Updated test file: " + details.file)
-                        testSrcFilesChanged += project.files(details.file)
-                    } else {
-                        nonSourceFileChanged = true
-                        getLogger().debug("New or Updated non-source file: " + details.file)
-                    }
-                }
-            })
-
-            List<String> removedMainFileNames = new ArrayList<>()
-            List<String> removedTestFileNames = new ArrayList<>()
-            inputs.removed(new Action<InputFileDetails>() {
-                @Override
-                void execute(InputFileDetails details) {
-                    // We must filter by srcFiles, since all possible input files are @InputFiles to this task.
-                    if (originalMainSrcFiles.contains(details.file)) {
-                        getLogger().debug("Removed main file: " + details.file.name)
-                        String nameWithoutExt = details.file.name.toString().replaceFirst("\\..*", "")
-                        removedMainFileNames += nameWithoutExt
-                    } else if (originalTestSrcFiles.contains(details.file)) {
-                        getLogger().debug("Removed test file: " + details.file.name)
-                        String nameWithoutExt = details.file.name.toString().replaceFirst("\\..*", "")
-                        removedTestFileNames += nameWithoutExt
-                    } else {
-                        nonSourceFileChanged = true
-                        getLogger().debug("Removed non-source file: " + details.file)
-                    }
-                }
-            })
-            logger.debug("Removed main files: " + removedMainFileNames.size())
-            logger.debug("Removed test files: " + removedTestFileNames.size())
-
-            logger.debug("New or Updated main files: " + mainSrcFilesChanged.getFiles().size())
-            logger.debug("New or Updated test files: " + testSrcFilesChanged.getFiles().size())
-
-            FileCollection unchangedMainSrcFiles = originalMainSrcFiles - mainSrcFilesChanged
-            FileCollection unchangedTestSrcFiles = originalTestSrcFiles - testSrcFilesChanged
-            logger.debug("Unchanged main files: " + unchangedMainSrcFiles.getFiles().size())
-            logger.debug("Unchanged test files: " + unchangedTestSrcFiles.getFiles().size())
-
-            if (nonSourceFileChanged) {
-                // A change outside of the source set directories has occurred, so an incremental build isn't possible.
-                // The most common such change is in the JAR for a dependent library, for example if Java project
-                // that this project depends on had its source changed and was recompiled.
-                Utils.projectClearDir(project, srcGenMainDir)
-                Utils.projectClearDir(project, srcGenTestDir)
-                mainSrcFilesChanged = originalMainSrcFiles
-                testSrcFilesChanged = originalTestSrcFiles
-            } else {
-                // All changes were within srcFiles (i.e. in a Java source-set).
-                int translatedFiles = 0
-                if (srcGenMainDir.exists()) {
-                    translatedFiles += deleteRemovedFiles(removedMainFileNames, srcGenMainDir)
-                }
-                if (srcGenTestDir.exists()) {
-                    translatedFiles += deleteRemovedFiles(removedTestFileNames, srcGenTestDir)
+        inputs.outOfDate(new Action<InputFileDetails>() {
+            @Override
+            void execute(InputFileDetails details) {
+                // We must filter by srcFiles, since all possible input files are @InputFiles to this task.
+                if (originalMainSrcFiles.contains(details.file)) {
+                    getLogger().debug("New or Updated main file: " + details.file)
+                    mainSrcFilesChanged += project.files(details.file)
+                } else if (originalTestSrcFiles.contains(details.file)) {
+                    getLogger().debug("New or Updated test file: " + details.file)
+                    testSrcFilesChanged += project.files(details.file)
+                } else {
+                    nonSourceFileChanged = true
+                    getLogger().debug("New or Updated non-source file: " + details.file)
                 }
             }
+        })
+
+        List<String> removedMainFileNames = new ArrayList<>()
+        List<String> removedTestFileNames = new ArrayList<>()
+        inputs.removed(new Action<InputFileDetails>() {
+            @Override
+            void execute(InputFileDetails details) {
+                // We must filter by srcFiles, since all possible input files are @InputFiles to this task.
+                if (originalMainSrcFiles.contains(details.file)) {
+                    getLogger().debug("Removed main file: " + details.file.name)
+                    String nameWithoutExt = details.file.name.toString().replaceFirst("\\..*", "")
+                    removedMainFileNames += nameWithoutExt
+                } else if (originalTestSrcFiles.contains(details.file)) {
+                    getLogger().debug("Removed test file: " + details.file.name)
+                    String nameWithoutExt = details.file.name.toString().replaceFirst("\\..*", "")
+                    removedTestFileNames += nameWithoutExt
+                } else {
+                    nonSourceFileChanged = true
+                    getLogger().debug("Removed non-source file: " + details.file)
+                }
+            }
+        })
+        logger.debug("Removed main files: " + removedMainFileNames.size())
+        logger.debug("Removed test files: " + removedTestFileNames.size())
+
+        logger.debug("New or Updated main files: " + mainSrcFilesChanged.getFiles().size())
+        logger.debug("New or Updated test files: " + testSrcFilesChanged.getFiles().size())
+
+        FileCollection unchangedMainSrcFiles = originalMainSrcFiles - mainSrcFilesChanged
+        FileCollection unchangedTestSrcFiles = originalTestSrcFiles - testSrcFilesChanged
+        logger.debug("Unchanged main files: " + unchangedMainSrcFiles.getFiles().size())
+        logger.debug("Unchanged test files: " + unchangedTestSrcFiles.getFiles().size())
+
+        if (nonSourceFileChanged) {
+            // A change outside of the source set directories has occurred, so an incremental build isn't possible.
+            // The most common such change is in the JAR for a dependent library, for example if Java project
+            // that this project depends on had its source changed and was recompiled.
+            Utils.projectClearDir(project, srcGenMainDir)
+            Utils.projectClearDir(project, srcGenTestDir)
+            mainSrcFilesChanged = originalMainSrcFiles
+            testSrcFilesChanged = originalTestSrcFiles
+        } else {
+            // All changes were within srcFiles (i.e. in a Java source-set).
+            int translatedFiles = 0
+            if (srcGenMainDir.exists()) {
+                translatedFiles += deleteRemovedFiles(removedMainFileNames, srcGenMainDir)
+            }
+            if (srcGenTestDir.exists()) {
+                translatedFiles += deleteRemovedFiles(removedTestFileNames, srcGenTestDir)
+            }
+        }
 
         def prefixMap = getPrefixes()
         doTranslate(
@@ -282,25 +281,23 @@ class TranslateTask extends DefaultTask {
                 prefixMap,
                 mainSrcFilesChanged,
                 "mainSrcFilesArgFile",
-                false,
-                j2objcConfig.ignoreWeakAnnotations
+                false
         )
 
         Utils.projectCopy(project, {
             from originalMainSrcFiles
             into srcGenMainDir
-            if(j2objcConfig.includeJavaSource)
-            {
+            if (j2objcConfig.includeJavaSource) {
                 include '**/*.java'
             }
             include '**/*.mappings'
         })
 
-        if(prefixMap.size() > 0) {
+        if (prefixMap.size() > 0) {
             def prefixes = new File(srcGenMainDir, "prefixes.properties")
             def writer = new FileWriter(prefixes)
 
-            for (String prefix : prefixMap.keySet() ) {
+            for (String prefix : prefixMap.keySet()) {
                 writer.append(prefix).append("=").append(prefixMap.get(prefix))
             }
 
@@ -319,13 +316,13 @@ class TranslateTask extends DefaultTask {
             }
         }
 
-        if(copyMainOutputPath() != null){
+        if (copyMainOutputPath() != null) {
 
             File mainOut = copyMainOutputPath()
 
             Utils.copyIfNewerRecursive(srcGenMainDir, mainOut, extensionFilter)
 
-            if(copyDependencies()){
+            if (copyDependencies()) {
                 List<DoppelDependency> dopplLibs = getTranslateDoppelLibs()
 
                 for (DoppelDependency lib : dopplLibs) {
@@ -361,24 +358,22 @@ class TranslateTask extends DefaultTask {
                 prefixMap,
                 testSrcFilesChanged,
                 "testSrcFilesArgFile",
-                true,
-                j2objcConfig.ignoreWeakAnnotations
+                true
         )
 
         Utils.projectCopy(project, {
             from Utils.srcDirs(project, 'test', 'java')
             into srcGenTestDir
-            if(j2objcConfig.includeJavaSource)
-            {
+            if (j2objcConfig.includeJavaSource) {
                 include '**/*.java'
             }
             include '**/*.mappings'
         })
 
-        if(copyTestOutputPath() != null){
+        if (copyTestOutputPath() != null) {
             File testOut = copyTestOutputPath()
             Utils.copyIfNewerRecursive(srcGenTestDir, testOut, extensionFilter)
-            if(copyDependencies()){
+            if (copyDependencies()) {
                 List<DoppelDependency> dopplLibs = getTranslateDoppelTestLibs()
 
                 for (DoppelDependency lib : dopplLibs) {
@@ -388,57 +383,6 @@ class TranslateTask extends DefaultTask {
                 }
             }
         }
-    }
-
-
-
-    //TODO: Figure out
-    void writeModulemap(File mainOut, String frameworkName){
-
-        //not writing to correct directory?
-        def modulemapFile = new File(mainOut, "module.modulemap")
-
-        FileWriter moduleMapWriter = new FileWriter(modulemapFile)
-
-        String frameworkHeaderFilename = frameworkName + ".h"
-
-        moduleMapWriter.append("module "+ frameworkName +" {\n" +
-                               "  umbrella header \""+ frameworkHeaderFilename +"\"\n" +
-                               "\n" +
-                               "  export *\n" +
-                               "  module * { export * }\n" +
-                               "}")
-
-        moduleMapWriter.close();
-
-        File frameworkHeaderFile = new File(mainOut, frameworkHeaderFilename)
-        FileWriter headerWriter = new FileWriter(frameworkHeaderFile)
-
-        headerWriter.append("#import <Foundation/Foundation.h>\n" +
-                            "\n" +
-                            "//! Project version number for "+ frameworkName +".\n" +
-                            "FOUNDATION_EXPORT double "+ frameworkName +"VersionNumber;\n" +
-                            "\n" +
-                            "//! Project version string for "+ frameworkName +".\n" +
-                            "FOUNDATION_EXPORT const unsigned char "+ frameworkName +"VersionString[];\n\n")
-
-        def preTrimStart = mainOut.getAbsolutePath().length() + 1
-
-        project.files(project.fileTree(
-                dir: mainOut, includes: ["**/*.h"])).each { File f ->
-
-            if(!frameworkHeaderFile.equals(f)) {
-
-                String relativePath = f.getAbsolutePath().substring(preTrimStart)
-
-                //You shouldn't be on windows, but if you are...
-                relativePath = relativePath.replace('\\', '/')
-
-                headerWriter.append("#import <"+ relativePath + ">\n")
-            }
-        }
-
-        headerWriter.close()
     }
 
     int deleteRemovedFiles(List<String> removedFileNames, File dir) {
@@ -460,10 +404,17 @@ class TranslateTask extends DefaultTask {
         return destFiles.getFiles().size()
     }
 
-    void doTranslate(FileCollection sourcepathDirs, File nativeSourceDir, File srcDir, List<String> translateArgs, Map<String, String> prefixMap,
-                     FileCollection srcFilesToTranslate, String srcFilesArgFilename, boolean testTranslate, boolean ignoreWeakAnnotations) {
+    void doTranslate(
+            FileCollection sourcepathDirs,
+            File nativeSourceDir,
+            File srcDir,
+            List<String> translateArgs,
+            Map<String, String> prefixMap,
+            FileCollection srcFilesToTranslate,
+            String srcFilesArgFilename,
+            boolean testTranslate) {
 
-        if(nativeSourceDir != null && nativeSourceDir.exists()){
+        if (nativeSourceDir != null && nativeSourceDir.exists()) {
             Utils.projectCopy(project, {
                 includeEmptyDirs = false
                 from nativeSourceDir
@@ -484,7 +435,7 @@ class TranslateTask extends DefaultTask {
 
 
         List<DoppelDependency> dopplLibs = getTranslateDoppelLibs()
-        if(testTranslate){
+        if (testTranslate) {
             dopplLibs.addAll(getTranslateDoppelTestLibs())
         }
         def libs = Utils.doppelJarLibs(dopplLibs)
@@ -536,8 +487,7 @@ class TranslateTask extends DefaultTask {
 
 
         String path = mappingsInputPath()
-        if(path != null)
-        {
+        if (path != null) {
             mappingFiles.add(path);
         }
 
@@ -546,14 +496,12 @@ class TranslateTask extends DefaultTask {
         for (DoppelDependency lib : dopplLibs) {
 
             String mappingPath = Utils.findDoppelLibraryMappings(lib.dependencyFolderLocation())
-            if(mappingPath != null && !mappingPath.isEmpty())
-            {
+            if (mappingPath != null && !mappingPath.isEmpty()) {
                 mappingFiles.add(mappingPath)
             }
 
             def prefixFile = Utils.findDoppelLibraryPrefixes(lib.dependencyFolderLocation())
-            if(prefixFile != null)
-            {
+            if (prefixFile != null) {
 
                 def properties = new Properties()
 
@@ -562,7 +510,7 @@ class TranslateTask extends DefaultTask {
                 fileReader.close()
 
                 for (String name : properties.propertyNames()) {
-                    allPrefixes.put(name, (String)properties.get(name))
+                    allPrefixes.put(name, (String) properties.get(name))
                 }
             }
         }
@@ -582,16 +530,13 @@ class TranslateTask extends DefaultTask {
                     args "-use-arc", ''
                 }*/
                 args "--package-prefixed-filenames", ''
-                if(!testTranslate)
-                {
+                if (!testTranslate) {
                     args "--output-header-mapping", new File(srcDir, project.name + ".mappings").absolutePath
                 }
-                if(ignoreWeakAnnotations)
-                {
+                if (getIgnoreWeakAnnotations()) {
                     args "--ignore-weak-annotation", ''
                 }
-                if(mappingFiles.size() > 0)
-                {
+                if (mappingFiles.size() > 0) {
                     args "--header-mapping", mappingFiles.join(",")
                 }
                 args "-sourcepath", sourcepathArg
