@@ -614,7 +614,7 @@ class Utils {
         }
     }
 
-    public static void copyIfNewerRecursive(File from, File to, FileFilter filter)
+    public static void copyIfNewerRecursive(File from, File to, FileFilter filter, boolean deleteStaleCopyFiles)
     {
         if(!from.exists())
             return;
@@ -633,7 +633,7 @@ class Utils {
         for (File ff : fromFiles) {
             if(ff.isDirectory())
             {
-                copyIfNewerRecursive(ff, new File(to, ff.getName()), filter)
+                copyIfNewerRecursive(ff, new File(to, ff.getName()), filter, deleteStaleCopyFiles)
             }
             else {
                 File targetFile = targetFiles.get(ff.getName())
@@ -657,6 +657,17 @@ class Utils {
                         inp.close()
                     }
                 }
+                targetFiles.remove(ff.getName());
+            }
+        }
+
+        if(deleteStaleCopyFiles)
+        {
+            def keySet = targetFiles.keySet()
+            for (String key : keySet) {
+                def file = targetFiles.get(key)
+                println "Cleaning "+ file.getPath()
+                file.delete()
             }
         }
     }

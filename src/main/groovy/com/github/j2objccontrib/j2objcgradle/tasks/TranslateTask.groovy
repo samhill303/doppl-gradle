@@ -108,6 +108,9 @@ class TranslateTask extends DefaultTask {
     @Input
     boolean getIgnoreWeakAnnotations() { return J2objcConfig.from(project).ignoreWeakAnnotations }
 
+    @Input
+    boolean getDeleteStaleCopyFiles() { return J2objcConfig.from(project).deleteStaleCopyFiles }
+
     List<DoppelDependency> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }
 
     List<DoppelDependency> getTranslateDoppelTestLibs() { return J2objcConfig.from(project).translateDoppelTestLibs }
@@ -311,6 +314,8 @@ class TranslateTask extends DefaultTask {
                 return pathname.isDirectory() ||
                        name.endsWith(".h") ||
                        name.endsWith(".m") ||
+                       name.endsWith(".cpp") ||
+                       name.endsWith(".hpp") ||
                        name.endsWith(".java") ||
                        name.endsWith(".modulemap")
             }
@@ -320,7 +325,7 @@ class TranslateTask extends DefaultTask {
 
             File mainOut = copyMainOutputPath()
 
-            Utils.copyIfNewerRecursive(srcGenMainDir, mainOut, extensionFilter)
+            Utils.copyIfNewerRecursive(srcGenMainDir, mainOut, extensionFilter, getDeleteStaleCopyFiles())
 
             if (copyDependencies()) {
                 List<DoppelDependency> dopplLibs = getTranslateDoppelLibs()
@@ -328,7 +333,7 @@ class TranslateTask extends DefaultTask {
                 for (DoppelDependency lib : dopplLibs) {
                     File depSource = new File(lib.dependencyFolderLocation(), "src")
 
-                    Utils.copyIfNewerRecursive(depSource, new File(mainOut, lib.name), extensionFilter)
+                    Utils.copyIfNewerRecursive(depSource, new File(mainOut, lib.name), extensionFilter, getDeleteStaleCopyFiles())
                 }
             }
 
@@ -372,14 +377,14 @@ class TranslateTask extends DefaultTask {
 
         if (copyTestOutputPath() != null) {
             File testOut = copyTestOutputPath()
-            Utils.copyIfNewerRecursive(srcGenTestDir, testOut, extensionFilter)
+            Utils.copyIfNewerRecursive(srcGenTestDir, testOut, extensionFilter, getDeleteStaleCopyFiles())
             if (copyDependencies()) {
                 List<DoppelDependency> dopplLibs = getTranslateDoppelTestLibs()
 
                 for (DoppelDependency lib : dopplLibs) {
                     File depSource = new File(lib.dependencyFolderLocation(), "src")
 
-                    Utils.copyIfNewerRecursive(depSource, new File(testOut, lib.name), extensionFilter)
+                    Utils.copyIfNewerRecursive(depSource, new File(testOut, lib.name), extensionFilter, getDeleteStaleCopyFiles())
                 }
             }
         }
@@ -529,6 +534,7 @@ class TranslateTask extends DefaultTask {
                 {
                     args "-use-arc", ''
                 }*/
+//                args "--strip-reflection", ''
                 args "--package-prefixed-filenames", ''
                 if (!testTranslate) {
                     args "--output-header-mapping", new File(srcDir, project.name + ".mappings").absolutePath

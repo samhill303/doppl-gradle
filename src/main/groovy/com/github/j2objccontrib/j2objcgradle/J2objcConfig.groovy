@@ -83,6 +83,7 @@ class J2objcConfig {
     String copyMainOutput = null;
     String copyTestOutput = null;
     boolean copyDependencies = false;
+    boolean deleteStaleCopyFiles = true;
 
     boolean ignoreWeakAnnotations = false;
 
