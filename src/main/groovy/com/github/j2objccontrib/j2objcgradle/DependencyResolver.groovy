@@ -18,6 +18,8 @@ package com.github.j2objccontrib.j2objcgradle
 
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
+import org.gradle.api.artifacts.ExternalModuleDependency
+import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.file.CopySpec
@@ -76,6 +78,7 @@ public class DependencyResolver {
         //Add project dependencies
         dopplConfig.dependencies.each {
             if (it instanceof ProjectDependency) {
+
                 Project beforeProject = it.dependencyProject
                 dopplDependencyList.add(new DoppelDependency(beforeProject.name, new File(J2objcConfig.from(beforeProject).getDestDoppelFolder())))
             }
@@ -83,10 +86,13 @@ public class DependencyResolver {
 
         //Add external "dop" file dependencies
         dopplConfig.resolvedConfiguration.resolvedArtifacts.each { ResolvedArtifact ra ->
-            if(ra.extension.equals("dop")) {
+
+            def classifier = ra.classifier
+            if(classifier != null && classifier.equals("doppl")) {
                 def group = ra.moduleVersion.id.group
                 def name = ra.moduleVersion.id.name
                 def version = ra.moduleVersion.id.version
+                println "dopplLibs-adding: config("+ configName +")/name("+ name +")"
                 def dependency = new DoppelDependency(group, name, version, new File(j2objcConfig.doppelDependencyExploded))
 
                 project.copy { CopySpec cp ->

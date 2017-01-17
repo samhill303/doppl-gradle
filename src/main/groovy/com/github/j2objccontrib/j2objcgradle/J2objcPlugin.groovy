@@ -93,10 +93,12 @@ class J2objcPlugin implements Plugin<Project> {
                 doppel{
                     transitive = true
                     description = 'For doppel special packages'
+//                    extendsFrom compile
                 }
                 testDoppel{
                     transitive = true
                     description = 'For doppel testing special packages'
+//                    extendsFrom testCompile
                 }
             }
 
@@ -171,6 +173,7 @@ class J2objcPlugin implements Plugin<Project> {
                 group 'doppl'
                 description 'Depends on j2objc build, move all doppel stuff to deploy dir'
 
+//                baseName "$project.name-doppl"
 
                 from project.j2objcConfig.destDoppelFolder
                 extension 'dop'

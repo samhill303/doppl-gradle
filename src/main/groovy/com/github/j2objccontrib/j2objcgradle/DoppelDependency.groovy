@@ -28,4 +28,23 @@ class DoppelDependency {
     File dependencyFolderLocation(){
         return dir
     }
+
+    boolean equals(o) {
+        if (this.is(o)) return true
+        if (getClass() != o.class) return false
+
+        DoppelDependency that = (DoppelDependency) o
+
+        if (dir != that.dir) return false
+        if (name != that.name) return false
+
+        return true
+    }
+
+    int hashCode() {
+        int result
+        result = (name != null ? name.hashCode() : 0)
+        result = 31 * result + (dir != null ? dir.hashCode() : 0)
+        return result
+    }
 }

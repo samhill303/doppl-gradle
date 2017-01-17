@@ -24,13 +24,12 @@ buildscript {
         maven {
             // change to point to your repo, e.g. http://my.org/repo
 //            url "http://dopplmaven.s3-website-us-east-1.amazonaws.com/"
-            url dopplMavenDeploy
+            url dopplIvyDeploy
         }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.1.0'
         classpath 'net.ltgt.gradle:gradle-apt-plugin:0.5'
-        classpath 'co.touchlab.doppel:doppelgradle:0.4.0-SNAPSHOT'
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.0.5'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -46,19 +45,18 @@ plugins {
     id "com.madvay.tools.build.gitbuildinfo" version "0.1.2-alpha"
 }
 apply plugin: 'groovy'
-apply plugin: 'maven-publish'
 apply plugin: 'kotlin'
+apply plugin: 'ivy-publish'
 
 allprojects {
     repositories {
         jcenter()
         mavenCentral()
-        maven { url 'https://raw.github.com/Raizlabs/maven-releases/master/releases' }
         maven { url 'http://oss.jfrog.org/artifactory/oss-snapshot-local' }
-        maven {
+        ivy {
             // change to point to your repo, e.g. http://my.org/repo
 //            url "http://dopplmaven.s3-website-us-east-1.amazonaws.com/"
-            url dopplMavenDeploy
+            url dopplIvyDeploy
         }
     }
 }
@@ -90,7 +88,7 @@ group = 'co.touchlab.doppel'
 // A suffix of -SNAPSHOT means this is not an official release of the
 // system, but built from an intermediate source tree.  Instructions:
 // https://github.com/j2objc-contrib/j2objc-gradle/blob/master/CONTRIBUTING.md#publishing-and-versioning
-version = "0.4.3-SNAPSHOT"
+version = "0.5.2-SNAPSHOT"
 
 test {
     //All of the testing needs a revisit.
@@ -135,15 +133,15 @@ configurations {
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
-            artifactId 'doppelgradle'
+        ivy(IvyPublication) {
+            module 'doppelgradle'
             from components.java
         }
     }
     repositories {
-        maven {
+        ivy {
             // change to point to your repo, e.g. http://my.org/repo
-            url dopplMavenDeploy
+            url dopplIvyDeploy
         }
     }
 }

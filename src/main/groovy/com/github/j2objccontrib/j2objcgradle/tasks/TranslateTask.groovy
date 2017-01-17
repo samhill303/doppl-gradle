@@ -288,8 +288,11 @@ class TranslateTask extends DefaultTask {
         )
 
         Utils.projectCopy(project, {
+
             from originalMainSrcFiles
             into srcGenMainDir
+            setIncludeEmptyDirs(false)
+
             if (j2objcConfig.includeJavaSource) {
                 include '**/*.java'
             }
@@ -321,6 +324,8 @@ class TranslateTask extends DefaultTask {
             }
         }
 
+        List<DoppelDependency> dopplLibs = new ArrayList<>(getTranslateDoppelLibs())
+
         if (copyMainOutputPath() != null) {
 
             File mainOut = copyMainOutputPath()
@@ -328,7 +333,6 @@ class TranslateTask extends DefaultTask {
             Utils.copyIfNewerRecursive(srcGenMainDir, mainOut, extensionFilter, getDeleteStaleCopyFiles())
 
             if (copyDependencies()) {
-                List<DoppelDependency> dopplLibs = getTranslateDoppelLibs()
 
                 for (DoppelDependency lib : dopplLibs) {
                     File depSource = new File(lib.dependencyFolderLocation(), "src")
@@ -379,9 +383,11 @@ class TranslateTask extends DefaultTask {
             File testOut = copyTestOutputPath()
             Utils.copyIfNewerRecursive(srcGenTestDir, testOut, extensionFilter, getDeleteStaleCopyFiles())
             if (copyDependencies()) {
-                List<DoppelDependency> dopplLibs = getTranslateDoppelTestLibs()
+                List<DoppelDependency> testDopplLibs = new ArrayList<>(getTranslateDoppelTestLibs())
 
-                for (DoppelDependency lib : dopplLibs) {
+                testDopplLibs.removeAll(dopplLibs)
+
+                for (DoppelDependency lib : testDopplLibs) {
                     File depSource = new File(lib.dependencyFolderLocation(), "src")
 
                     Utils.copyIfNewerRecursive(depSource, new File(testOut, lib.name), extensionFilter, getDeleteStaleCopyFiles())
@@ -438,8 +444,7 @@ class TranslateTask extends DefaultTask {
 
         String sourcepathArg = Utils.joinedPathArg(sourcepathDirs)
 
-
-        List<DoppelDependency> dopplLibs = getTranslateDoppelLibs()
+        List<DoppelDependency> dopplLibs = new ArrayList<>(getTranslateDoppelLibs())
         if (testTranslate) {
             dopplLibs.addAll(getTranslateDoppelTestLibs())
         }
