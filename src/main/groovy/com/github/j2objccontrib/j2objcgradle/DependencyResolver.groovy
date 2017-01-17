@@ -18,15 +18,9 @@ package com.github.j2objccontrib.j2objcgradle
 
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ExternalModuleDependency
-import org.gradle.api.artifacts.ModuleDependency
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.file.CopySpec
-import org.gradle.api.file.DuplicatesStrategy
-import org.gradle.api.plugins.JavaPluginConvention
-import org.gradle.api.tasks.Copy
-import org.gradle.api.tasks.SourceSet
 
 /**
  * Resolves `j2objc*` dependencies into their `j2objc` constructs:
@@ -56,23 +50,25 @@ import org.gradle.api.tasks.SourceSet
 @CompileStatic
 public class DependencyResolver {
 
+    public static final String CONFIG_DOPPL = 'doppl'
+    public static final String CONFIG_TEST_DOPPL = 'testDoppl'
     final Project project
-    final J2objcConfig j2objcConfig
+    final DopplConfig dopplConfig
 
-    public DependencyResolver(Project project, J2objcConfig j2objcConfig) {
+    public DependencyResolver(Project project, DopplConfig dopplConfig) {
         this.project = project
-        this.j2objcConfig = j2objcConfig
+        this.dopplConfig = dopplConfig
     }
 
     public void configureAll() {
 
         //Current "lazy" plan. Just copy all dependencies. If something is changed, will need to clean.
         //TODO: Fix the lazy
-        configForConfig('doppel', j2objcConfig.translateDoppelLibs)
-        configForConfig('testDoppel', j2objcConfig.translateDoppelTestLibs)
+        configForConfig(CONFIG_DOPPL, dopplConfig.translateDopplLibs)
+        configForConfig(CONFIG_TEST_DOPPL, dopplConfig.translateDopplTestLibs)
     }
 
-    void configForConfig(String configName, List<DoppelDependency> dopplDependencyList){
+    void configForConfig(String configName, List<DopplDependency> dopplDependencyList){
         def dopplConfig = project.configurations.getByName(configName)
 
         //Add project dependencies
@@ -80,7 +76,7 @@ public class DependencyResolver {
             if (it instanceof ProjectDependency) {
 
                 Project beforeProject = it.dependencyProject
-                dopplDependencyList.add(new DoppelDependency(beforeProject.name, new File(J2objcConfig.from(beforeProject).getDestDoppelFolder())))
+                dopplDependencyList.add(new DopplDependency(beforeProject.name, new File(DopplConfig.from(beforeProject).getDestDopplFolder())))
             }
         }
 
@@ -93,11 +89,11 @@ public class DependencyResolver {
                 def name = ra.moduleVersion.id.name
                 def version = ra.moduleVersion.id.version
                 println "dopplLibs-adding: config("+ configName +")/name("+ name +")"
-                def dependency = new DoppelDependency(group, name, version, new File(j2objcConfig.doppelDependencyExploded))
+                def dependency = new DopplDependency(group, name, version, new File(this.dopplConfig.dopplDependencyExploded))
 
                 project.copy { CopySpec cp ->
                     cp.from project.zipTree(ra.file)
-                    cp.into dependency.dependencyFolderLocation()// j2objcConfig.doppelDependencyExploded + "/" + dependency.fullFolderName()
+                    cp.into dependency.dependencyFolderLocation()// dopplConfig.dopplDependencyExploded + "/" + dependency.fullFolderName()
                 }
 
                 dopplDependencyList.add(dependency)

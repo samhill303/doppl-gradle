@@ -16,26 +16,20 @@
 
 package com.github.j2objccontrib.j2objcgradle.tasks
 
-import com.github.j2objccontrib.j2objcgradle.J2objcConfig
+import com.github.j2objccontrib.j2objcgradle.DopplConfig
 import groovy.transform.CompileStatic
 import org.gradle.api.DefaultTask
-import org.gradle.api.artifacts.Dependency
-import org.gradle.api.artifacts.DependencyArtifact
-import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.file.FileTree
-import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.OutputDirectories
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 
 /**
- * Copy doppel builds to a central directory
+ * Copy doppl builds to a central directory
  */
 @CompileStatic
-class DoppelAssemblyTask extends DefaultTask {
+class DopplAssemblyTask extends DefaultTask {
 
     @InputDirectory
     File srcGenMainDir
@@ -47,16 +41,16 @@ class DoppelAssemblyTask extends DefaultTask {
     }
 
     @OutputDirectory
-    File getDestDoppelDirFile() {
-        return J2objcConfig.from(project).getDestDoppelDirFile()
+    File getDestDopplDirFile() {
+        return DopplConfig.from(project).getDestDopplDirFile()
     }
 
     @TaskAction
-    void doppelDeploy() {
+    void dopplDeploy() {
         //Copy code
         Utils.projectCopy(project, {
             from srcGenMainDir
-            into getDestDoppelDirFile().absolutePath + "/src"
+            into getDestDopplDirFile().absolutePath + "/src"
             include '**/*.h'
             include '**/*.m'
             include '**/*.cpp'
@@ -66,30 +60,19 @@ class DoppelAssemblyTask extends DefaultTask {
 
         Utils.projectCopy(project, {
             from inputJavaJarFile()
-            into getDestDoppelDirFile().absolutePath + "/lib"
+            into getDestDopplDirFile().absolutePath + "/lib"
             include '**/*.jar'
         })
 
         Utils.projectCopy(project, {
             from srcGenMainDir
-            into getDestDoppelDirFile().absolutePath
+            into getDestDopplDirFile().absolutePath
             include '*.mappings'
             include 'prefixes.properties'
         })
-
-        /*Utils.projectCopy(project, {
-            from inputDestPodspecDir()
-            into getDestDoppelDirFile().absolutePath
-            include '*debug.podspec'
-            include '*release.podspec'
-        })*/
     }
 
     private File inputJavaJarFile() {
-        return new File(J2objcConfig.from(project).destJavaJarDir)
+        return new File(DopplConfig.from(project).destJavaJarDir)
     }
-/*
-    private File inputDestPodspecDir() {
-        return new File(J2objcConfig.from(project).destPodspecDir)
-    }*/
 }

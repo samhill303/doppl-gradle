@@ -25,19 +25,19 @@ import org.gradle.api.tasks.util.PatternSet
 import org.gradle.util.ConfigureUtil
 
 /**
- * j2objcConfig is used to configure the plugin with the project's build.gradle.
+ * dopplConfig is used to configure the plugin with the project's build.gradle.
  */
 @CompileStatic
-class J2objcConfig {
+class DopplConfig {
     public static final String TRANSLATE_ARC_ARG = '-use-arc'
 
-    static J2objcConfig from(Project project) {
-        return project.extensions.findByType(J2objcConfig)
+    static DopplConfig from(Project project) {
+        return project.extensions.findByType(DopplConfig)
     }
 
     final protected Project project
 
-    J2objcConfig(Project project) {
+    DopplConfig(Project project) {
         assert project != null
         this.project = project
 
@@ -45,18 +45,18 @@ class J2objcConfig {
         destLibDir = new File(project.buildDir, 'j2objcOutputs/lib').absolutePath
         destJavaJarDir = new File(project.buildDir, 'libs').absolutePath
 
-        destDoppelFolder = new File(project.buildDir, 'doppel').absolutePath
-        doppelDependencyExploded = new File(project.buildDir, 'doppelDependencyExploded').absolutePath
+        destDopplFolder = new File(project.buildDir, 'doppl').absolutePath
+        dopplDependencyExploded = new File(project.buildDir, 'dopplDependencyExploded').absolutePath
 
         foundJ2objcVersion = findVersionString(Utils.j2objcHome(project))
     }
 
     /**
-     * Local exploded dir for doppel files
+     * Local exploded dir for doppl files
      */
-    String destDoppelFolder = null
+    String destDopplFolder = null
 
-    String doppelDependencyExploded = null
+    String dopplDependencyExploded = null
 
     /**
      * Exact required version of j2objc.
@@ -142,8 +142,8 @@ class J2objcConfig {
             "mockito-core-1.9.5.jar", "hamcrest-core-1.3.jar"/*, "protobuf_runtime.jar"*/]
 
     // Native build accepts empty array but throws exception on empty List<String>
-    List<DoppelDependency> translateDoppelLibs = new ArrayList<>()
-    List<DoppelDependency> translateDoppelTestLibs = new ArrayList<>()
+    List<DopplDependency> translateDopplLibs = new ArrayList<>()
+    List<DopplDependency> translateDopplTestLibs = new ArrayList<>()
 
     /**
      * Sets the filter on files to translate.
@@ -176,8 +176,8 @@ class J2objcConfig {
         return project.file(destLibDir)
     }
 
-    File getDestDoppelDirFile(){
-        return project.file(destDoppelFolder)
+    File getDestDopplDirFile(){
+        return project.file(destDopplFolder)
     }
 
     /**
@@ -365,7 +365,7 @@ class J2objcConfig {
     // Provides a subset of "args" interface from project.exec as implemented by ExecHandleBuilder:
     // https://github.com/gradle/gradle/blob/master/subprojects/core/src/main/groovy/org/gradle/process/internal/ExecHandleBuilder.java
     // Allows the following:
-    // j2objcConfig {
+    // dopplConfig {
     //     translateArgs '--no-package-directories', '--prefixes', 'prefixes.properties'
     // }
     @VisibleForTesting
@@ -400,7 +400,7 @@ class J2objcConfig {
     void testingOnlyPrepConfigurations() {
         // When testing we don't always want to apply the entire plugin
         // before calling finalConfigure.
-        project.configurations.create('doppel')
-        project.configurations.create('testDoppel')
+        project.configurations.create(DependencyResolver.CONFIG_DOPPL)
+        project.configurations.create(DependencyResolver.CONFIG_TEST_DOPPL)
     }
 }

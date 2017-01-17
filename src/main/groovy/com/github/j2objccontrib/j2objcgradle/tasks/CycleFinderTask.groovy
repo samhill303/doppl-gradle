@@ -16,7 +16,7 @@
 
 package com.github.j2objccontrib.j2objcgradle.tasks
 
-import com.github.j2objccontrib.j2objcgradle.J2objcConfig
+import com.github.j2objccontrib.j2objcgradle.DopplConfig
 import groovy.transform.CompileStatic
 import org.gradle.api.DefaultTask
 import org.gradle.api.InvalidUserDataException
@@ -51,8 +51,8 @@ class CycleFinderTask extends DefaultTask {
         FileTree allFiles = Utils.srcSet(project, 'main', 'java')
 //        allFiles = allFiles.plus(Utils.srcSet(project, 'test', 'java'))
         FileTree ret = allFiles.plus(Utils.javaTrees(project, getGeneratedSourceDirs()))
-        if (J2objcConfig.from(project).translatePattern != null) {
-            ret = allFiles.matching(J2objcConfig.from(project).translatePattern)
+        if (DopplConfig.from(project).translatePattern != null) {
+            ret = allFiles.matching(DopplConfig.from(project).translatePattern)
         }
         return Utils.mapSourceFiles(project, ret, getTranslateSourceMapping())
     }
@@ -71,16 +71,16 @@ class CycleFinderTask extends DefaultTask {
     String getJ2objcHome() { return Utils.j2objcHome(project) }
 
     @Input
-    List<String> getCycleFinderArgs() { return J2objcConfig.from(project).cycleFinderArgs }
+    List<String> getCycleFinderArgs() { return DopplConfig.from(project).cycleFinderArgs }
 
     @Input
-    List<String> getGeneratedSourceDirs() { return J2objcConfig.from(project).generatedSourceDirs }
+    List<String> getGeneratedSourceDirs() { return DopplConfig.from(project).generatedSourceDirs }
 
     @Input
-    List<String> getTranslateJ2objcLibs() { return J2objcConfig.from(project).translateJ2objcLibs }
+    List<String> getTranslateJ2objcLibs() { return DopplConfig.from(project).translateJ2objcLibs }
 
     @Input
-    Map<String, String> getTranslateSourceMapping() { return J2objcConfig.from(project).translateSourceMapping }
+    Map<String, String> getTranslateSourceMapping() { return DopplConfig.from(project).translateSourceMapping }
 
     // Output required for task up-to-date checks
     @OutputFile
@@ -116,7 +116,7 @@ class CycleFinderTask extends DefaultTask {
         UnionFileCollection classpathFiles = new UnionFileCollection([
                 /*project.files(getTranslateClasspaths()),*/
                 project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs()))/*,
-                project.files(Utils.doppelJarLibs(getTranslateDoppelLibs()))*/
+                project.files(Utils.dopplJarLibs(getTranslateDopplLibs()))*/
         ])
         // TODO: comment explaining ${project.buildDir}/classes
         String classpathArg = Utils.joinedPathArg(classpathFiles) +

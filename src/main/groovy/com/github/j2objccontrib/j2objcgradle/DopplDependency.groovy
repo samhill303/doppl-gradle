@@ -3,16 +3,16 @@ package com.github.j2objccontrib.j2objcgradle
 /**
  * Created by kgalligan on 6/24/16.
  */
-class DoppelDependency {
+class DopplDependency {
     String name
     File dir
 
-    DoppelDependency(String name, File dir) {
+    DopplDependency(String name, File dir) {
         this.name = name
         this.dir = dir
     }
 
-    DoppelDependency(String group, String name, String version, File explodedDir)
+    DopplDependency(String group, String name, String version, File explodedDir)
     {
         this.name = name
 
@@ -33,7 +33,7 @@ class DoppelDependency {
         if (this.is(o)) return true
         if (getClass() != o.class) return false
 
-        DoppelDependency that = (DoppelDependency) o
+        DopplDependency that = (DopplDependency) o
 
         if (dir != that.dir) return false
         if (name != that.name) return false

@@ -17,8 +17,8 @@
 package com.github.j2objccontrib.j2objcgradle.tasks
 
 import com.github.j2objccontrib.j2objcgradle.DependencyResolver
-import com.github.j2objccontrib.j2objcgradle.DoppelDependency
-import com.github.j2objccontrib.j2objcgradle.J2objcConfig
+import com.github.j2objccontrib.j2objcgradle.DopplDependency
+import com.github.j2objccontrib.j2objcgradle.DopplConfig
 import com.github.j2objccontrib.j2objcgradle.PlatformSpecificProvider
 import com.github.j2objccontrib.j2objcgradle.TryThingsPlugin
 import groovy.transform.CompileStatic
@@ -44,18 +44,18 @@ class TranslateTask extends DefaultTask {
 
     @SuppressWarnings("GroovyUnusedDeclaration")
     @Input String getJ2objcVersion() {
-        return J2objcConfig.from(project).foundJ2objcVersion
+        return DopplConfig.from(project).foundJ2objcVersion
     }
 
     // Source files part of the Java main sourceSet.
     @InputFiles
     FileCollection getMainSrcFiles() {
-        return allSourceFor('main', J2objcConfig.from(project).generatedSourceDirs)
+        return allSourceFor('main', DopplConfig.from(project).generatedSourceDirs)
     }
 
     Set<File> getMainSrcDirs() {
         Set<File> allFiles = new HashSet<>()
-        for (String genPath : J2objcConfig.from(project).generatedSourceDirs) {
+        for (String genPath : DopplConfig.from(project).generatedSourceDirs) {
             allFiles.add(project.file(genPath))
         }
         allFiles.addAll(Utils.srcDirs(project, 'main', 'java'))
@@ -67,7 +67,7 @@ class TranslateTask extends DefaultTask {
         Set<File> allFiles = new HashSet<>()
         allFiles.addAll(getMainSrcDirs())
 
-        for (String genPath : J2objcConfig.from(project).generatedTestSourceDirs) {
+        for (String genPath : DopplConfig.from(project).generatedTestSourceDirs) {
             allFiles.add(project.file(genPath))
         }
         allFiles.addAll(Utils.srcDirs(project, 'test', 'java'))
@@ -78,7 +78,7 @@ class TranslateTask extends DefaultTask {
     // Source files part of the Java test sourceSet.
     @InputFiles
     FileCollection getTestSrcFiles() {
-        return allSourceFor('test', J2objcConfig.from(project).generatedTestSourceDirs)
+        return allSourceFor('test', DopplConfig.from(project).generatedTestSourceDirs)
     }
 
     HashSet<File> getExtraGeneratedSourceFolders() {
@@ -88,7 +88,7 @@ class TranslateTask extends DefaultTask {
 
     @Input
     Map<String, String> getPrefixes() {
-        J2objcConfig.from(project).translatedPathPrefix
+        DopplConfig.from(project).translatedPathPrefix
     }
 
     @Input
@@ -96,27 +96,27 @@ class TranslateTask extends DefaultTask {
 
     @Input
     List<String> getTranslateArgs() {
-        return J2objcConfig.from(project).processedTranslateArgs()
+        return DopplConfig.from(project).processedTranslateArgs()
     }
 
     @Input
-    List<String> getTranslateClasspaths() { return J2objcConfig.from(project).translateClasspaths }
+    List<String> getTranslateClasspaths() { return DopplConfig.from(project).translateClasspaths }
 
     @Input
-    List<String> getTranslateJ2objcLibs() { return J2objcConfig.from(project).translateJ2objcLibs }
+    List<String> getTranslateJ2objcLibs() { return DopplConfig.from(project).translateJ2objcLibs }
 
     @Input
-    boolean getIgnoreWeakAnnotations() { return J2objcConfig.from(project).ignoreWeakAnnotations }
+    boolean getIgnoreWeakAnnotations() { return DopplConfig.from(project).ignoreWeakAnnotations }
 
     @Input
-    boolean getDeleteStaleCopyFiles() { return J2objcConfig.from(project).deleteStaleCopyFiles }
+    boolean getDeleteStaleCopyFiles() { return DopplConfig.from(project).deleteStaleCopyFiles }
 
-    List<DoppelDependency> getTranslateDoppelLibs() { return J2objcConfig.from(project).translateDoppelLibs }
+    List<DopplDependency> getTranslateDopplLibs() { return DopplConfig.from(project).translateDopplLibs }
 
-    List<DoppelDependency> getTranslateDoppelTestLibs() { return J2objcConfig.from(project).translateDoppelTestLibs }
+    List<DopplDependency> getTranslateDopplTestLibs() { return DopplConfig.from(project).translateDopplTestLibs }
 
     @Input
-    Map<String, String> getTranslateSourceMapping() { return J2objcConfig.from(project).translateSourceMapping }
+    Map<String, String> getTranslateSourceMapping() { return DopplConfig.from(project).translateSourceMapping }
 
     // Generated ObjC files
     @OutputDirectory
@@ -132,12 +132,12 @@ class TranslateTask extends DefaultTask {
     File srcTestObjcDir;
 
     @Input String mappingsInputPath() {
-        J2objcConfig.from(project).mappingsInput
+        DopplConfig.from(project).mappingsInput
     }
 
     @OutputDirectory File copyMainOutputPath() {
 
-        String output = J2objcConfig.from(project).copyMainOutput
+        String output = DopplConfig.from(project).copyMainOutput
         if (output == null)
             return null
         else
@@ -145,11 +145,11 @@ class TranslateTask extends DefaultTask {
     }
 
     @Input boolean copyDependencies() {
-        J2objcConfig.from(project).copyDependencies
+        DopplConfig.from(project).copyDependencies
     }
 
     @OutputDirectory File copyTestOutputPath() {
-        String output = J2objcConfig.from(project).copyTestOutput
+        String output = DopplConfig.from(project).copyTestOutput
         if (output == null)
             return null
         else
@@ -177,8 +177,8 @@ class TranslateTask extends DefaultTask {
             allFiles = allFiles.plus(project.fileTree(folder))
         }
 
-        if (J2objcConfig.from(project).translatePattern != null) {
-            allFiles = allFiles.matching(J2objcConfig.from(project).translatePattern)
+        if (DopplConfig.from(project).translatePattern != null) {
+            allFiles = allFiles.matching(DopplConfig.from(project).translatePattern)
         }
 
         return Utils.mapSourceFiles(project, allFiles, getTranslateSourceMapping())
@@ -189,8 +189,8 @@ class TranslateTask extends DefaultTask {
     @TaskAction
     void translate(IncrementalTaskInputs inputs) {
 
-        J2objcConfig j2objcConfig = J2objcConfig.from(project)
-        new DependencyResolver(project, j2objcConfig).configureAll()
+        DopplConfig dopplConfig = DopplConfig.from(project)
+        new DependencyResolver(project, dopplConfig).configureAll()
 //        DependencyResolver.configureSourceSets(project)
 
         List<String> translateArgs = getTranslateArgs()
@@ -293,7 +293,7 @@ class TranslateTask extends DefaultTask {
             into srcGenMainDir
             setIncludeEmptyDirs(false)
 
-            if (j2objcConfig.includeJavaSource) {
+            if (dopplConfig.includeJavaSource) {
                 include '**/*.java'
             }
             include '**/*.mappings'
@@ -324,7 +324,7 @@ class TranslateTask extends DefaultTask {
             }
         }
 
-        List<DoppelDependency> dopplLibs = new ArrayList<>(getTranslateDoppelLibs())
+        List<DopplDependency> dopplLibs = new ArrayList<>(getTranslateDopplLibs())
 
         if (copyMainOutputPath() != null) {
 
@@ -334,7 +334,7 @@ class TranslateTask extends DefaultTask {
 
             if (copyDependencies()) {
 
-                for (DoppelDependency lib : dopplLibs) {
+                for (DopplDependency lib : dopplLibs) {
                     File depSource = new File(lib.dependencyFolderLocation(), "src")
 
                     Utils.copyIfNewerRecursive(depSource, new File(mainOut, lib.name), extensionFilter, getDeleteStaleCopyFiles())
@@ -373,7 +373,7 @@ class TranslateTask extends DefaultTask {
         Utils.projectCopy(project, {
             from Utils.srcDirs(project, 'test', 'java')
             into srcGenTestDir
-            if (j2objcConfig.includeJavaSource) {
+            if (dopplConfig.includeJavaSource) {
                 include '**/*.java'
             }
             include '**/*.mappings'
@@ -383,11 +383,11 @@ class TranslateTask extends DefaultTask {
             File testOut = copyTestOutputPath()
             Utils.copyIfNewerRecursive(srcGenTestDir, testOut, extensionFilter, getDeleteStaleCopyFiles())
             if (copyDependencies()) {
-                List<DoppelDependency> testDopplLibs = new ArrayList<>(getTranslateDoppelTestLibs())
+                List<DopplDependency> testDopplLibs = new ArrayList<>(getTranslateDopplTestLibs())
 
                 testDopplLibs.removeAll(dopplLibs)
 
-                for (DoppelDependency lib : testDopplLibs) {
+                for (DopplDependency lib : testDopplLibs) {
                     File depSource = new File(lib.dependencyFolderLocation(), "src")
 
                     Utils.copyIfNewerRecursive(depSource, new File(testOut, lib.name), extensionFilter, getDeleteStaleCopyFiles())
@@ -444,11 +444,11 @@ class TranslateTask extends DefaultTask {
 
         String sourcepathArg = Utils.joinedPathArg(sourcepathDirs)
 
-        List<DoppelDependency> dopplLibs = new ArrayList<>(getTranslateDoppelLibs())
+        List<DopplDependency> dopplLibs = new ArrayList<>(getTranslateDopplLibs())
         if (testTranslate) {
-            dopplLibs.addAll(getTranslateDoppelTestLibs())
+            dopplLibs.addAll(getTranslateDopplTestLibs())
         }
-        def libs = Utils.doppelJarLibs(dopplLibs)
+        def libs = Utils.dopplJarLibs(dopplLibs)
 
         UnionFileCollection classpathFiles = new UnionFileCollection([
                 project.files(getTranslateClasspaths()),
@@ -503,14 +503,14 @@ class TranslateTask extends DefaultTask {
 
         Map<String, String> allPrefixes = new HashMap<>(prefixMap)
 
-        for (DoppelDependency lib : dopplLibs) {
+        for (DopplDependency lib : dopplLibs) {
 
-            String mappingPath = Utils.findDoppelLibraryMappings(lib.dependencyFolderLocation())
+            String mappingPath = Utils.findDopplLibraryMappings(lib.dependencyFolderLocation())
             if (mappingPath != null && !mappingPath.isEmpty()) {
                 mappingFiles.add(mappingPath)
             }
 
-            def prefixFile = Utils.findDoppelLibraryPrefixes(lib.dependencyFolderLocation())
+            def prefixFile = Utils.findDopplLibraryPrefixes(lib.dependencyFolderLocation())
             if (prefixFile != null) {
 
                 def properties = new Properties()

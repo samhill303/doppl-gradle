@@ -8,12 +8,12 @@ See the [Reference](#reference) for that additional information.
 ## TL/DR
 If simple enough, your dependencies may be configurable automatically.  First try adding:
 ```gradle
-j2objcConfig {
+dopplConfig {
    autoConfigureDeps true
    // ...
 }
 ```
-at the top of your Gradle project's `j2objcConfig` section.  If that fails, follow one of the
+at the top of your Gradle project's `dopplConfig` section.  If that fails, follow one of the
 sections below.
 
 
@@ -55,7 +55,7 @@ dependencies {
     // (plus any other libraries provided by J2ObjC)
 }
 
-j2objcConfig {
+dopplConfig {
     // ...
     finalConfigure()
 }
@@ -69,7 +69,7 @@ dependencies {
     // (plus any other libraries provided by J2ObjC)
 }
 
-j2objcConfig {
+dopplConfig {
     // ADD: This causes the plugin to download the sources and transpile them into
     // your project using --build-closure.
     autoConfigureDeps true
@@ -94,7 +94,7 @@ dependencies {
     j2objcTranslation 'com.google.code.gson:gson:2.3.1:sources'
 }
 
-j2objcConfig {
+dopplConfig {
     // No tests provided with the Gson library.
     testMinExpectedTests 0
     finalConfigure()
@@ -133,7 +133,7 @@ dependencies {
     // (plus any other libraries provided by J2ObjC)
 }
 
-j2objcConfig {
+dopplConfig {
     // ...
     finalConfigure()
 }
@@ -148,7 +148,7 @@ dependencies {
     // (plus any other libraries provided by J2ObjC)
 }
 
-j2objcConfig {
+dopplConfig {
     // ADD: This causes the plugin to link in the J2ObjC projects third-party-gson and buase above.
     autoConfigureDeps true
     // ...
@@ -172,7 +172,7 @@ add to `shared/build.gradle`:
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
     extraNativeLib project: ':A', library: 'someLibrary', linkage: 'static'
     finalConfigure()
 }
@@ -191,7 +191,7 @@ add to `shared/build.gradle`:
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
     extraObjcCompilerArgs '-I/include/SOMEPATH'
     extraLinkerArgs '-L/lib/SOMEPATH'
     extraLinkerArgs '-lpreBuilt'
@@ -200,7 +200,7 @@ j2objcConfig {
 
 The library will be linked in and the headers available for inclusion. All prebuilt libraries
 must be fat binaries with the architectures defined by `supportedArchs` in
-[j2objcConfig.groovy](https://github.com/j2objc-contrib/j2objc-gradle/blob/master/src/main/groovy/com/github/j2objccontrib/j2objcgradle/J2objcConfig.groovy).
+[dopplConfig.groovy](https://github.com/j2objc-contrib/j2objc-gradle/blob/master/src/main/groovy/com/github/j2objccontrib/j2objcgradle/J2objcConfig.groovy).
 
 Note that J2ObjC does not understand this native library in any way - your Java code must still
 compile as always, ignoring this library.

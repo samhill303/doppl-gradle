@@ -89,7 +89,7 @@ Now try building again.
 
 The J2ObjC Gradle Plugin can configure your Xcode project with [CocoaPods](https://cocoapods.org/).
 To take advantage of this, specify the directory that contains `PROJECT.xcodeproj` as
-the `xcodeProjectDir` in your shared `j2objcConfig` per the [Quick Start Guide](README.md#quick-start-guide).
+the `xcodeProjectDir` in your shared `dopplConfig` per the [Quick Start Guide](README.md#quick-start-guide).
 Gradle projects that `shared` depends on must not specify `xcodeProjectDir` so that only one project
 controls the Xcode updates.
 
@@ -113,7 +113,7 @@ For example, to use methods only available in iOS 9.2:
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
     minVersionIos '9.2'
     ...
 }
@@ -250,14 +250,14 @@ Note that you can use the Gradle shorthand of `$ gradlew jA` to do the `j2objcAs
 
 ### How do I customize translation with J2ObjC?
 
-Inside your `j2objcConfig` section, you can pass any of the [options J2ObjC takes](http://j2objc.org/docs/j2objc.html)
+Inside your `dopplConfig` section, you can pass any of the [options J2ObjC takes](http://j2objc.org/docs/j2objc.html)
 with `translateArgs`.
 
 Make sure your arguments are separate strings, not a single space-concatenated string.
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
     // CORRECT
     translateArgs '-use-arc'
     translateArgs '-prefixes', 'file.prefixes'
@@ -278,7 +278,7 @@ Many well-known compiler or linker args can be customized using an existing
 `J2objcConfig` option.  The plugin already sets up a standard build for you,
 so only configure these options if the defaults fail to work.
 
-As a last resort, inside your `j2objcConfig` section, you can pass any of the
+As a last resort, inside your `dopplConfig` section, you can pass any of the
 standard Clang compiler or linker args as `extraObjcCompilerArgs` and `extraLinkerArgs`,
 respectively.
 
@@ -350,7 +350,7 @@ and one called "Preview" for doing ad-hoc distribution:
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
     xcodeDebugConfigurations += ['Beta']
     xcodeReleaseConfigurations += ['Preview']
     ...
@@ -365,7 +365,7 @@ the Podfile is too complex. In that situation, you can manually configure the po
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
     xcodeTargetsManualConfig true
     ...
 }
@@ -400,7 +400,7 @@ be written (done by the `j2objcPodspec` task).
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
     ...
 }
 j2objcXcode {
@@ -480,7 +480,7 @@ Also see the reference docs on [package name prefixes](http://j2objc.org/docs/Pa
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
     translateArgs '--prefixes', 'src/main/resources/prefixes.properties'
     ...
 }
@@ -514,7 +514,7 @@ Add the following to your configuration block. See
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
    translateArgs '-use-arc'
    extraObjcCompilerArgs '-fobjc-arc'
    ...
@@ -524,19 +524,19 @@ j2objcConfig {
 
 ### How do I call finalConfigure()?
 
-You must always call `finalConfigure()` at the end of `j2objcConfig {...}` within your project's
-`build.gradle` file. You need to include an otherwise empty `j2objcConfig {...}` block with this
+You must always call `finalConfigure()` at the end of `dopplConfig {...}` within your project's
+`build.gradle` file. You need to include an otherwise empty `dopplConfig {...}` block with this
 call even if you do not need to customize any other `j2objConfig` option.
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
     ...
     finalConfigure()
 }
 ```
 
-In addition, put your `j2objcConfig` at the very end of your build.gradle.  This allows
+In addition, put your `dopplConfig` at the very end of your build.gradle.  This allows
 `finalConfigure()` to correctly access other project settings, like dependencies.
 
 
@@ -561,12 +561,12 @@ See: [How do I enable ARC for my translated Objective-C classes?](#how-do-i-enab
 ### How do I disable a plugin task?
 
 You can disable tasks performed by the plugin using the following configuration block in your
-`build.gradle`. This is separate and alongside the `j2objcConfig` settings. For example, to
+`build.gradle`. This is separate and alongside the `dopplConfig` settings. For example, to
 disable the `j2objcTest` task, do the following:
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
     ...
 }
 
@@ -611,14 +611,14 @@ and building the J2ObjC source:
 
     `(cd jre_emul && make java_sources_manifest)`
 
-3. Configure j2objcConfig in `shared/build.gradle` so CycleFinder uses the annotated J2ObjC
+3. Configure dopplConfig in `shared/build.gradle` so CycleFinder uses the annotated J2ObjC
 source and whitelist. Note how this specifies an expected cycle count of zero, as the JRE cycles
 are already accounted for in the generated whitelist.  If however, you have additional cycles
 you expect, you should use that number instead of zero.
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
     cycleFinderArgs '--whitelist', 'J2OBJC_REPO/jre_emul/cycle_whitelist.txt'
     cycleFinderArgs '--sourcefilelist', 'J2OBJC_REPO/jre_emul/build_result/java_sources.mf'
     ...
@@ -668,7 +668,7 @@ devices), add the following to your build.gradle file:
 
 ```gradle
 // File: shared/build.gradle
-j2objcConfig {
+dopplConfig {
     supportedArchs += ['ios_i386']
     ...
 }

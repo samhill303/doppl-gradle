@@ -50,7 +50,7 @@ dependencies {
 }
 
 // Plugin settings; put these at the bottom of the file.
-j2objcConfig {
+dopplConfig {
     // Sets up libraries you depend on
     autoConfigureDeps true
     
@@ -77,7 +77,7 @@ For more complex situations like:
 * customizing the translation and compilation steps
 * mixing Objective-C and Java implementations
 
-, check the [FAQ table of contents](FAQ.md) or see all of the `j2objcConfig` settings in
+, check the [FAQ table of contents](FAQ.md) or see all of the `dopplConfig` settings in
 [J2objcConfig.groovy](https://github.com/j2objc-contrib/j2objc-gradle/blob/master/src/main/groovy/com/github/j2objccontrib/j2objcgradle/J2objcConfig.groovy#L30).
 
 

@@ -17,7 +17,7 @@
 package com.github.j2objccontrib.j2objcgradle
 
 import com.github.j2objccontrib.j2objcgradle.tasks.CycleFinderTask
-import com.github.j2objccontrib.j2objcgradle.tasks.DoppelAssemblyTask
+import com.github.j2objccontrib.j2objcgradle.tasks.DopplAssemblyTask
 import com.github.j2objccontrib.j2objcgradle.tasks.TranslateTask
 import com.github.j2objccontrib.j2objcgradle.tasks.Utils
 import org.gradle.api.DefaultTask
@@ -31,9 +31,13 @@ import org.gradle.api.tasks.bundling.Jar
 /*
  * Main plugin class for creation of extension object and all the tasks.
  */
-class J2objcPlugin implements Plugin<Project> {
+class DopplPlugin implements Plugin<Project> {
 
-    boolean hasOneOfTheFollowingPlugins(Project project, String... pluginIds)
+
+    public static final String TASK_DOPPL_ASSEMBLY = 'dopplAssembly'
+    public static final String TASK_DOPPL_ARCHIVE = 'dopplArchive'
+
+    static boolean hasOneOfTheFollowingPlugins(Project project, String... pluginIds)
     {
         for (String pluginId : pluginIds) {
             if(project.plugins.hasPlugin(pluginId))
@@ -80,24 +84,24 @@ class J2objcPlugin implements Plugin<Project> {
         project.with {
 //            Utils.throwIfNoJavaPlugin(project)
 
-            extensions.create('j2objcConfig', J2objcConfig, project)
+            extensions.create('dopplConfig', DopplConfig, project)
 
             // This is an intermediate directory only.  Clients should use only directories
-            // specified in j2objcConfig (or associated defaults in J2objcConfig).
+            // specified in dopplConfig (or associated defaults in dopplConfig).
             File j2objcSrcGenMainDir = file("${buildDir}/j2objcSrcGenMain")
             File j2objcSrcGenTestDir = file("${buildDir}/j2objcSrcGenTest")
 
             // These configurations are groups of artifacts and dependencies for the plugin build
             // https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.Configuration.html
             configurations {
-                doppel{
+                doppl{
                     transitive = true
-                    description = 'For doppel special packages'
+                    description = 'For doppl special packages'
 //                    extendsFrom compile
                 }
-                testDoppel{
+                testDoppl{
                     transitive = true
-                    description = 'For doppel testing special packages'
+                    description = 'For doppl testing special packages'
 //                    extendsFrom testCompile
                 }
             }
@@ -128,7 +132,7 @@ class J2objcPlugin implements Plugin<Project> {
                 prebuildTask.dependsOn('assemble')
             }
 
-            // TODO @Bruno "build/source/apt" must be project.j2objcConfig.generatedSourceDirs no idea how to set it
+            // TODO @Bruno "build/source/apt" must be project.dopplConfig.generatedSourceDirs no idea how to set it
             // there
             // Dependency may be added in project.plugins.withType for Java or Android plugin
             tasks.create(name: 'j2objcTranslate', type: TranslateTask,
@@ -159,27 +163,27 @@ class J2objcPlugin implements Plugin<Project> {
                     dependsOn: 'j2objcPreBuild') {
                 group 'doppl'
                 description "Run the cycle_finder tool on all Java source files"
+
                 outputs.upToDateWhen { false }
             }
 
-            tasks.create(name: 'doppelAssembly', type: DoppelAssemblyTask,
+            tasks.create(name: TASK_DOPPL_ASSEMBLY, type: DopplAssemblyTask,
                     dependsOn: 'j2objcTranslate') {
                 group 'doppl'
-                description 'Pull together doppel pieces'
+                description 'Pull together doppl pieces'
+
                 srcGenMainDir = j2objcSrcGenMainDir
             }
 
-            tasks.create(name: 'doppelArchive', type: Jar, dependsOn: 'doppelAssembly') {
+            tasks.create(name: TASK_DOPPL_ARCHIVE, type: Jar, dependsOn: TASK_DOPPL_ASSEMBLY) {
                 group 'doppl'
-                description 'Depends on j2objc build, move all doppel stuff to deploy dir'
+                description 'Depends on j2objc build, move all doppl stuff to deploy dir'
 
-//                baseName "$project.name-doppl"
-
-                from project.j2objcConfig.destDoppelFolder
+                from project.dopplConfig.destDopplFolder
                 extension 'dop'
             }
 
-//            lateDependsOn(project, 'build', 'doppelArchive')
+//            lateDependsOn(project, 'build', 'dopplArchive')
         }
     }
 }

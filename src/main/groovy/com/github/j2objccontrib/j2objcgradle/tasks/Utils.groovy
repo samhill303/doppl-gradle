@@ -16,8 +16,8 @@
 
 package com.github.j2objccontrib.j2objcgradle.tasks
 
-import com.github.j2objccontrib.j2objcgradle.DoppelDependency
-import com.github.j2objccontrib.j2objcgradle.J2objcConfig
+import com.github.j2objccontrib.j2objcgradle.DopplDependency
+import com.github.j2objccontrib.j2objcgradle.DopplConfig
 import com.google.common.annotations.VisibleForTesting
 import groovy.transform.CompileStatic
 import groovy.transform.TypeCheckingMode
@@ -322,7 +322,7 @@ class Utils {
     static void throwJ2objcConfigFailure(Project proj, String preamble) {
         String propFile = "${proj.rootDir.absolutePath}/local.properties"
         // This can be null in tests!
-        J2objcConfig config = J2objcConfig.from(proj)
+        DopplConfig config = DopplConfig.from(proj)
         String ver = config == null ? '(unknown version)' : config.explicitJ2objcVersion
         String message = ">>>>>>>>>>>>>>>> J2ObjC Tool Configuration Failure <<<<<<<<<<<<<<<<\n" +
                          "$preamble\n" +
@@ -417,13 +417,13 @@ class Utils {
         }
     }
 
-    static List<String> doppelJarLibs(List<DoppelDependency> libraries) {
-        return libraries.collect { DoppelDependency library ->
-            return findDoppelLibraryJar(library.dependencyFolderLocation())
+    static List<String> dopplJarLibs(List<DopplDependency> libraries) {
+        return libraries.collect { DopplDependency library ->
+            return findDopplLibraryJar(library.dependencyFolderLocation())
         }
     }
 
-    public static String findDoppelLibraryJar(File libDirBase) {
+    public static String findDopplLibraryJar(File libDirBase) {
 
         def libDir = new File(libDirBase, "lib")
         def files = libDir.listFiles()
@@ -435,7 +435,7 @@ class Utils {
         throw new IllegalArgumentException("No jar found in doppl directory")
     }
 
-    public static String findDoppelLibraryMappings(File dopplDir) {
+    public static String findDopplLibraryMappings(File dopplDir) {
 
         def files = dopplDir.listFiles()
         for (File file : files) {
@@ -446,7 +446,7 @@ class Utils {
         return null
     }
 
-    public static File findDoppelLibraryPrefixes(File dopplDir) {
+    public static File findDopplLibraryPrefixes(File dopplDir) {
 
         def files = dopplDir.listFiles()
         for (File file : files) {

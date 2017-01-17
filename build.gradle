@@ -17,33 +17,15 @@
 buildscript {
     repositories {
         jcenter()
-        mavenCentral()
-        maven { url 'http://oss.jfrog.org/artifactory/oss-snapshot-local' }
-        maven { url 'https://oss.sonatype.org/content/repositories/snapshots/' }
         maven { url 'https://plugins.gradle.org/m2/' }
-        maven {
-            // change to point to your repo, e.g. http://my.org/repo
-//            url "http://dopplmaven.s3-website-us-east-1.amazonaws.com/"
-            url dopplIvyDeploy
-        }
+        maven { url dopplIvyDeploy }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.1.0'
-        classpath 'net.ltgt.gradle:gradle-apt-plugin:0.5'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.0.5'
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.0.5-2'
     }
 }
 
-plugins {
-    id "com.gradle.plugin-publish" version "0.9.0"
-    // Outputs a BuildInfo.java file with information about the git repo;
-    // also fails plugin publishing if your git working directory is unclean.
-    // Note this only enforces that the code you are publishing is committed
-    // to your local repo; you have to make sure to push it upstream.
-    id "com.madvay.tools.build.gitbuildinfo" version "0.1.2-alpha"
-}
 apply plugin: 'groovy'
 apply plugin: 'kotlin'
 apply plugin: 'ivy-publish'
@@ -51,13 +33,7 @@ apply plugin: 'ivy-publish'
 allprojects {
     repositories {
         jcenter()
-        mavenCentral()
-        maven { url 'http://oss.jfrog.org/artifactory/oss-snapshot-local' }
-        ivy {
-            // change to point to your repo, e.g. http://my.org/repo
-//            url "http://dopplmaven.s3-website-us-east-1.amazonaws.com/"
-            url dopplIvyDeploy
-        }
+        ivy { url dopplIvyDeploy }
     }
 }
 
@@ -69,8 +45,8 @@ dependencies {
     compile localGroovy()
     compile 'com.android.tools.build:gradle:2.2.1'
     compile 'org.codehaus.groovy:groovy-android-gradle-plugin:1.1.0'
-    compile  "org.jetbrains.kotlin:kotlin-stdlib:1.0.5"
-    compile  "org.jetbrains.kotlin:kotlin-reflect:1.0.5"
+    compile  "org.jetbrains.kotlin:kotlin-stdlib:1.0.5-2"
+    compile  "org.jetbrains.kotlin:kotlin-reflect:1.0.5-2"
 
     testCompile 'junit:junit:4.11'
     // https://mvnrepository.com/artifact/org.testng/testng
@@ -79,46 +55,15 @@ dependencies {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.4'
-    distributionUrl = 'https://services.gradle.org/distributions/gradle-2.4-all.zip'
+    gradleVersion = '2.14.1'
+    distributionUrl = 'https://services.gradle.org/distributions/gradle-2.14.1-all.zip'
 }
 
-group = 'co.touchlab.doppel'
-
-// A suffix of -SNAPSHOT means this is not an official release of the
-// system, but built from an intermediate source tree.  Instructions:
-// https://github.com/j2objc-contrib/j2objc-gradle/blob/master/CONTRIBUTING.md#publishing-and-versioning
-version = "0.5.2-SNAPSHOT"
+group = 'co.touchlab.doppl'
+version = "0.6.0-SNAPSHOT"
 
 test {
-    //All of the testing needs a revisit.
     enabled = false
-    testLogging {
-        // Provide full exception info on failure, instead
-        // of just pointing to an HTML file.
-        exceptionFormat = 'full'
-    }
-}
-
-pluginBundle {
-    website = 'https://www.github.com/j2objc-contrib/j2objc-gradle/'
-    vcsUrl = 'https://github.com/j2objc-contrib/j2objc-gradle'
-    description =
-            "Gradle Plugin for J2ObjC, which is an open-source tool from Google that translates " +
-            "Java source code to Objective-C for the iOS (iPhone/iPad) platform. The plugin is " +
-            "not affiliated with Google but was developed by former Google Engineers and others. " +
-            "J2ObjC enables Java source to be part of an iOS application's build, no editing " +
-            "of the generated files is necessary. The goal is to write an app's non-UI code " +
-            "(such as application logic and data models) in Java, which is then shared by " +
-            "Android apps, web apps (using GWT), and iOS apps (using J2ObjC)."
-    tags = ['android', 'java', 'j2objc', 'ios', 'iphone', 'objective-c', 'xcode']
-
-    plugins {
-        j2objcPlugin {
-            id = 'com.touchlab.doppel.doppelgradle'
-            displayName = 'Doppel Gradle Plugin'
-        }
-    }
 }
 
 project.tasks.all {
@@ -134,7 +79,7 @@ configurations {
 publishing {
     publications {
         ivy(IvyPublication) {
-            module 'doppelgradle'
+            module 'dopplgradle'
             from components.java
         }
     }
@@ -144,17 +89,4 @@ publishing {
             url dopplIvyDeploy
         }
     }
-}
-
-
-/*install {
-    repositories.mavenInstaller {
-        pom.version = project.version
-        pom.artifactId = 'doppelgradle'
-    }
-}*/
-
-buildStamp {
-    repoBaseUrl "https://github.com/touchlab/j2objc-gradle/tree/"
-    packageName "com.github.j2objccontrib.j2objcgradle"
 }

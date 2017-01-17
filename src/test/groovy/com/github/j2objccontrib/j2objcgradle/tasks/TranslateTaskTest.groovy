@@ -15,7 +15,7 @@
  */
 
 package com.github.j2objccontrib.j2objcgradle.tasks
-import com.github.j2objccontrib.j2objcgradle.J2objcConfig
+import com.github.j2objccontrib.j2objcgradle.DopplConfig
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
@@ -29,7 +29,7 @@ class TranslateTaskTest {
 
     private Project proj
     private String j2objcHome
-    private J2objcConfig j2objcConfig
+    private DopplConfig j2objcConfig
 
     @Before
     void setUp() {
@@ -148,7 +148,7 @@ class TranslateTaskTest {
         j2objcConfig.translateJ2objcLibs = ['J2OBJC-LIB1', 'J2OBJC-LIB2']
         j2objcConfig.translateArgs('-ARG1', '-ARG2')
         // TODO: add testing for translatePattern
-        // j2objcConfig.translatePattern {
+        // dopplConfig.translatePattern {
         //     exclude '**/Example.java'
         // }
 

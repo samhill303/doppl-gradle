@@ -16,8 +16,8 @@
 
 package com.github.j2objccontrib.j2objcgradle.tasks
 
-import com.github.j2objccontrib.j2objcgradle.J2objcConfig
-import com.github.j2objccontrib.j2objcgradle.J2objcPlugin
+import com.github.j2objccontrib.j2objcgradle.DopplConfig
+import com.github.j2objccontrib.j2objcgradle.DopplPlugin
 import groovy.util.logging.Slf4j
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -43,7 +43,7 @@ class TestingUtils {
         boolean applyJ2objcPlugin = false
         /** to apply the JavaPlugin (forced true if applyJ2objcPlugin = true) */
         boolean applyJavaPlugin = false
-        /** to create the j2objcConfig extension (forced true if applyJ2objcPlugin = true) */
+        /** to create the dopplConfig extension (forced true if applyJ2objcPlugin = true) */
         boolean createJ2objcConfig = false
         /** to create projectDir/build/reports for writing output */
         boolean createReportsDir = false
@@ -57,9 +57,9 @@ class TestingUtils {
      * Setup the project for testing purposes
      *
      * Configuration in setup() or individual test:
-     * (proj, j2objcHome, j2objcConfig) = TestingUtils.setupProject(new ProjectConfig(...))
+     * (proj, j2objcHome, dopplConfig) = TestingUtils.setupProject(new ProjectConfig(...))
      *
-     * @return [Project proj, String j2objcHome, J2objcConfig j2objcConfig] multiple assignment
+     * @return [Project proj, String j2objcHome, J2objcConfig dopplConfig] multiple assignment
      */
     static Object[] setupProject(ProjectConfig config) {
         // Builds temporary project
@@ -80,13 +80,13 @@ class TestingUtils {
 
         String j2objcHome = createLocalPropertiesAndJ2objcHome(proj, config.extraLocalProperties)
 
-        J2objcConfig j2objcConfig = null
+        DopplConfig j2objcConfig = null
         if (config.applyJ2objcPlugin) {
-            proj.pluginManager.apply(J2objcPlugin)
-            j2objcConfig = (J2objcConfig) proj.extensions.getByName('j2objcConfig')
+            proj.pluginManager.apply(DopplPlugin)
+            j2objcConfig = (DopplConfig) proj.extensions.getByName('dopplConfig')
         } else if (config.createJ2objcConfig) {
             // can't use the config from the J2objcPlugin:
-            j2objcConfig = proj.extensions.create('j2objcConfig', J2objcConfig, proj)
+            j2objcConfig = proj.extensions.create('dopplConfig', DopplConfig, proj)
         }
 
         if (config.createReportsDir) {
@@ -117,8 +117,8 @@ class TestingUtils {
         return j2objcHome
     }
 
-    static J2objcConfig setupProjectJ2objcConfig(ProjectConfig config) {
-        return setupProject(config)[2] as J2objcConfig
+    static DopplConfig setupProjectJ2objcConfig(ProjectConfig config) {
+        return setupProject(config)[2] as DopplConfig
     }
 
     static Set<? extends Task> getTaskDependencies(Project proj, String name) {

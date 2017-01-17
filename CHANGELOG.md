@@ -124,7 +124,7 @@ Code quality:
 Functionality:
 - Resources copied for unit tests and Xcode build
 - Xcode debug and release targets now load distinct generated libraries
-- j2objcConfig syntax standardized for translateClasspaths and translateSourcepaths
+- dopplConfig syntax standardized for translateClasspaths and translateSourcepaths
 - Helpful error message upon failure with full command line, stdout and sterr
 
 Code Quality:
