@@ -79,7 +79,7 @@ configurations {
 publishing {
     publications {
         ivy(IvyPublication) {
-            module 'dopplgradle'
+            module 'gradle'
             from components.java
         }
     }
