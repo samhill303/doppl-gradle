@@ -60,7 +60,7 @@ task wrapper(type: Wrapper) {
 }
 
 group = 'co.touchlab.doppl'
-version = "0.6.0"
+version = "0.6.1-SNAPSHOT"
 
 test {
     enabled = false

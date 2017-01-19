@@ -540,6 +540,7 @@ class TranslateTask extends DefaultTask {
                     args "-use-arc", ''
                 }*/
 //                args "--strip-reflection", ''
+                args "-Xuse-javac", ''
                 args "--package-prefixed-filenames", ''
                 if (!testTranslate) {
                     args "--output-header-mapping", new File(srcDir, project.name + ".mappings").absolutePath
