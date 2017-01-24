@@ -50,6 +50,8 @@ class DopplPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
 
+        DopplVersionManager.verifyJ2objcRequirements(project)
+
         //TODO: Figure out which plugin we're playing with an run it
         //currently you *need* to run the other one first, physically
         //getPluginManager().apply(JavaPlugin)

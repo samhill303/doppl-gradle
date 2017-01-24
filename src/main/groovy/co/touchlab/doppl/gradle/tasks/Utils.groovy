@@ -64,15 +64,9 @@ class Utils {
     static boolean failGradleVersion(GradleVersion gradleVersion, boolean throwIfUnsupported) {
         String errorMsg = ''
 
-        final GradleVersion minGradleVersion = GradleVersion.version('2.4')
-        if (gradleVersion.compareTo(GradleVersion.version('2.4')) < 0) {
+        final GradleVersion minGradleVersion = GradleVersion.version('2.8')
+        if (gradleVersion.compareTo(minGradleVersion) < 0) {
             errorMsg = "J2ObjC Gradle Plugin requires minimum Gradle version: $minGradleVersion"
-        }
-
-        final GradleVersion unsupportedGradleVersion = GradleVersion.version('2.9')
-        if (gradleVersion.compareTo(unsupportedGradleVersion) >= 0) {
-            errorMsg = "Please use Gradle 2.8 as $unsupportedGradleVersion is unsupported:\n" +
-                       "https://github.com/j2objc-contrib/j2objc-gradle/issues/568"
         }
 
         if (!errorMsg.isEmpty()) {
@@ -323,7 +317,7 @@ class Utils {
         String propFile = "${proj.rootDir.absolutePath}/local.properties"
         // This can be null in tests!
         DopplConfig config = DopplConfig.from(proj)
-        String ver = config == null ? '(unknown version)' : config.explicitJ2objcVersion
+        String ver = DopplConfig.findVersionString(proj, Utils.j2objcHome(proj))
         String message = ">>>>>>>>>>>>>>>> J2ObjC Tool Configuration Failure <<<<<<<<<<<<<<<<\n" +
                          "$preamble\n" +
                          "\n" +

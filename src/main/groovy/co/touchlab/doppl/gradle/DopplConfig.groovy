@@ -47,8 +47,6 @@ class DopplConfig {
 
         destDopplFolder = new File(project.buildDir, 'doppl').absolutePath
         dopplDependencyExploded = new File(project.buildDir, 'dopplDependencyExploded').absolutePath
-
-        foundJ2objcVersion = findVersionString(Utils.j2objcHome(project))
     }
 
     /**
@@ -57,13 +55,6 @@ class DopplConfig {
     String destDopplFolder = null
 
     String dopplDependencyExploded = null
-
-    /**
-     * Exact required version of j2objc.
-     */
-    String explicitJ2objcVersion = '1.2'
-
-    String foundJ2objcVersion = null;
 
     /**
      * Where to assemble generated main libraries.
@@ -77,7 +68,7 @@ class DopplConfig {
     boolean useArc = false;
     boolean includeJavaSource = false;
 
-    boolean checkJ2objcVersionExplicit = false;
+    boolean checkJ2objcVersionExplicit = true;
 
     String mappingsInput = null;
     String copyMainOutput = null;
@@ -296,44 +287,7 @@ class DopplConfig {
         translateSourceMapping.put(before, after)
     }
 
-    //KPG: Find place to call this
-    protected void verifyJ2objcRequirements() {
-
-        /*if (!Utils.isAtLeastVersion(j2objcVersion, MIN_SUPPORTED_J2OBJC_VERSION)) {
-            String requestedVersion = j2objcVersion
-            // j2objcVersion is used for instructing the user how to install j2objc
-            // so we should use the version we need, not the bad one the user requested.
-            j2objcVersion = MIN_SUPPORTED_J2OBJC_VERSION
-            Utils.throwJ2objcConfigFailure(project,
-                    "Must use at least J2ObjC version $MIN_SUPPORTED_J2OBJC_VERSION; you requested $requestedVersion.")
-        }*/
-
-        // Make sure we have *some* J2ObjC distribution identified.
-        // This will throw a proper out-of-box error if misconfigured.
-        String j2objcHome = Utils.j2objcHome(project)
-
-        // Verify that underlying J2ObjC binary exists at all.
-        File j2objcJar = Utils.j2objcJar(project)
-        if (!j2objcJar.exists()) {
-            Utils.throwJ2objcConfigFailure(project, "J2ObjC binary does not exist at ${j2objcJar.absolutePath}.")
-        }
-
-        //KPG: Should do a more robust check, but at this point you're either on the latest or you'll have problems
-        if(checkJ2objcVersionExplicit)
-        {
-            checkJ2objcVersion(j2objcHome)
-        }
-    }
-
-    private void checkJ2objcVersion(String j2objcHome) {
-        if (foundJ2objcVersion != "j2objc $explicitJ2objcVersion".toString()) {
-            // Note that actualVersionString will usually already have the word 'j2objc' in it.
-            Utils.throwJ2objcConfigFailure(project,
-                    "Found $foundJ2objcVersion at $j2objcHome, J2ObjC v$explicitJ2objcVersion required.")
-        }
-    }
-
-    private String findVersionString(String j2objcHome) {
+    public static String findVersionString(Project project, String j2objcHome) {
         String j2objcExecutable = "$j2objcHome/j2objc"
 
         ByteArrayOutputStream stdout = new ByteArrayOutputStream()
@@ -359,7 +313,9 @@ class DopplConfig {
         }
         // Yes, J2ObjC uses stderr to output the version.
         String actualVersionString = stderr.toString().trim()
-        actualVersionString
+        if(actualVersionString.startsWith("j2objc "))
+            actualVersionString = actualVersionString.substring("j2objc ".length())
+        return actualVersionString
     }
 
     // Provides a subset of "args" interface from project.exec as implemented by ExecHandleBuilder:

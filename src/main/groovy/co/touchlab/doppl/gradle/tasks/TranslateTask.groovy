@@ -42,11 +42,6 @@ import org.gradle.api.tasks.incremental.InputFileDetails
 @CompileStatic
 class TranslateTask extends DefaultTask {
 
-    @SuppressWarnings("GroovyUnusedDeclaration")
-    @Input String getJ2objcVersion() {
-        return DopplConfig.from(project).foundJ2objcVersion
-    }
-
     // Source files part of the Java main sourceSet.
     @InputFiles
     FileCollection getMainSrcFiles() {
