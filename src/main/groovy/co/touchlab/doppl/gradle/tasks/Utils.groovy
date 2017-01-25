@@ -426,7 +426,7 @@ class Utils {
                 return file.getAbsolutePath()
             }
         }
-        throw new IllegalArgumentException("No jar found in doppl directory")
+        throw new IllegalArgumentException("No jar found in doppl directory ("+ libDirBase.getPath() +")")
     }
 
     public static String findDopplLibraryMappings(File dopplDir) {
