@@ -17,8 +17,8 @@
 package co.touchlab.doppl.gradle.tasks
 
 import co.touchlab.doppl.gradle.DependencyResolver
-import co.touchlab.doppl.gradle.DopplDependency
 import co.touchlab.doppl.gradle.DopplConfig
+import co.touchlab.doppl.gradle.DopplDependency
 import co.touchlab.doppl.gradle.PlatformSpecificProvider
 import co.touchlab.doppl.gradle.TryThingsPlugin
 import groovy.transform.CompileStatic
@@ -35,6 +35,7 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import org.gradle.api.tasks.incremental.InputFileDetails
+import org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler
 
 /**
  * Translation task for Java to Objective-C using j2objc tool.
@@ -45,7 +46,7 @@ class TranslateTask extends DefaultTask {
     // Source files part of the Java main sourceSet.
     @InputFiles
     FileCollection getMainSrcFiles() {
-        return allSourceFor('main', DopplConfig.from(project).generatedSourceDirs)
+        return allSourceFor(DopplConfig.from(project).generatedSourceDirs, 'main'/*, 'objectServer'*/)
     }
 
     Set<File> getMainSrcDirs() {
@@ -73,7 +74,7 @@ class TranslateTask extends DefaultTask {
     // Source files part of the Java test sourceSet.
     @InputFiles
     FileCollection getTestSrcFiles() {
-        return allSourceFor('test', DopplConfig.from(project).generatedTestSourceDirs)
+        return allSourceFor(DopplConfig.from(project).generatedTestSourceDirs, 'test')
     }
 
     HashSet<File> getExtraGeneratedSourceFolders() {
@@ -162,10 +163,14 @@ class TranslateTask extends DefaultTask {
         }
     }
 
-    private FileCollection allSourceFor(String sourceSetName, List<String> generatedSourceDirs) {
+    private FileCollection allSourceFor(List<String> generatedSourceDirs, String... sourceSetNames) {
 
-        FileTree allFiles = Utils.srcSet(project, sourceSetName, 'java')
-        allFiles = allFiles.plus(Utils.javaTrees(project, generatedSourceDirs))
+        FileTree allFiles = Utils.javaTrees(project, generatedSourceDirs)
+        for (String sourceSetName : sourceSetNames) {
+            def set = Utils.srcSet(project, sourceSetName, 'java')
+            if(set != null)
+                allFiles = allFiles.plus(set)
+        }
 
         def folders = getExtraGeneratedSourceFolders()
         for (File folder : folders) {
@@ -179,7 +184,93 @@ class TranslateTask extends DefaultTask {
         return Utils.mapSourceFiles(project, allFiles, getTranslateSourceMapping())
     }
 
+    private File goDecompile()
+    {
+        File dopplDecompileSourceDir = new File(project.buildDir, "dopplDecompileSource")
+        dopplDecompileSourceDir.mkdirs()
 
+        List<String> generatedSourceDirs = new ArrayList<>();//DopplConfig.from(project).generatedClassDirs;
+
+        def dopplConfig = DopplConfig.from(project)
+
+        if(dopplConfig.decompilePath != null)
+        {
+            generatedSourceDirs.add(dopplConfig.decompilePath)
+        }
+        else
+        {
+            generatedSourceDirs.addAll(dopplConfig.generatedClassDirs)
+        }
+
+        File dopplDecompileBinaryCopyDir = new File(project.buildDir, "dopplDecompileBinaryCopy")
+        dopplDecompileBinaryCopyDir.mkdirs()
+
+        List<String> args = new ArrayList<>();
+        args.add(new File(project.projectDir, dopplConfig.decompilePath).getPath());
+        args.add(dopplDecompileBinaryCopyDir.getPath());
+//        args.add(dopplDecompileSourceDir.getPath());
+
+        ConsoleDecompiler.main(args.toArray(new String[args.size()]));
+
+
+
+        List<String> asdf = new ArrayList<>()
+        asdf.add("build/dopplDecompileBinaryCopy")
+        FileTree allFiles = Utils.javaTrees(project, asdf).matching(dopplConfig.decompilePattern)
+
+        Set<File> sourceFiles = allFiles.getFiles()
+
+        logger.info("TRACER: found file count "+ sourceFiles.size())
+
+        for (File sourceFile : sourceFiles) {
+
+            String classNamePackage = null;
+
+            String classFilePath = sourceFile.getPath()
+            for (String classPathBase : asdf) {
+                if(classFilePath.contains(classPathBase))
+                {
+                    if(classNamePackage != null)
+                        throw new IllegalStateException("decompile matching multiple bases");
+
+                    classNamePackage = classFilePath.substring(classFilePath.indexOf(classPathBase) + classPathBase.length());
+                }
+            }
+
+            if(classNamePackage == null)
+                throw new IllegalStateException("no class base matched for decompile");
+
+            if(classNamePackage.startsWith("/"))
+                classNamePackage = classNamePackage.substring(1);
+
+//            if(classNamePackage.endsWith(".class"))
+//                classNamePackage = classNamePackage.substring(0, classNamePackage.lastIndexOf(".class")) + ".java";
+
+            File outfile = new File(dopplDecompileSourceDir, classNamePackage);
+
+            outfile.getParentFile().mkdirs();
+
+            if(outfile.exists() && outfile.lastModified() > sourceFile.lastModified())
+                break;
+
+            byte [] buf =new byte[2048];
+            FileOutputStream outp = new FileOutputStream(outfile)
+            FileInputStream inp = new FileInputStream(sourceFile)
+
+            try {
+                int read;
+
+                while ((read = inp.read(buf)) > -1) {
+                    outp.write(buf, 0, read)
+                }
+            } finally {
+                outp.close()
+                inp.close()
+            }
+
+        }
+        return dopplDecompileSourceDir
+    }
 
     @TaskAction
     void translate(IncrementalTaskInputs inputs) {
@@ -270,9 +361,49 @@ class TranslateTask extends DefaultTask {
             }
         }
 
+        List<File> translateSourceDirs = new ArrayList<>(getMainSrcDirs());
+
+        logger.info("FileList-Before: "+ debugFileList(mainSrcFilesChanged))
+
+        if(dopplConfig.decompilePattern != null) {
+            File decompileDir = goDecompile()
+            if(decompileDir != null)
+            {
+                List<File> alls = new ArrayList<>()
+                recursiveGrab(decompileDir, alls)
+
+                logger.info("DecompiledTranslate-init: "+ decompileDir.getPath())
+                FileCollection allTheFiles = project.files(alls)
+                mainSrcFilesChanged.add(allTheFiles)
+                for (File file : allTheFiles.files) {
+                    logger.info("DecompiledTranslate: "+ file.getPath())
+                }
+
+                mainSrcFilesChanged = mainSrcFilesChanged -
+                                      project.files(
+                                              ///Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/CatRealmProxy.java
+                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/DogRealmProxyInterface.java"),
+                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/DefaultRealmModuleMediator.java"),
+                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/CatRealmProxy.java"),
+                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/CatRealmProxyInterface.java"),
+                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/PersonRealmProxy.java"),
+                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/DefaultRealmModule.java"),
+                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/PersonRealmProxyInterface.java"),
+                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/DogRealmProxy.java"),
+                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/src/main/java/io/realm/examples/intro/IntroExamplePresenter.java"),
+                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/src/main/java/io/realm/examples/intro/model/Cat.java"),
+                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/src/main/java/io/realm/examples/intro/model/Dog.java"),
+                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/src/main/java/io/realm/examples/intro/model/Person.java")
+                                      )
+            }
+        }
+
+        logger.info("FileList-After: "+ debugFileList(mainSrcFilesChanged))
+
         def prefixMap = getPrefixes()
+
         doTranslate(
-                project.files(getMainSrcDirs().toArray()),
+                project.files(translateSourceDirs.toArray()),
                 srcMainObjcDir,
                 srcGenMainDir,
                 translateArgs,
@@ -391,6 +522,45 @@ class TranslateTask extends DefaultTask {
         }
     }
 
+    String debugFileList(FileCollection files)
+    {
+        Collection<File> asdf = files.files
+        StringBuilder sb = new StringBuilder()
+        for (File f : asdf) {
+            if(sb.length())
+                sb.append(", ")
+            sb.append(f.getPath())
+        }
+
+        return sb.toString()
+    }
+
+    String debugStringList(Collection<String> files)
+    {
+        StringBuilder sb = new StringBuilder()
+        for (String f : files) {
+            if(sb.length())
+                sb.append(", ")
+            sb.append(f)
+        }
+
+        return sb.toString()
+    }
+
+    void recursiveGrab(File dir, List<File> files)
+    {
+        if(dir.isDirectory())
+        {
+            File[] dirFiles = dir.listFiles()
+            for (File f : dirFiles) {
+                if(f.isDirectory())
+                    recursiveGrab(f, files)
+                else if(f.getName().endsWith(".java"))
+                    files.add(f);
+            }
+        }
+    }
+
     int deleteRemovedFiles(List<String> removedFileNames, File dir) {
         FileCollection destFiles = project.files(project.fileTree(
                 dir: dir, includes: ["**/*.h", "**/*.m"]))
@@ -428,11 +598,17 @@ class TranslateTask extends DefaultTask {
             })
         }
 
-        int num = srcFilesToTranslate.getFiles().size()
+
+        Set<File> files = srcFilesToTranslate.getFiles()
+        int num = files.size()
         logger.info("Translating $num files with j2objc...")
-        if (srcFilesToTranslate.getFiles().size() == 0) {
+        if (files.size() == 0) {
             logger.info("No files to translate; skipping j2objc execution")
             return
+        }
+
+        for (File f : files) {
+            logger.info("Translating ${f.getPath()}")
         }
 
         String j2objcExecutable = "${getJ2objcHome()}/j2objc"
@@ -454,6 +630,8 @@ class TranslateTask extends DefaultTask {
         // TODO: comment explaining ${project.buildDir}/classes
         String classpathArg = Utils.joinedPathArg(classpathFiles) +
                               Utils.pathSeparator() + "${project.buildDir}/classes"
+
+        logger.info("srcFilesArgs-a: "+ debugFileList(srcFilesToTranslate))
 
         // Source files arguments
         List<String> srcFilesArgs = []
@@ -519,6 +697,8 @@ class TranslateTask extends DefaultTask {
                 }
             }
         }
+
+        logger.info("srcFilesArgs-b: "+ debugStringList(srcFilesArgs))
 
         try {
             Utils.projectExec(project, stdout, stderr, null, {

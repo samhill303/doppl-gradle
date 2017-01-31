@@ -43,7 +43,12 @@ class DopplConfig {
 
         // Provide defaults for assembly output locations.
         destLibDir = new File(project.buildDir, 'j2objcOutputs/lib').absolutePath
+
         destJavaJarDir = new File(project.buildDir, 'libs').absolutePath
+        /*if(Utils.isJavaTypeProject(project))
+            destJavaJarDir = new File(project.buildDir, 'libs').absolutePath
+        else if(Utils.isAndroidTypeProject(project))
+            destJavaJarDir = new File(project.buildDir, 'outputs/aar').absolutePath*/
 
         destDopplFolder = new File(project.buildDir, 'doppl').absolutePath
         dopplDependencyExploded = new File(project.buildDir, 'dopplDependencyExploded').absolutePath
@@ -86,6 +91,7 @@ class DopplConfig {
     // However, we cannot actually access sourceSets.main.output.classesDir here, because
     // the Java plugin convention may not be applied at this time.
     List<String> generatedSourceDirs = ['build/classes/main', 'build/generated/source/apt/main', 'build/generated/source/apt/debug']
+    List<String> generatedClassDirs = ['build/classes/main', 'build/intermediates/classes/debug']
     List<String> generatedTestSourceDirs = ['build/classes/test', 'build/generated/source/apt/test']
 
     /**
@@ -146,6 +152,9 @@ class DopplConfig {
      * configure.
      */
     PatternSet translatePattern = null
+
+    String decompilePath = null
+    PatternSet decompilePattern = null
 
     //KPG: Review if this is still useful
     /**
@@ -277,6 +286,13 @@ class DopplConfig {
             translatePattern = new PatternSet()
         }
         return ConfigureUtil.configure(cl, translatePattern)
+    }
+
+    PatternSet decompilePattern(@DelegatesTo(strategy = Closure.DELEGATE_FIRST, value = PatternSet) Closure cl) {
+        if (decompilePattern == null) {
+            decompilePattern = new PatternSet()
+        }
+        return ConfigureUtil.configure(cl, decompilePattern)
     }
 
     /**

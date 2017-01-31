@@ -48,10 +48,10 @@ dependencies {
     compile  "org.jetbrains.kotlin:kotlin-stdlib:1.0.5-2"
     compile  "org.jetbrains.kotlin:kotlin-reflect:1.0.5-2"
 
+    compile 'yo.fernflower:fernflower:1.2.3'
     testCompile 'junit:junit:4.11'
     // https://mvnrepository.com/artifact/org.testng/testng
     testCompile group: 'org.testng', name: 'testng', version: '6.10'
-
 }
 
 task wrapper(type: Wrapper) {

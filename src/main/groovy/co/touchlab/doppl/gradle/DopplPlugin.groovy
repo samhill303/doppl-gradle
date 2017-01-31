@@ -37,16 +37,6 @@ class DopplPlugin implements Plugin<Project> {
     public static final String TASK_DOPPL_ASSEMBLY = 'dopplAssembly'
     public static final String TASK_DOPPL_ARCHIVE = 'dopplArchive'
 
-    static boolean hasOneOfTheFollowingPlugins(Project project, String... pluginIds)
-    {
-        for (String pluginId : pluginIds) {
-            if(project.plugins.hasPlugin(pluginId))
-                return true;
-        }
-
-        return false;
-    }
-
     @Override
     void apply(Project project) {
 
@@ -56,9 +46,9 @@ class DopplPlugin implements Plugin<Project> {
         //currently you *need* to run the other one first, physically
         //getPluginManager().apply(JavaPlugin)
 
-        boolean javaTypeProject = hasOneOfTheFollowingPlugins(project, 'java')
+        boolean javaTypeProject = Utils.isJavaTypeProject(project);
 
-        boolean androidTypeProject = hasOneOfTheFollowingPlugins(project, "com.android.application", "android", "com.android.test", "android-library", "com.android.library")
+        boolean androidTypeProject = Utils.isAndroidTypeProject(project);
 
         if(!javaTypeProject && !androidTypeProject) {
             throw new ProjectConfigurationException("Doppl depends on running java or one of the Android gradle plugins. None of those were found. If you have one, please make sure to apply doppl AFTER the other plugin(s)", null)

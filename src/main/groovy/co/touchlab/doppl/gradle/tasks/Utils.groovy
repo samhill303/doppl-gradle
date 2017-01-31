@@ -355,7 +355,7 @@ class Utils {
 
     static Set<File> srcDirs(Project proj, String sourceSetName, String fileType){
         assert fileType == 'java' || fileType == 'resources'
-        assert sourceSetName == 'main' || sourceSetName == 'test'
+//        assert sourceSetName == 'main' || sourceSetName == 'test'
 
         boolean javaTypeProject = proj.plugins.hasPlugin('java')
 
@@ -373,7 +373,7 @@ class Utils {
 //        throwIfNoJavaPlugin(proj)
 
         assert fileType == 'java' || fileType == 'resources'
-        assert sourceSetName == 'main' || sourceSetName == 'test'
+//        assert sourceSetName == 'main' || sourceSetName == 'test'
 
         boolean javaTypeProject = proj.plugins.hasPlugin('java')
 
@@ -392,6 +392,9 @@ class Utils {
         throwIfNoJavaPlugin(proj)
         JavaPluginConvention javaConvention = proj.getConvention().getPlugin(JavaPluginConvention)
         SourceSet sourceSet = javaConvention.sourceSets.findByName(sourceSetName)
+        if(sourceSet == null)
+            return null;
+
         // For standard fileTypes 'java' and 'resources,' per contract this cannot be null.
         SourceDirectorySet srcDirSet = fileType == 'java' ? sourceSet.java : sourceSet.resources
         return srcDirSet
@@ -402,6 +405,13 @@ class Utils {
         List<? extends FileTree> trees =
             treePaths.collect({ String treePath -> proj.fileTree(dir: treePath, includes: ["**/*.java"]) })
         return new UnionFileTree("javaTrees_j2objc", (Collection<? extends FileTree>) trees)
+    }
+
+    // Add list of java path to a FileCollection as a FileTree
+    static FileTree classTrees(Project proj, List<String> treePaths) {
+        List<? extends FileTree> trees =
+                treePaths.collect({ String treePath -> proj.fileTree(dir: treePath, includes: ["**/*.class"]) })
+        return new UnionFileTree("classTrees_j2objc", (Collection<? extends FileTree>) trees)
     }
 
     static List<String> j2objcLibs(String j2objcHome,
@@ -427,6 +437,24 @@ class Utils {
             }
         }
         throw new IllegalArgumentException("No jar found in doppl directory ("+ libDirBase.getPath() +")")
+    }
+
+    public static boolean isJavaTypeProject(Project project){
+        return hasOneOfTheFollowingPlugins(project, 'java');
+    }
+
+    public static boolean isAndroidTypeProject(Project project){
+        return hasOneOfTheFollowingPlugins(project, "com.android.application", "android", "com.android.test", "android-library", "com.android.library");
+    }
+
+    public static boolean hasOneOfTheFollowingPlugins(Project project, String... pluginIds)
+    {
+        for (String pluginId : pluginIds) {
+            if(project.plugins.hasPlugin(pluginId))
+                return true;
+        }
+
+        return false;
     }
 
     public static String findDopplLibraryMappings(File dopplDir) {
@@ -727,8 +755,8 @@ class Utils {
     @CompileStatic(TypeCheckingMode.SKIP)
     static ExecResult projectExec(
             Project proj,
-            ByteArrayOutputStream stdout,
-            ByteArrayOutputStream stderr,
+            OutputStream stdout,
+            OutputStream stderr,
             @Nullable String matchRegexOutputsRequired,
             @ClosureParams(value = SimpleType.class, options = "org.gradle.process.ExecSpec")
             @DelegatesTo(ExecSpec)
