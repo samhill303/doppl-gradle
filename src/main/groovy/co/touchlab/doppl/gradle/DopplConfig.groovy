@@ -43,12 +43,7 @@ class DopplConfig {
 
         // Provide defaults for assembly output locations.
         destLibDir = new File(project.buildDir, 'j2objcOutputs/lib').absolutePath
-
         destJavaJarDir = new File(project.buildDir, 'libs').absolutePath
-        /*if(Utils.isJavaTypeProject(project))
-            destJavaJarDir = new File(project.buildDir, 'libs').absolutePath
-        else if(Utils.isAndroidTypeProject(project))
-            destJavaJarDir = new File(project.buildDir, 'outputs/aar').absolutePath*/
 
         destDopplFolder = new File(project.buildDir, 'doppl').absolutePath
         dopplDependencyExploded = new File(project.buildDir, 'dopplDependencyExploded').absolutePath
@@ -91,8 +86,12 @@ class DopplConfig {
     // However, we cannot actually access sourceSets.main.output.classesDir here, because
     // the Java plugin convention may not be applied at this time.
     List<String> generatedSourceDirs = ['build/classes/main', 'build/generated/source/apt/main', 'build/generated/source/apt/debug']
-    List<String> generatedClassDirs = ['build/classes/main', 'build/intermediates/classes/debug']
     List<String> generatedTestSourceDirs = ['build/classes/test', 'build/generated/source/apt/test']
+
+    /**
+     * Some transforms will need to replace existing classes. These dirs are handled special.
+     */
+    List<String> overlaySourceDirs = new ArrayList<>();
 
     /**
      * Command line arguments for j2objc cycle_finder.
@@ -153,9 +152,6 @@ class DopplConfig {
      */
     PatternSet translatePattern = null
 
-    String decompilePath = null
-    PatternSet decompilePattern = null
-
     //KPG: Review if this is still useful
     /**
      * A mapping from source file names (in the project Java sourcesets) to alternate
@@ -187,6 +183,15 @@ class DopplConfig {
      */
     void generatedSourceDirs(String... generatedSourceDirs) {
         appendArgs(this.generatedSourceDirs, 'generatedSourceDirs', true, generatedSourceDirs)
+    }
+
+    /**
+     * Add generated source files directories, e.g. from dagger annotations.
+     *
+     * @param generatedSourceDirs adds generated source directories for j2objc translate
+     */
+    void overlaySourceDirs(String... overlaySourceDirs) {
+        this.overlaySourceDirs.addAll(overlaySourceDirs)
     }
 
     /**
@@ -288,13 +293,6 @@ class DopplConfig {
         return ConfigureUtil.configure(cl, translatePattern)
     }
 
-    PatternSet decompilePattern(@DelegatesTo(strategy = Closure.DELEGATE_FIRST, value = PatternSet) Closure cl) {
-        if (decompilePattern == null) {
-            decompilePattern = new PatternSet()
-        }
-        return ConfigureUtil.configure(cl, decompilePattern)
-    }
-
     /**
      * Adds a new source mapping.
      * @see #translateSourceMapping
@@ -321,11 +319,9 @@ class DopplConfig {
                 setErrorOutput stderr
             })
 
-        } catch (Exception exception) {  // NOSONAR
-            // Likely too old to understand -version,
-            // but include the error since it could be something else.
-            Utils.throwJ2objcConfigFailure(project, exception.toString() + "\n\n" +
-                                                    "J2ObjC binary at $j2objcHome failed version call.")
+        } catch (Exception exception) {
+            throw new RuntimeException(exception.toString() + "\n\n" +
+                                       "J2ObjC binary at $j2objcHome failed version call.", exception)
         }
         // Yes, J2ObjC uses stderr to output the version.
         String actualVersionString = stderr.toString().trim()

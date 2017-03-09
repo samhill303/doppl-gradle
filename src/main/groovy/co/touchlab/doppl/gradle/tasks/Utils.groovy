@@ -1,17 +1,5 @@
 /*
- * Copyright (c) 2015 the authors of j2objc-gradle (see AUTHORS file)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+
  */
 
 package co.touchlab.doppl.gradle.tasks
@@ -27,6 +15,7 @@ import groovy.util.logging.Slf4j
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Nullable
 import org.gradle.api.Project
+import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.CopySpec
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
@@ -54,7 +43,7 @@ class Utils {
     // TODO: ClassLoader.getResourceAsStream(), extract, chmod and then execute
 
     // Prevent construction of this class, confines usage to static methods
-    private Utils() { }
+    private Utils() {}
 
     static boolean failGradleVersion(boolean throwIfUnsupported) {
         return failGradleVersion(GradleVersion.current(), throwIfUnsupported)
@@ -80,7 +69,7 @@ class Utils {
     }
 
     static List<Integer> parseVersionComponents(String ver) {
-        return ver.tokenize('.').collect({String versionComponent ->
+        return ver.tokenize('.').collect({ String versionComponent ->
             try {
                 return Integer.parseInt(versionComponent)
             } catch (NumberFormatException nfe) {
@@ -113,6 +102,7 @@ class Utils {
      *
      * The setFakeOsNone() should be called in the test unit @After method to isolate test state.
      */
+
     @VisibleForTesting
     static void setFakeOSLinux() {
         fakeOSName = 'Linux'
@@ -231,12 +221,12 @@ class Utils {
     // Use camelCase and order alphabetically
     private static final List<String> PROPERTIES_VALID_KEYS =
             Collections.unmodifiableList(Arrays.asList(
-        'debug.enabled',
-        'enabledArchs',
-        'home',
-        'release.enabled',
-        'translateOnlyMode'
-    ))
+                    'debug.enabled',
+                    'enabledArchs',
+                    'home',
+                    'release.enabled',
+                    'translateOnlyMode'
+            ))
 
     private static final String PROPERTY_KEY_PREFIX = 'j2objc.'
 
@@ -290,19 +280,26 @@ class Utils {
     // MUST be used only in @Input getJ2objcHome() methods to ensure up-to-date checks are correct
     // @Input getJ2objcHome() method can be used freely inside the task action
     static String j2objcHome(Project proj) {
-        String j2objcHome = getLocalProperty(proj, 'home')
-        if (j2objcHome == null) {
-            j2objcHome = System.getenv("J2OBJC_HOME")
-        }
+        String j2objcHome = j2objcHomeOrNull(proj)
         if (j2objcHome == null) {
             throwJ2objcConfigFailure(proj, "J2ObjC Home not set.")
         }
         File j2objcHomeFile = new File(j2objcHome)
+
         if (!j2objcHomeFile.exists()) {
             throwJ2objcConfigFailure(proj, "J2ObjC Home directory not found, expected at $j2objcHome.")
         }
         // File removes trailing slashes cause problems with string concatenation logic
         return j2objcHomeFile.absolutePath
+    }
+
+    static String j2objcHomeOrNull(Project proj)
+    {
+        String j2objcHome = getLocalProperty(proj, 'home')
+        if (j2objcHome == null) {
+            j2objcHome = System.getenv("J2OBJC_HOME")
+        }
+        return j2objcHome
     }
 
     static File j2objcJar(Project proj) {
@@ -317,7 +314,9 @@ class Utils {
         String propFile = "${proj.rootDir.absolutePath}/local.properties"
         // This can be null in tests!
         DopplConfig config = DopplConfig.from(proj)
-        String ver = DopplConfig.findVersionString(proj, Utils.j2objcHome(proj))
+        String j2objcHomeDir = Utils.j2objcHomeOrNull(proj)
+        String ver = j2objcHomeDir == null ? "(unknown)" : DopplConfig.findVersionString(proj, j2objcHomeDir)
+
         String message = ">>>>>>>>>>>>>>>> J2ObjC Tool Configuration Failure <<<<<<<<<<<<<<<<\n" +
                          "$preamble\n" +
                          "\n" +
@@ -370,10 +369,7 @@ class Utils {
     // Retrieves the configured source directories from the Java plugin SourceSets.
     // This includes the files for all Java source within these directories.
     static FileTree srcSet(Project proj, String sourceSetName, String fileType) {
-//        throwIfNoJavaPlugin(proj)
-
         assert fileType == 'java' || fileType == 'resources'
-//        assert sourceSetName == 'main' || sourceSetName == 'test'
 
         boolean javaTypeProject = proj.plugins.hasPlugin('java')
 
@@ -401,17 +397,11 @@ class Utils {
     }
 
     // Add list of java path to a FileCollection as a FileTree
-    static FileTree javaTrees(Project proj, List<String> treePaths) {
-        List<? extends FileTree> trees =
+    static List<ConfigurableFileTree> javaTrees(Project proj, List<String> treePaths) {
+        List<ConfigurableFileTree> trees =
             treePaths.collect({ String treePath -> proj.fileTree(dir: treePath, includes: ["**/*.java"]) })
-        return new UnionFileTree("javaTrees_j2objc", (Collection<? extends FileTree>) trees)
-    }
-
-    // Add list of java path to a FileCollection as a FileTree
-    static FileTree classTrees(Project proj, List<String> treePaths) {
-        List<? extends FileTree> trees =
-                treePaths.collect({ String treePath -> proj.fileTree(dir: treePath, includes: ["**/*.class"]) })
-        return new UnionFileTree("classTrees_j2objc", (Collection<? extends FileTree>) trees)
+        return trees;
+//        return new UnionFileTree("javaTrees_j2objc", (Collection<? extends FileTree>) trees)
     }
 
     static List<String> j2objcLibs(String j2objcHome,
@@ -430,13 +420,29 @@ class Utils {
     public static String findDopplLibraryJar(File libDirBase) {
 
         def libDir = new File(libDirBase, "lib")
-        def files = libDir.listFiles()
+        String jarPath = findJarRecursive(libDir)
+        if(jarPath != null)
+            return jarPath
+        else
+            throw new IllegalArgumentException("No jar found in doppl directory ("+ libDirBase.getPath() +")")
+    }
+
+    private static String findJarRecursive(File dir)
+    {
+        File[] files = dir.listFiles()
         for (File file : files) {
-            if (!file.isDirectory() && file.getName().endsWith(".jar")) {
+            if(file.isDirectory())
+            {
+                String jarPath = findJarRecursive(file)
+                if(jarPath != null)
+                    return jarPath;
+            }
+            else if (file.getName().endsWith(".jar")) {
                 return file.getAbsolutePath()
             }
         }
-        throw new IllegalArgumentException("No jar found in doppl directory ("+ libDirBase.getPath() +")")
+
+        return null;
     }
 
     public static boolean isJavaTypeProject(Project project){

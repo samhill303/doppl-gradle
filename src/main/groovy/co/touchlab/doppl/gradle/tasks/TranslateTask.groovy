@@ -1,17 +1,5 @@
 /*
- * Copyright (c) 2015 the authors of j2objc-gradle (see AUTHORS file)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+
  */
 
 package co.touchlab.doppl.gradle.tasks
@@ -24,9 +12,11 @@ import co.touchlab.doppl.gradle.TryThingsPlugin
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileCollection
+import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
@@ -35,7 +25,6 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import org.gradle.api.tasks.incremental.InputFileDetails
-import org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler
 
 /**
  * Translation task for Java to Objective-C using j2objc tool.
@@ -165,7 +154,8 @@ class TranslateTask extends DefaultTask {
 
     private FileCollection allSourceFor(List<String> generatedSourceDirs, String... sourceSetNames) {
 
-        FileTree allFiles = Utils.javaTrees(project, generatedSourceDirs)
+        FileTree allFiles = new UnionFileTree("asdf", (Collection<? extends FileTree>)Utils.javaTrees(project, generatedSourceDirs))
+
         for (String sourceSetName : sourceSetNames) {
             def set = Utils.srcSet(project, sourceSetName, 'java')
             if(set != null)
@@ -177,99 +167,53 @@ class TranslateTask extends DefaultTask {
             allFiles = allFiles.plus(project.fileTree(folder))
         }
 
-        if (DopplConfig.from(project).translatePattern != null) {
-            allFiles = allFiles.matching(DopplConfig.from(project).translatePattern)
+        DopplConfig dopplConfig = DopplConfig.from(project)
+
+        List<String> overlaySourceDirs = dopplConfig.overlaySourceDirs
+        Set<String> overlayClasses = new HashSet<>()
+        List<FileTree> overlayTrees = new ArrayList<>()
+
+        for (String sd  : overlaySourceDirs) {
+            ConfigurableFileTree fileTree = project.fileTree(dir: sd, includes: ["**/*.java"])
+            FileTree matchingFileTree = fileTree.matching(dopplConfig.translatePattern)
+
+            for (File overlayFile : matchingFileTree.files) {
+                overlayClasses.add(overlayFile.getPath().substring(fileTree.getDir().getPath().length()))
+            }
+
+            overlayTrees.add(matchingFileTree)
         }
 
-        return Utils.mapSourceFiles(project, allFiles, getTranslateSourceMapping())
-    }
+        Set<File> allFilesFiles = allFiles.files
+        Set<File> toRemove = new HashSet<>()
 
-    private File goDecompile()
-    {
-        File dopplDecompileSourceDir = new File(project.buildDir, "dopplDecompileSource")
-        dopplDecompileSourceDir.mkdirs()
+        //Yeah, this is not great. TODO: better matching algo
+        for (File af : allFilesFiles) {
 
-        List<String> generatedSourceDirs = new ArrayList<>();//DopplConfig.from(project).generatedClassDirs;
-
-        def dopplConfig = DopplConfig.from(project)
-
-        if(dopplConfig.decompilePath != null)
-        {
-            generatedSourceDirs.add(dopplConfig.decompilePath)
-        }
-        else
-        {
-            generatedSourceDirs.addAll(dopplConfig.generatedClassDirs)
-        }
-
-        File dopplDecompileBinaryCopyDir = new File(project.buildDir, "dopplDecompileBinaryCopy")
-        dopplDecompileBinaryCopyDir.mkdirs()
-
-        List<String> args = new ArrayList<>();
-        args.add(new File(project.projectDir, dopplConfig.decompilePath).getPath());
-        args.add(dopplDecompileBinaryCopyDir.getPath());
-//        args.add(dopplDecompileSourceDir.getPath());
-
-        ConsoleDecompiler.main(args.toArray(new String[args.size()]));
-
-
-
-        List<String> asdf = new ArrayList<>()
-        asdf.add("build/dopplDecompileBinaryCopy")
-        FileTree allFiles = Utils.javaTrees(project, asdf).matching(dopplConfig.decompilePattern)
-
-        Set<File> sourceFiles = allFiles.getFiles()
-
-        logger.info("TRACER: found file count "+ sourceFiles.size())
-
-        for (File sourceFile : sourceFiles) {
-
-            String classNamePackage = null;
-
-            String classFilePath = sourceFile.getPath()
-            for (String classPathBase : asdf) {
-                if(classFilePath.contains(classPathBase))
+            String sourceFilePath = af.getPath()
+            for (String overlayClassFilenameSuffix : overlayClasses) {
+                if(sourceFilePath.endsWith(overlayClassFilenameSuffix))
                 {
-                    if(classNamePackage != null)
-                        throw new IllegalStateException("decompile matching multiple bases");
-
-                    classNamePackage = classFilePath.substring(classFilePath.indexOf(classPathBase) + classPathBase.length());
+                    toRemove.add(af)
                 }
             }
-
-            if(classNamePackage == null)
-                throw new IllegalStateException("no class base matched for decompile");
-
-            if(classNamePackage.startsWith("/"))
-                classNamePackage = classNamePackage.substring(1);
-
-//            if(classNamePackage.endsWith(".class"))
-//                classNamePackage = classNamePackage.substring(0, classNamePackage.lastIndexOf(".class")) + ".java";
-
-            File outfile = new File(dopplDecompileSourceDir, classNamePackage);
-
-            outfile.getParentFile().mkdirs();
-
-            if(outfile.exists() && outfile.lastModified() > sourceFile.lastModified())
-                break;
-
-            byte [] buf =new byte[2048];
-            FileOutputStream outp = new FileOutputStream(outfile)
-            FileInputStream inp = new FileInputStream(sourceFile)
-
-            try {
-                int read;
-
-                while ((read = inp.read(buf)) > -1) {
-                    outp.write(buf, 0, read)
-                }
-            } finally {
-                outp.close()
-                inp.close()
-            }
-
         }
-        return dopplDecompileSourceDir
+
+        for (FileTree tree : overlayTrees) {
+            allFiles.add(tree)
+        }
+
+        FileCollection resultCollection = allFiles;
+
+        if (dopplConfig.translatePattern != null) {
+            resultCollection = resultCollection.matching(dopplConfig.translatePattern)
+        }
+
+        resultCollection = resultCollection.filter {f ->
+            !toRemove.contains(f)
+        }
+
+        return Utils.mapSourceFiles(project, resultCollection, getTranslateSourceMapping())
     }
 
     @TaskAction
@@ -364,39 +308,6 @@ class TranslateTask extends DefaultTask {
         List<File> translateSourceDirs = new ArrayList<>(getMainSrcDirs());
 
         logger.info("FileList-Before: "+ debugFileList(mainSrcFilesChanged))
-
-        if(dopplConfig.decompilePattern != null) {
-            File decompileDir = goDecompile()
-            if(decompileDir != null)
-            {
-                List<File> alls = new ArrayList<>()
-                recursiveGrab(decompileDir, alls)
-
-                logger.info("DecompiledTranslate-init: "+ decompileDir.getPath())
-                FileCollection allTheFiles = project.files(alls)
-                mainSrcFilesChanged.add(allTheFiles)
-                for (File file : allTheFiles.files) {
-                    logger.info("DecompiledTranslate: "+ file.getPath())
-                }
-
-                mainSrcFilesChanged = mainSrcFilesChanged -
-                                      project.files(
-                                              ///Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/CatRealmProxy.java
-                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/DogRealmProxyInterface.java"),
-                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/DefaultRealmModuleMediator.java"),
-                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/CatRealmProxy.java"),
-                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/CatRealmProxyInterface.java"),
-                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/PersonRealmProxy.java"),
-                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/DefaultRealmModule.java"),
-                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/PersonRealmProxyInterface.java"),
-                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/build/generated/source/apt/debug/io/realm/DogRealmProxy.java"),
-                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/src/main/java/io/realm/examples/intro/IntroExamplePresenter.java"),
-                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/src/main/java/io/realm/examples/intro/model/Cat.java"),
-                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/src/main/java/io/realm/examples/intro/model/Dog.java"),
-                                              new File("/Users/kgalligan/devel-doppl/realm-java/examples/introExample/src/main/java/io/realm/examples/intro/model/Person.java")
-                                      )
-            }
-        }
 
         logger.info("FileList-After: "+ debugFileList(mainSrcFilesChanged))
 

@@ -23,6 +23,7 @@ import org.gradle.api.InvalidUserDataException
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileCollection
+import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
@@ -50,7 +51,7 @@ class CycleFinderTask extends DefaultTask {
         // solely an input to this method, which is already an input (via @InputFiles).
         FileTree allFiles = Utils.srcSet(project, 'main', 'java')
 //        allFiles = allFiles.plus(Utils.srcSet(project, 'test', 'java'))
-        FileTree ret = allFiles.plus(Utils.javaTrees(project, getGeneratedSourceDirs()))
+        FileTree ret = allFiles.plus(new UnionFileTree("all the codez", (Collection<? extends FileTree>)Utils.javaTrees(project, getGeneratedSourceDirs())))
         if (DopplConfig.from(project).translatePattern != null) {
             ret = allFiles.matching(DopplConfig.from(project).translatePattern)
         }
