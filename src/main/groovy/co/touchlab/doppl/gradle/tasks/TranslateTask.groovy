@@ -4,17 +4,17 @@
 
 package co.touchlab.doppl.gradle.tasks
 
+import co.touchlab.doppl.gradle.BuildTypeProvider
 import co.touchlab.doppl.gradle.DependencyResolver
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
-import co.touchlab.doppl.gradle.PlatformSpecificProvider
-import co.touchlab.doppl.gradle.TryThingsPlugin
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
+import org.gradle.api.file.FileTreeElement
 import org.gradle.api.internal.file.UnionFileCollection
 import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.tasks.Input
@@ -25,6 +25,8 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import org.gradle.api.tasks.incremental.InputFileDetails
+import org.gradle.api.tasks.util.PatternFilterable
+import org.gradle.api.tasks.util.PatternSet
 
 /**
  * Translation task for Java to Objective-C using j2objc tool.
@@ -32,19 +34,20 @@ import org.gradle.api.tasks.incremental.InputFileDetails
 @CompileStatic
 class TranslateTask extends DefaultTask {
 
+    BuildTypeProvider _buildTypeProvider;
+
     // Source files part of the Java main sourceSet.
     @InputFiles
     FileCollection getMainSrcFiles() {
-        return allSourceFor(DopplConfig.from(project).generatedSourceDirs, 'main'/*, 'objectServer'*/)
+        List<FileTree> sourceSets = _buildTypeProvider.sourceSets(project)
+        return replaceOverlayFilterJava(sourceSets)
     }
 
     Set<File> getMainSrcDirs() {
         Set<File> allFiles = new HashSet<>()
-        for (String genPath : DopplConfig.from(project).generatedSourceDirs) {
-            allFiles.add(project.file(genPath))
+        for (FileTree genPath : _buildTypeProvider.sourceSets(project)) {
+            allFiles.add(Utils.dirFromFileTree(genPath))
         }
-        allFiles.addAll(Utils.srcDirs(project, 'main', 'java'))
-        allFiles.addAll(getExtraGeneratedSourceFolders())
         return allFiles
     }
 
@@ -52,10 +55,9 @@ class TranslateTask extends DefaultTask {
         Set<File> allFiles = new HashSet<>()
         allFiles.addAll(getMainSrcDirs())
 
-        for (String genPath : DopplConfig.from(project).generatedTestSourceDirs) {
-            allFiles.add(project.file(genPath))
+        for (FileTree genPath : _buildTypeProvider.testSourceSets(project)) {
+            allFiles.add(Utils.dirFromFileTree(genPath))
         }
-        allFiles.addAll(Utils.srcDirs(project, 'test', 'java'))
 
         return allFiles
     }
@@ -63,12 +65,8 @@ class TranslateTask extends DefaultTask {
     // Source files part of the Java test sourceSet.
     @InputFiles
     FileCollection getTestSrcFiles() {
-        return allSourceFor(DopplConfig.from(project).generatedTestSourceDirs, 'test')
-    }
-
-    HashSet<File> getExtraGeneratedSourceFolders() {
-        return platformSpecificProvider == null ? new HashSet<File>() : platformSpecificProvider
-                .findGeneratedSourceDirs(project)
+        List<FileTree> sourceSets = _buildTypeProvider.testSourceSets(project)
+        return replaceOverlayFilterJava(sourceSets)
     }
 
     @Input
@@ -141,33 +139,13 @@ class TranslateTask extends DefaultTask {
             return project.file(output)
     }
 
-    PlatformSpecificProvider platformSpecificProvider
+    private FileCollection replaceOverlayFilterJava(List<FileTree> sourceDirs) {
 
-    TranslateTask() {
-        boolean javaTypeProject = project.plugins.hasPlugin('java')
-        if (javaTypeProject) {
-            platformSpecificProvider = null
-        } else {
-            platformSpecificProvider = new TryThingsPlugin()
-        }
-    }
-
-    private FileCollection allSourceFor(List<String> generatedSourceDirs, String... sourceSetNames) {
-
-        FileTree allFiles = new UnionFileTree("asdf", (Collection<? extends FileTree>)Utils.javaTrees(project, generatedSourceDirs))
-
-        for (String sourceSetName : sourceSetNames) {
-            def set = Utils.srcSet(project, sourceSetName, 'java')
-            if(set != null)
-                allFiles = allFiles.plus(set)
-        }
-
-        def folders = getExtraGeneratedSourceFolders()
-        for (File folder : folders) {
-            allFiles = allFiles.plus(project.fileTree(folder))
-        }
+        FileTree allFiles = new UnionFileTree("asdf", (Collection<? extends FileTree>)sourceDirs)
 
         DopplConfig dopplConfig = DopplConfig.from(project)
+
+        allFiles = allFiles.matching(new PatternSet().include("**/*.java"))
 
         List<String> overlaySourceDirs = dopplConfig.overlaySourceDirs
         Set<String> overlayClasses = new HashSet<>()

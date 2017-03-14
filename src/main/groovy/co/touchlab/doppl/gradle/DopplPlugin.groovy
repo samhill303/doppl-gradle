@@ -26,6 +26,7 @@ import org.gradle.api.Project
 import org.gradle.api.ProjectConfigurationException
 import org.gradle.api.Task
 import org.gradle.api.logging.LogLevel
+import org.gradle.api.tasks.TaskDependency
 import org.gradle.api.tasks.bundling.Jar
 
 /*
@@ -41,10 +42,6 @@ class DopplPlugin implements Plugin<Project> {
     void apply(Project project) {
 
         DopplVersionManager.verifyJ2objcRequirements(project)
-
-        //TODO: Figure out which plugin we're playing with an run it
-        //currently you *need* to run the other one first, physically
-        //getPluginManager().apply(JavaPlugin)
 
         boolean javaTypeProject = Utils.isJavaTypeProject(project);
 
@@ -65,18 +62,11 @@ class DopplPlugin implements Plugin<Project> {
             }
         }
 
-        /*String version = BuildInfo.VERSION
-        String commit = BuildInfo.GIT_COMMIT
-        String url = BuildInfo.URL
-        String timestamp = BuildInfo.TIMESTAMP
-
-        project.logger.info("doppl-gradle plugin: Version $version, Built: $timestamp, Commit: $commit, URL: $url")*/
-
         // This avoids a lot of "project." prefixes, such as "project.tasks.create"
         project.with {
-//            Utils.throwIfNoJavaPlugin(project)
-
             extensions.create('dopplConfig', DopplConfig, project)
+
+            BuildTypeProvider buildTypeProvider = androidTypeProject ? new AndroidBuildTypeProvider(project) : new JavaBuildTypeProvider()
 
             // This is an intermediate directory only.  Clients should use only directories
             // specified in dopplConfig (or associated defaults in dopplConfig).
@@ -89,17 +79,14 @@ class DopplPlugin implements Plugin<Project> {
                 doppl{
                     transitive = true
                     description = 'For doppl special packages'
-//                    extendsFrom compile
                 }
                 testDoppl{
                     transitive = true
                     description = 'For doppl testing special packages'
-//                    extendsFrom testCompile
                 }
             }
 
             dependencies {
-
                 if(javaTypeProject) {
                     provided project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
                 }
@@ -118,11 +105,25 @@ class DopplPlugin implements Plugin<Project> {
                 description "Marker task for all tasks that must be complete before j2objc building"
             }
 
-            if(javaTypeProject) {
-                prebuildTask.dependsOn('jar')
-            }else{
-                prebuildTask.dependsOn('assemble')
-            }
+
+            /*def variants = null;
+            if (project.plugins.findPlugin("com.android.application") || project.plugins.findPlugin("android") ||
+                project.plugins.findPlugin("com.android.test")) {
+                variants = "applicationVariants";
+            } else if (project.plugins.findPlugin("com.android.library") || project.plugins.findPlugin("android-library")) {
+                variants = "libraryVariants";
+            } else {
+                throw new ProjectConfigurationException("The android or android-library plugin must be applied to the project", null)
+            }*/
+
+            //What runs before you run
+            buildTypeProvider.configureDependsOn(project, prebuildTask)
+
+            /*project.afterEvaluate {
+                project.android[variants].all { variant ->
+                    List<File> genedFolderz = variant.variantData.extraGeneratedSourceFolders
+                }
+            }*/
 
             // TODO @Bruno "build/source/apt" must be project.dopplConfig.generatedSourceDirs no idea how to set it
             // there
@@ -131,10 +132,12 @@ class DopplPlugin implements Plugin<Project> {
                     dependsOn: 'j2objcPreBuild') {
                 group 'doppl'
                 description "Translates all the java source files in to Objective-C using 'j2objc'"
+                _buildTypeProvider = buildTypeProvider
                 // Output directories of 'j2objcTranslate', input for all other tasks
                 srcGenMainDir = j2objcSrcGenMainDir
                 srcGenTestDir = j2objcSrcGenTestDir
                 try {
+                    //TODO: This should probably be more configurable
                     def file = file('src/main/objc')
                     if(file.exists())
                         srcMainObjcDir = file
@@ -142,6 +145,7 @@ class DopplPlugin implements Plugin<Project> {
                     //Ugh
                 }
                 try {
+                    //TODO: This should probably be more configurable
                     def file = file('src/test/objc')
                     if(file.exists())
                         srcTestObjcDir = file
@@ -150,14 +154,14 @@ class DopplPlugin implements Plugin<Project> {
                 }
             }
 
-            // j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder
+            /*// j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder
             tasks.create(name: 'j2objcCycleFinder', type: CycleFinderTask,
                     dependsOn: 'j2objcPreBuild') {
                 group 'doppl'
                 description "Run the cycle_finder tool on all Java source files"
 
                 outputs.upToDateWhen { false }
-            }
+            }*/
 
             tasks.create(name: TASK_DOPPL_ASSEMBLY, type: DopplAssemblyTask,
                     dependsOn: 'j2objcTranslate') {

@@ -1,0 +1,39 @@
+
+
+ext {
+    dopplCoreVersion = '0.6.1-SNAPSHOT'
+    gradleVersion = '2.14.1'
+
+    /**
+     * Simple comparison of generated code with a "known good" copy in source control
+     */
+    checkGeneratedOutput = { Project project, File left, File right ->
+
+        ConfigurableFileTree leftTree = project.fileTree(left)
+        ConfigurableFileTree rightTree = project.fileTree(right)
+
+        Set<File> leftFiles = leftTree.getFiles()
+        Set<File> rightFiles = rightTree.getFiles()
+
+        buildAssert(leftFiles.size() == rightFiles.size(), "File count differs")
+
+        int substringLength = left.getPath().length() + 1
+
+        for (File lf : leftFiles) {
+            //Create right side file from left side name and dir
+            //Assume that 'lf.getParentFile().path' does not have trailing '/'
+
+            File rf = new File(right, lf.path.substring(substringLength))
+            buildAssert(rightFiles.contains(rf), "Couldn't find '" + rf.getPath() + "'")
+            buildAssert(lf.text.equals(rf.text), "Files not the same '" + rf.getPath() + "'")
+        }
+    }
+
+    buildAssert = {boolean b, String message ->
+        if(!b)
+        {
+            throw new GradleException(message)
+        }
+    }
+}
+

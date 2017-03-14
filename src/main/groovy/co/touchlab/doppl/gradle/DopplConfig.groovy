@@ -68,8 +68,6 @@ class DopplConfig {
     boolean useArc = false;
     boolean includeJavaSource = false;
 
-    boolean checkJ2objcVersionExplicit = true;
-
     String mappingsInput = null;
     String copyMainOutput = null;
     String copyTestOutput = null;
@@ -78,15 +76,13 @@ class DopplConfig {
 
     boolean ignoreWeakAnnotations = false;
 
+    String targetVariant = "debug"
+
     /**
-     * Generated source files directories, e.g. from dagger annotations.
+     * Additional generated source files directories
      */
-    // Default location for generated source files using annotation processor compilation,
-    // per sourceSets.main.output.classesDir.
-    // However, we cannot actually access sourceSets.main.output.classesDir here, because
-    // the Java plugin convention may not be applied at this time.
-    List<String> generatedSourceDirs = ['build/classes/main', 'build/generated/source/apt/main', 'build/generated/source/apt/debug']
-    List<String> generatedTestSourceDirs = ['build/classes/test', 'build/generated/source/apt/test']
+    List<String> generatedSourceDirs = new ArrayList<>()
+    List<String> generatedTestSourceDirs = new ArrayList<>()
 
     /**
      * Some transforms will need to replace existing classes. These dirs are handled special.

@@ -20,7 +20,7 @@ import org.gradle.api.file.CopySpec
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.file.SourceDirectorySet
-import org.gradle.api.internal.file.UnionFileTree
+import org.gradle.api.internal.file.collections.DefaultConfigurableFileTree
 import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.WorkResult
@@ -377,8 +377,6 @@ class Utils {
             return javaGetSet(proj, sourceSetName, fileType)
         }else{
             def asdf = proj['android']['sourceSets'][sourceSetName][fileType]
-            def srcDirs = asdf['srcDirs']
-
             return (FileTree)asdf['sourceFiles']
         }
     }
@@ -402,6 +400,15 @@ class Utils {
             treePaths.collect({ String treePath -> proj.fileTree(dir: treePath, includes: ["**/*.java"]) })
         return trees;
 //        return new UnionFileTree("javaTrees_j2objc", (Collection<? extends FileTree>) trees)
+    }
+
+    static File dirFromFileTree(FileTree fileTree)
+    {
+        if(fileTree instanceof DefaultConfigurableFileTree)
+        {
+            return ((DefaultConfigurableFileTree)fileTree).getDir()
+        }
+        return null;
     }
 
     static List<String> j2objcLibs(String j2objcHome,
