@@ -66,13 +66,12 @@ class DopplConfig {
     String destJavaJarDir = null;
 
     boolean useArc = false;
-    boolean includeJavaSource = false;
 
     String mappingsInput = null;
     String copyMainOutput = null;
     String copyTestOutput = null;
     boolean copyDependencies = false;
-    boolean deleteStaleCopyFiles = true;
+    boolean emitLineDirectives = false;
 
     boolean ignoreWeakAnnotations = false;
 
@@ -132,10 +131,6 @@ class DopplConfig {
             // Libraries that don't need CycleFinder fixes
             "javax.inject-1.jar", "jsr305-3.0.0.jar",
             "mockito-core-1.9.5.jar", "hamcrest-core-1.3.jar"/*, "protobuf_runtime.jar"*/]
-
-    // Native build accepts empty array but throws exception on empty List<String>
-    List<DopplDependency> translateDopplLibs = new ArrayList<>()
-    List<DopplDependency> translateDopplTestLibs = new ArrayList<>()
 
     /**
      * Sets the filter on files to translate.

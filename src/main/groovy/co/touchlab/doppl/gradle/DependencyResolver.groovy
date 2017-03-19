@@ -23,29 +23,7 @@ import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.file.CopySpec
 
 /**
- * Resolves `j2objc*` dependencies into their `j2objc` constructs:
- * <p/>
- * <ul>
- * <li><b>j2objcTranslationClosure</b> - The plugin will translate only the subset of
- * the configuration's source jars that are actually used by this project's
- * code (via --build-closure), and
- * compile and link the translated code directly into this project's libraries.
- * Note that if multiple projects use j2objcTranslationClosure with the same
- * external library, you will likely get duplicate symbol definition errors
- * when linking them together.  Consider instead creating a separate Gradle
- * project for that external library using j2objcTranslation.
- * </li>
- * <li><b>j2objcTranslation</b> - The plugin will translate the entire source jar
- * provided in this configuration. Usually, this configuration is used
- * to translate a single external Java library into a standalone Objective C library, that
- * can then be linked (via j2objcLinkage) into your projects.
- * </li>
- * <li><b>j2objcLinkage</b> - The plugin will include the headers of, and link to
- * the static library within, the referenced project.  Usually this configuration
- * is used with other projects (your own, or external libraries translated
- * with j2objcTranslation) that the J2ObjC Gradle Plugin has also been applied to.
- * </li>
- * </ul>
+ * Resolves doppl dependencies. Can handle external artifacts as well as project dependencies
  */
 @CompileStatic
 public class DependencyResolver {
@@ -54,6 +32,8 @@ public class DependencyResolver {
     public static final String CONFIG_TEST_DOPPL = 'testDoppl'
     final Project project
     final DopplConfig dopplConfig
+    List<DopplDependency> translateDopplLibs = new ArrayList<>()
+    List<DopplDependency> translateDopplTestLibs = new ArrayList<>()
 
     public DependencyResolver(Project project, DopplConfig dopplConfig) {
         this.project = project
@@ -64,8 +44,8 @@ public class DependencyResolver {
 
         //Current "lazy" plan. Just copy all dependencies. If something is changed, will need to clean.
         //TODO: Fix the lazy
-        configForConfig(CONFIG_DOPPL, dopplConfig.translateDopplLibs)
-        configForConfig(CONFIG_TEST_DOPPL, dopplConfig.translateDopplTestLibs)
+        configForConfig(CONFIG_DOPPL, translateDopplLibs)
+        configForConfig(CONFIG_TEST_DOPPL, translateDopplTestLibs)
     }
 
     void configForConfig(String configName, List<DopplDependency> dopplDependencyList){
@@ -93,7 +73,7 @@ public class DependencyResolver {
 
                 project.copy { CopySpec cp ->
                     cp.from project.zipTree(ra.file)
-                    cp.into dependency.dependencyFolderLocation()// dopplConfig.dopplDependencyExploded + "/" + dependency.fullFolderName()
+                    cp.into dependency.dependencyFolderLocation()
                 }
 
                 dopplDependencyList.add(dependency)

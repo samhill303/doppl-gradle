@@ -649,61 +649,55 @@ class Utils {
         }
     }
 
-    public static void copyIfNewerRecursive(File from, File to, FileFilter filter, boolean deleteStaleCopyFiles)
+    public static void copyFileRecursive(File from, File to, FileFilter filter)
     {
         if(!from.exists())
             return;
 
-        Map<String, File> targetFiles = new HashMap<>()
-        File[] toFiles = to.listFiles()
-        for (File tf : toFiles) {
-            if(!tf.isDirectory()) {
-                targetFiles.put(tf.getName(), tf)
-            }
-        }
-
-        byte [] buf = new byte[2048]
-
         File[] fromFiles = from.listFiles(filter)
         for (File ff : fromFiles) {
+
+            File targetFile = new File(to, ff.getName());
+
             if(ff.isDirectory())
             {
-                copyIfNewerRecursive(ff, new File(to, ff.getName()), filter, deleteStaleCopyFiles)
+                copyFileRecursive(ff, targetFile, filter)
             }
             else {
-                File targetFile = targetFiles.get(ff.getName())
-                if (targetFile == null || targetFile.lastModified() < ff.lastModified()) {
-                    InputStream inp = new FileInputStream(ff)
-                    if(targetFile == null)
-                    {
-                        to.mkdirs();
-                        targetFile = new File(to, ff.getName());
-                    }
-                    OutputStream outp = new FileOutputStream(targetFile)
-
-                    try {
-                        int read;
-
-                        while ((read = inp.read(buf)) > -1) {
-                            outp.write(buf, 0, read)
-                        }
-                    } finally {
-                        outp.close()
-                        inp.close()
-                    }
-                }
-                targetFiles.remove(ff.getName());
+                copyFileIfNewer(ff, targetFile)
             }
         }
+    }
 
-        if(deleteStaleCopyFiles)
-        {
-            def keySet = targetFiles.keySet()
-            for (String key : keySet) {
-                def file = targetFiles.get(key)
-                println "Cleaning "+ file.getPath()
-                file.delete()
+    public static void copyFileIfNewer(File inputFile, File targetFile) {
+
+        byte[] buf = copyBufferLocation.get()
+
+        if (!targetFile.exists()) {
+            targetFile.getParentFile().mkdirs();
+        }
+
+        InputStream inp = new FileInputStream(inputFile)
+
+        //TODO: We should do a safer copy, in case process killed, but whatever
+        OutputStream outp = new FileOutputStream(targetFile)
+
+        try {
+            int read;
+
+            while ((read = inp.read(buf)) > -1) {
+                outp.write(buf, 0, read)
             }
+        } finally {
+            outp.close()
+            inp.close()
+        }
+    }
+
+    private static ThreadLocal<byte []> copyBufferLocation = new ThreadLocal<byte []>(){
+        @Override
+        protected byte [] initialValue() {
+            return new byte[2048];
         }
     }
 

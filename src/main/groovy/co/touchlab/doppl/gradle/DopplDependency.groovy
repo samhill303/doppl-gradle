@@ -5,10 +5,12 @@ package co.touchlab.doppl.gradle
  */
 class DopplDependency {
     String name
+    String versionMame
     File dir
 
     DopplDependency(String name, File dir) {
         this.name = name
+        this.versionMame = name
         this.dir = dir
     }
 
@@ -17,6 +19,8 @@ class DopplDependency {
         this.name = name
 
         String foldername = group + "_" + name + "_" + version
+
+        this.versionMame = foldername
 
         foldername = foldername.replace('-', '_')
         foldername = foldername.replace('.', '_')

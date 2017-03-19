@@ -16,7 +16,7 @@
 
 package co.touchlab.doppl.gradle
 
-import co.touchlab.doppl.gradle.tasks.CycleFinderTask
+import co.touchlab.doppl.gradle.tasks.DeployTask
 import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
 import co.touchlab.doppl.gradle.tasks.TranslateTask
 import co.touchlab.doppl.gradle.tasks.Utils
@@ -26,7 +26,6 @@ import org.gradle.api.Project
 import org.gradle.api.ProjectConfigurationException
 import org.gradle.api.Task
 import org.gradle.api.logging.LogLevel
-import org.gradle.api.tasks.TaskDependency
 import org.gradle.api.tasks.bundling.Jar
 
 /*
@@ -34,6 +33,8 @@ import org.gradle.api.tasks.bundling.Jar
  */
 class DopplPlugin implements Plugin<Project> {
 
+    public static final String TASK_DOPPL_DEPLOY_MAIN = 'dopplDeployMain'
+    public static final String TASK_DOPPL_DEPLOY_TEST = 'dopplDeployTest'
 
     public static final String TASK_DOPPL_ASSEMBLY = 'dopplAssembly'
     public static final String TASK_DOPPL_ARCHIVE = 'dopplArchive'
@@ -66,7 +67,7 @@ class DopplPlugin implements Plugin<Project> {
         project.with {
             extensions.create('dopplConfig', DopplConfig, project)
 
-            BuildTypeProvider buildTypeProvider = androidTypeProject ? new AndroidBuildTypeProvider(project) : new JavaBuildTypeProvider()
+            BuildContext buildContext = new BuildContext(project)
 
             // This is an intermediate directory only.  Clients should use only directories
             // specified in dopplConfig (or associated defaults in dopplConfig).
@@ -117,7 +118,7 @@ class DopplPlugin implements Plugin<Project> {
             }*/
 
             //What runs before you run
-            buildTypeProvider.configureDependsOn(project, prebuildTask)
+            buildContext.getBuildTypeProvider().configureDependsOn(project, prebuildTask)
 
             /*project.afterEvaluate {
                 project.android[variants].all { variant ->
@@ -125,14 +126,12 @@ class DopplPlugin implements Plugin<Project> {
                 }
             }*/
 
-            // TODO @Bruno "build/source/apt" must be project.dopplConfig.generatedSourceDirs no idea how to set it
-            // there
-            // Dependency may be added in project.plugins.withType for Java or Android plugin
             tasks.create(name: 'j2objcTranslate', type: TranslateTask,
                     dependsOn: 'j2objcPreBuild') {
                 group 'doppl'
                 description "Translates all the java source files in to Objective-C using 'j2objc'"
-                _buildTypeProvider = buildTypeProvider
+                _buildContext = buildContext
+
                 // Output directories of 'j2objcTranslate', input for all other tasks
                 srcGenMainDir = j2objcSrcGenMainDir
                 srcGenTestDir = j2objcSrcGenTestDir
@@ -163,6 +162,7 @@ class DopplPlugin implements Plugin<Project> {
                 outputs.upToDateWhen { false }
             }*/
 
+
             tasks.create(name: TASK_DOPPL_ASSEMBLY, type: DopplAssemblyTask,
                     dependsOn: 'j2objcTranslate') {
                 group 'doppl'
@@ -171,15 +171,38 @@ class DopplPlugin implements Plugin<Project> {
                 srcGenMainDir = j2objcSrcGenMainDir
             }
 
-            tasks.create(name: TASK_DOPPL_ARCHIVE, type: Jar, dependsOn: TASK_DOPPL_ASSEMBLY) {
+            tasks.create(name: TASK_DOPPL_DEPLOY_MAIN, type: DeployTask,
+                    dependsOn: 'j2objcTranslate') {
+                group 'doppl'
+                description 'Push main code to Xcode directory (or wherever you want)'
+
+                srcGenDir = j2objcSrcGenMainDir
+                testCode = false
+                _buildContext = buildContext
+            }
+
+            tasks.create(name: TASK_DOPPL_DEPLOY_TEST, type: DeployTask,
+                    dependsOn: 'j2objcTranslate') {
+                group 'doppl'
+                description 'Push test code to Xcode directory (or wherever you want)'
+
+                srcGenDir = j2objcSrcGenTestDir
+                testCode = true
+                _buildContext = buildContext
+            }
+
+
+            tasks.create(name: TASK_DOPPL_ARCHIVE, type: Jar, dependsOn: [
+                    TASK_DOPPL_DEPLOY_MAIN,
+                    TASK_DOPPL_DEPLOY_TEST,
+                    TASK_DOPPL_ASSEMBLY
+            ]) {
                 group 'doppl'
                 description 'Depends on j2objc build, move all doppl stuff to deploy dir'
 
                 from project.dopplConfig.destDopplFolder
                 extension 'dop'
             }
-
-//            lateDependsOn(project, 'build', 'dopplArchive')
         }
     }
 }

@@ -4,6 +4,7 @@
 
 package co.touchlab.doppl.gradle.tasks
 
+import co.touchlab.doppl.gradle.BuildContext
 import co.touchlab.doppl.gradle.BuildTypeProvider
 import co.touchlab.doppl.gradle.DependencyResolver
 import co.touchlab.doppl.gradle.DopplConfig
@@ -14,7 +15,6 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
-import org.gradle.api.file.FileTreeElement
 import org.gradle.api.internal.file.UnionFileCollection
 import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.tasks.Input
@@ -25,7 +25,6 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 import org.gradle.api.tasks.incremental.InputFileDetails
-import org.gradle.api.tasks.util.PatternFilterable
 import org.gradle.api.tasks.util.PatternSet
 
 /**
@@ -34,18 +33,18 @@ import org.gradle.api.tasks.util.PatternSet
 @CompileStatic
 class TranslateTask extends DefaultTask {
 
-    BuildTypeProvider _buildTypeProvider;
+    BuildContext _buildContext;
 
     // Source files part of the Java main sourceSet.
     @InputFiles
     FileCollection getMainSrcFiles() {
-        List<FileTree> sourceSets = _buildTypeProvider.sourceSets(project)
+        List<FileTree> sourceSets = _buildContext.getBuildTypeProvider().sourceSets(project)
         return replaceOverlayFilterJava(sourceSets)
     }
 
     Set<File> getMainSrcDirs() {
         Set<File> allFiles = new HashSet<>()
-        for (FileTree genPath : _buildTypeProvider.sourceSets(project)) {
+        for (FileTree genPath : _buildContext.getBuildTypeProvider().sourceSets(project)) {
             allFiles.add(Utils.dirFromFileTree(genPath))
         }
         return allFiles
@@ -55,7 +54,7 @@ class TranslateTask extends DefaultTask {
         Set<File> allFiles = new HashSet<>()
         allFiles.addAll(getMainSrcDirs())
 
-        for (FileTree genPath : _buildTypeProvider.testSourceSets(project)) {
+        for (FileTree genPath : _buildContext.getBuildTypeProvider().testSourceSets(project)) {
             allFiles.add(Utils.dirFromFileTree(genPath))
         }
 
@@ -65,7 +64,7 @@ class TranslateTask extends DefaultTask {
     // Source files part of the Java test sourceSet.
     @InputFiles
     FileCollection getTestSrcFiles() {
-        List<FileTree> sourceSets = _buildTypeProvider.testSourceSets(project)
+        List<FileTree> sourceSets = _buildContext.getBuildTypeProvider().testSourceSets(project)
         return replaceOverlayFilterJava(sourceSets)
     }
 
@@ -91,12 +90,9 @@ class TranslateTask extends DefaultTask {
     @Input
     boolean getIgnoreWeakAnnotations() { return DopplConfig.from(project).ignoreWeakAnnotations }
 
-    @Input
-    boolean getDeleteStaleCopyFiles() { return DopplConfig.from(project).deleteStaleCopyFiles }
+    List<DopplDependency> getTranslateDopplLibs() { return _buildContext.getDependencyResolver().translateDopplLibs }
 
-    List<DopplDependency> getTranslateDopplLibs() { return DopplConfig.from(project).translateDopplLibs }
-
-    List<DopplDependency> getTranslateDopplTestLibs() { return DopplConfig.from(project).translateDopplTestLibs }
+    List<DopplDependency> getTranslateDopplTestLibs() { return _buildContext.getDependencyResolver().translateDopplTestLibs }
 
     @Input
     Map<String, String> getTranslateSourceMapping() { return DopplConfig.from(project).translateSourceMapping }
@@ -116,27 +112,6 @@ class TranslateTask extends DefaultTask {
 
     @Input String mappingsInputPath() {
         DopplConfig.from(project).mappingsInput
-    }
-
-    @OutputDirectory File copyMainOutputPath() {
-
-        String output = DopplConfig.from(project).copyMainOutput
-        if (output == null)
-            return null
-        else
-            return project.file(output)
-    }
-
-    @Input boolean copyDependencies() {
-        DopplConfig.from(project).copyDependencies
-    }
-
-    @OutputDirectory File copyTestOutputPath() {
-        String output = DopplConfig.from(project).copyTestOutput
-        if (output == null)
-            return null
-        else
-            return project.file(output)
     }
 
     private FileCollection replaceOverlayFilterJava(List<FileTree> sourceDirs) {
@@ -198,8 +173,6 @@ class TranslateTask extends DefaultTask {
     void translate(IncrementalTaskInputs inputs) {
 
         DopplConfig dopplConfig = DopplConfig.from(project)
-        new DependencyResolver(project, dopplConfig).configureAll()
-//        DependencyResolver.configureSourceSets(project)
 
         List<String> translateArgs = getTranslateArgs()
 
@@ -299,18 +272,14 @@ class TranslateTask extends DefaultTask {
                 prefixMap,
                 mainSrcFilesChanged,
                 "mainSrcFilesArgFile",
-                false
+                false,
+                dopplConfig.emitLineDirectives
         )
 
         Utils.projectCopy(project, {
-
             from originalMainSrcFiles
             into srcGenMainDir
             setIncludeEmptyDirs(false)
-
-            if (dopplConfig.includeJavaSource) {
-                include '**/*.java'
-            }
             include '**/*.mappings'
         })
 
@@ -325,44 +294,6 @@ class TranslateTask extends DefaultTask {
             writer.close()
         }
 
-        FileFilter extensionFilter = new FileFilter() {
-            @Override
-            boolean accept(File pathname) {
-                String name = pathname.getName()
-                return pathname.isDirectory() ||
-                       name.endsWith(".h") ||
-                       name.endsWith(".m") ||
-                       name.endsWith(".cpp") ||
-                       name.endsWith(".hpp") ||
-                       name.endsWith(".java") ||
-                       name.endsWith(".modulemap")
-            }
-        }
-
-        List<DopplDependency> dopplLibs = new ArrayList<>(getTranslateDopplLibs())
-
-        if (copyMainOutputPath() != null) {
-
-            File mainOut = copyMainOutputPath()
-
-            Utils.copyIfNewerRecursive(srcGenMainDir, mainOut, extensionFilter, getDeleteStaleCopyFiles())
-
-            if (copyDependencies()) {
-
-                for (DopplDependency lib : dopplLibs) {
-                    File depSource = new File(lib.dependencyFolderLocation(), "src")
-
-                    Utils.copyIfNewerRecursive(depSource, new File(mainOut, lib.name), extensionFilter, getDeleteStaleCopyFiles())
-                }
-            }
-
-            //TODO: Figure out
-            /*if(frameworkName() != null)
-            {
-                writeModulemap(mainOut, frameworkName())
-            }*/
-        }
-
         // Translate test code. Tests are never built with --build-closure; otherwise
         // we will get duplicate symbol errors.
         // There is an edge-case that will fail: if the main and test code depend on
@@ -373,6 +304,7 @@ class TranslateTask extends DefaultTask {
         //KPG: We don't pass '--build-closure' to j2objc. Evaluate if we want to add support.
         List<String> testTranslateArgs = new ArrayList<>(translateArgs)
         testTranslateArgs.removeAll('--build-closure')
+        //*************** ^^^ THIS PART NEEDS TO GO AND/OR BE UPDATED. DOES NOTHING NOW!!!!!!
 
         doTranslate(
                 project.files(getTestSrcDirs().toArray()),
@@ -382,33 +314,15 @@ class TranslateTask extends DefaultTask {
                 prefixMap,
                 testSrcFilesChanged,
                 "testSrcFilesArgFile",
-                true
+                true,
+                dopplConfig.emitLineDirectives
         )
 
         Utils.projectCopy(project, {
             from Utils.srcDirs(project, 'test', 'java')
             into srcGenTestDir
-            if (dopplConfig.includeJavaSource) {
-                include '**/*.java'
-            }
             include '**/*.mappings'
         })
-
-        if (copyTestOutputPath() != null) {
-            File testOut = copyTestOutputPath()
-            Utils.copyIfNewerRecursive(srcGenTestDir, testOut, extensionFilter, getDeleteStaleCopyFiles())
-            if (copyDependencies()) {
-                List<DopplDependency> testDopplLibs = new ArrayList<>(getTranslateDopplTestLibs())
-
-                testDopplLibs.removeAll(dopplLibs)
-
-                for (DopplDependency lib : testDopplLibs) {
-                    File depSource = new File(lib.dependencyFolderLocation(), "src")
-
-                    Utils.copyIfNewerRecursive(depSource, new File(testOut, lib.name), extensionFilter, getDeleteStaleCopyFiles())
-                }
-            }
-        }
     }
 
     String debugFileList(FileCollection files)
@@ -477,7 +391,8 @@ class TranslateTask extends DefaultTask {
             Map<String, String> prefixMap,
             FileCollection srcFilesToTranslate,
             String srcFilesArgFilename,
-            boolean testTranslate) {
+            boolean testTranslate,
+            boolean emitLineDirectives) {
 
         if (nativeSourceDir != null && nativeSourceDir.exists()) {
             Utils.projectCopy(project, {
@@ -520,8 +435,6 @@ class TranslateTask extends DefaultTask {
         String classpathArg = Utils.joinedPathArg(classpathFiles) +
                               Utils.pathSeparator() + "${project.buildDir}/classes"
 
-        logger.info("srcFilesArgs-a: "+ debugFileList(srcFilesToTranslate))
-
         // Source files arguments
         List<String> srcFilesArgs = []
         int srcFilesArgsCharCount = 0
@@ -546,17 +459,7 @@ class TranslateTask extends DefaultTask {
         ByteArrayOutputStream stdout = new ByteArrayOutputStream()
         ByteArrayOutputStream stderr = new ByteArrayOutputStream()
 
-        logger.debug('TranslateTask - projectExec:')
-
-
         List<String> mappingFiles = new ArrayList<>()
-
-        /*File file = standardMappingFile()
-        if(file.exists())
-        {
-            mappingFiles.add(file.getPath())
-        }*/
-
 
         String path = mappingsInputPath()
         if (path != null) {
@@ -587,22 +490,16 @@ class TranslateTask extends DefaultTask {
             }
         }
 
-        logger.info("srcFilesArgs-b: "+ debugStringList(srcFilesArgs))
-
         try {
             Utils.projectExec(project, stdout, stderr, null, {
                 executable j2objcExecutable
 
                 // Arguments
                 args "-d", srcDir
-                /*if(testTranslate)
+                if(emitLineDirectives)
                 {
                     args "-g", ''
-                }*/
-                /*if(testTranslate)
-                {
-                    args "-use-arc", ''
-                }*/
+                }
 //                args "--strip-reflection", ''
                 args "-Xuse-javac", ''
                 args "--package-prefixed-filenames", ''
