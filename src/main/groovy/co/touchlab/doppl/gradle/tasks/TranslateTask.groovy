@@ -287,9 +287,7 @@ class TranslateTask extends DefaultTask {
             def prefixes = new File(srcGenMainDir, "prefixes.properties")
             def writer = new FileWriter(prefixes)
 
-            for (String prefix : prefixMap.keySet()) {
-                writer.append(prefix).append("=").append(prefixMap.get(prefix))
-            }
+            Utils.propsFromStringMap(prefixMap).store(writer, null);
 
             writer.close()
         }
@@ -411,10 +409,6 @@ class TranslateTask extends DefaultTask {
             return
         }
 
-        for (File f : files) {
-            logger.info("Translating ${f.getPath()}")
-        }
-
         String j2objcExecutable = "${getJ2objcHome()}/j2objc"
 
         String sourcepathArg = Utils.joinedPathArg(sourcepathDirs)
@@ -425,6 +419,7 @@ class TranslateTask extends DefaultTask {
         }
         def libs = Utils.dopplJarLibs(dopplLibs)
 
+        //Classpath arg for translation. Includes user specified jars, j2objc 'standard' jars, and doppl dependency libs
         UnionFileCollection classpathFiles = new UnionFileCollection([
                 project.files(getTranslateClasspaths()),
                 project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs())),
@@ -475,16 +470,9 @@ class TranslateTask extends DefaultTask {
                 mappingFiles.add(mappingPath)
             }
 
-            def prefixFile = Utils.findDopplLibraryPrefixes(lib.dependencyFolderLocation())
-            if (prefixFile != null) {
-
-                def properties = new Properties()
-
-                def fileReader = new FileReader(prefixFile)
-                properties.load(fileReader)
-                fileReader.close()
-
-                for (String name : properties.propertyNames()) {
+            Properties prefixPropertiesFromFile = Utils.findDopplLibraryPrefixes(lib.dependencyFolderLocation())
+            if (prefixPropertiesFromFile != null) {
+                for (String name : prefixPropertiesFromFile.propertyNames()) {
                     allPrefixes.put(name, (String) properties.get(name))
                 }
             }

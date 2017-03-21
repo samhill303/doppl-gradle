@@ -109,6 +109,10 @@ class DopplConfig {
     /**
      *  Local jars for translation e.g.: "lib/json-20140107.jar", "lib/somelib.jar".
      *  This will be added to j2objc as a '-classpath' argument.
+     *
+     *  TODO: We should review some of these more open ended arguments. I doubt we'd ever need
+     *  to add an external jar. The only reasonable scenario would be outside objc that was already
+     *  translated and added manually.
      */
     List<String> translateClasspaths = new ArrayList<>()
 

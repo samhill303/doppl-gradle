@@ -481,12 +481,18 @@ class Utils {
         return null
     }
 
-    public static File findDopplLibraryPrefixes(File dopplDir) {
+    public static Properties  findDopplLibraryPrefixes(File dopplDir) {
 
         def files = dopplDir.listFiles()
         for (File file : files) {
             if (!file.isDirectory() && file.getName().endsWith("prefixes.properties")) {
-                return file
+                def properties = new Properties()
+
+                def fileReader = new FileReader(file)
+                properties.load(fileReader)
+                fileReader.close()
+
+                return properties
             }
         }
         return null
@@ -565,6 +571,16 @@ class Utils {
         } else {
             return "'${listString.join("','")}'"
         }
+    }
+
+    static Properties propsFromStringMap(Map<String, String> map)
+    {
+        Properties properties = new Properties()
+        for (String key : map.keySet()) {
+            properties.put(key, map.get(key))
+        }
+
+        return properties
     }
 
     @VisibleForTesting

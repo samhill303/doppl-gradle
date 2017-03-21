@@ -22,6 +22,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.1.0'
+
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.0.5-2'
     }
 }
@@ -33,6 +34,7 @@ apply plugin: 'ivy-publish'
 allprojects {
     repositories {
         jcenter()
+        mavenCentral()
         ivy { url dopplIvyDeploy }
     }
 }
@@ -47,6 +49,7 @@ dependencies {
     compile 'org.codehaus.groovy:groovy-android-gradle-plugin:1.1.0'
     compile "org.jetbrains.kotlin:kotlin-stdlib:1.0.5-2"
     compile "org.jetbrains.kotlin:kotlin-reflect:1.0.5-2"
+    compile 'com.google.apis:google-api-services-analytics:v3-rev137-1.22.0'
 
     testCompile 'junit:junit:4.11'
     // https://mvnrepository.com/artifact/org.testng/testng

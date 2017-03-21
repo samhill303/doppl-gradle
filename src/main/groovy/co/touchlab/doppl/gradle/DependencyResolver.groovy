@@ -68,7 +68,6 @@ public class DependencyResolver {
                 def group = ra.moduleVersion.id.group
                 def name = ra.moduleVersion.id.name
                 def version = ra.moduleVersion.id.version
-                println "dopplLibs-adding: config("+ configName +")/name("+ name +")"
                 def dependency = new DopplDependency(group, name, version, new File(this.dopplConfig.dopplDependencyExploded))
 
                 project.copy { CopySpec cp ->

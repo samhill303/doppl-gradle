@@ -24,9 +24,10 @@ import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 
 /**
- * Copy doppl builds to a central directory
+ * Copies artifacts into doppl directory structure
  */
 @CompileStatic
 class DopplAssemblyTask extends DefaultTask {
@@ -46,30 +47,34 @@ class DopplAssemblyTask extends DefaultTask {
     }
 
     @TaskAction
-    void dopplDeploy() {
-        //Copy code
-        Utils.projectCopy(project, {
-            from srcGenMainDir
-            into getDestDopplDirFile().absolutePath + "/src"
-            include '**/*.h'
-            include '**/*.m'
-            include '**/*.cpp'
-            include '**/*.hpp'
-            include '**/*.java'
-        })
+    void dopplDeploy(IncrementalTaskInputs inputs) {
 
-        Utils.projectCopy(project, {
-            from inputJavaJarFile()
-            into getDestDopplDirFile().absolutePath + "/lib"
-            include '**/*.jar'
-        })
+        //We don't really deal with incremental now. If anything is out of date, copy all. Should update this.
+//        if (!inputs.incremental) {
+            //Copy code
+            Utils.projectCopy(project, {
+                from srcGenMainDir
+                into getDestDopplDirFile().absolutePath + "/src"
+                include '**/*.h'
+                include '**/*.m'
+                include '**/*.cpp'
+                include '**/*.hpp'
+                include '**/*.java'
+            })
 
-        Utils.projectCopy(project, {
-            from srcGenMainDir
-            into getDestDopplDirFile().absolutePath
-            include '*.mappings'
-            include 'prefixes.properties'
-        })
+            Utils.projectCopy(project, {
+                from inputJavaJarFile()
+                into getDestDopplDirFile().absolutePath + "/lib"
+                include '**/*.jar'
+            })
+
+            Utils.projectCopy(project, {
+                from srcGenMainDir
+                into getDestDopplDirFile().absolutePath
+                include '*.mappings'
+                include 'prefixes.properties'
+            })
+//        }
     }
 
     private File inputJavaJarFile() {

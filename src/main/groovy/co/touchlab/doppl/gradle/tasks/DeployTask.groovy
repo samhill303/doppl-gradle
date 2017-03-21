@@ -46,6 +46,11 @@ class DeployTask extends DefaultTask{
         DopplConfig.from(project).copyDependencies
     }
 
+    @Input
+    Map<String, String> getPrefixes() {
+        DopplConfig.from(project).translatedPathPrefix
+    }
+
     BuildContext _buildContext;
     boolean testCode;
 
@@ -91,11 +96,12 @@ class DeployTask extends DefaultTask{
             inputs.outOfDate(new Action<InputFileDetails>() {
                 @Override
                 void execute(InputFileDetails inputFileDetails) {
-                    File outFile = findOutFile(inputFileDetails)
+                    if(extensionFilter.accept(inputFileDetails.file)) {
+                        File outFile = findOutFile(inputFileDetails)
 
-                    if(outFile != null)
-                    {
-                        Utils.copyFileIfNewer(inputFileDetails.file, outFile)
+                        if (outFile != null) {
+                            Utils.copyFileIfNewer(inputFileDetails.file, outFile)
+                        }
                     }
                 }
             })
@@ -139,6 +145,8 @@ class DeployTask extends DefaultTask{
 
             Utils.copyFileRecursive(srcGenDir, mainOut, extensionFilter)
 
+            Properties properties = new Properties();
+
             if (copyDependencies()) {
 
                 if(testCode)
@@ -150,7 +158,30 @@ class DeployTask extends DefaultTask{
                     File depSource = new File(lib.dependencyFolderLocation(), "src")
 
                     Utils.copyFileRecursive(depSource, new File(mainOut, lib.name), extensionFilter)
+                    Properties libraryPrefixes = Utils.findDopplLibraryPrefixes(lib.dependencyFolderLocation())
+                    if(libraryPrefixes != null) {
+                        for (String name : libraryPrefixes.propertyNames()) {
+                            properties.put(name, libraryPrefixes.get(name))
+                        }
+                    }
                 }
+            }
+
+            Map<String, String> prefixes = getPrefixes()
+            for (String name : prefixes.keySet()) {
+                properties.put(name, prefixes.get(name))
+            }
+
+            //The output dir wouldn't have been created by now if nothing is in it
+            if(prefixes.size() > 0 && mainOut.exists()) {
+                //this properties file is different than what's in the doppl packaging properties
+                //Should probably rename the other one. this is ALL of them, even from dependencies.
+                def prefixFile = new File(mainOut, "prefixes.properties")
+                def writer = new FileWriter(prefixFile)
+
+                properties.store(writer, null);
+
+                writer.close()
             }
         }
     }

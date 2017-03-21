@@ -35,6 +35,7 @@ class DopplPlugin implements Plugin<Project> {
 
     public static final String TASK_DOPPL_DEPLOY_MAIN = 'dopplDeployMain'
     public static final String TASK_DOPPL_DEPLOY_TEST = 'dopplDeployTest'
+    public static final String TASK_DOPPL_DEPLOY = 'dopplDeploy'
 
     public static final String TASK_DOPPL_ASSEMBLY = 'dopplAssembly'
     public static final String TASK_DOPPL_ARCHIVE = 'dopplArchive'
@@ -63,7 +64,6 @@ class DopplPlugin implements Plugin<Project> {
             }
         }
 
-        // This avoids a lot of "project." prefixes, such as "project.tasks.create"
         project.with {
             extensions.create('dopplConfig', DopplConfig, project)
 
@@ -106,25 +106,8 @@ class DopplPlugin implements Plugin<Project> {
                 description "Marker task for all tasks that must be complete before j2objc building"
             }
 
-
-            /*def variants = null;
-            if (project.plugins.findPlugin("com.android.application") || project.plugins.findPlugin("android") ||
-                project.plugins.findPlugin("com.android.test")) {
-                variants = "applicationVariants";
-            } else if (project.plugins.findPlugin("com.android.library") || project.plugins.findPlugin("android-library")) {
-                variants = "libraryVariants";
-            } else {
-                throw new ProjectConfigurationException("The android or android-library plugin must be applied to the project", null)
-            }*/
-
             //What runs before you run
             buildContext.getBuildTypeProvider().configureDependsOn(project, prebuildTask)
-
-            /*project.afterEvaluate {
-                project.android[variants].all { variant ->
-                    List<File> genedFolderz = variant.variantData.extraGeneratedSourceFolders
-                }
-            }*/
 
             tasks.create(name: 'j2objcTranslate', type: TranslateTask,
                     dependsOn: 'j2objcPreBuild') {
@@ -153,24 +136,6 @@ class DopplPlugin implements Plugin<Project> {
                 }
             }
 
-            /*// j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder
-            tasks.create(name: 'j2objcCycleFinder', type: CycleFinderTask,
-                    dependsOn: 'j2objcPreBuild') {
-                group 'doppl'
-                description "Run the cycle_finder tool on all Java source files"
-
-                outputs.upToDateWhen { false }
-            }*/
-
-
-            tasks.create(name: TASK_DOPPL_ASSEMBLY, type: DopplAssemblyTask,
-                    dependsOn: 'j2objcTranslate') {
-                group 'doppl'
-                description 'Pull together doppl pieces'
-
-                srcGenMainDir = j2objcSrcGenMainDir
-            }
-
             tasks.create(name: TASK_DOPPL_DEPLOY_MAIN, type: DeployTask,
                     dependsOn: 'j2objcTranslate') {
                 group 'doppl'
@@ -191,18 +156,41 @@ class DopplPlugin implements Plugin<Project> {
                 _buildContext = buildContext
             }
 
-
-            tasks.create(name: TASK_DOPPL_ARCHIVE, type: Jar, dependsOn: [
+            tasks.create(name: TASK_DOPPL_DEPLOY, type: DefaultTask, dependsOn: [
                     TASK_DOPPL_DEPLOY_MAIN,
-                    TASK_DOPPL_DEPLOY_TEST,
-                    TASK_DOPPL_ASSEMBLY
-            ]) {
+                    TASK_DOPPL_DEPLOY_TEST
+                    ]) {
+                group 'doppl'
+                description "Wrapper task to build and deploy translated objc to xcode directories"
+            }
+
+            //************** LIBRARY TASKS **************
+            //The following tasks are geared towards library assembly and archiving
+
+            tasks.create(name: TASK_DOPPL_ASSEMBLY, type: DopplAssemblyTask,
+                    dependsOn: 'j2objcTranslate') {
+                group 'doppl'
+                description 'Pull together doppl pieces for library projects'
+
+                srcGenMainDir = j2objcSrcGenMainDir
+            }
+
+            tasks.create(name: TASK_DOPPL_ARCHIVE, type: Jar, dependsOn: TASK_DOPPL_ASSEMBLY) {
                 group 'doppl'
                 description 'Depends on j2objc build, move all doppl stuff to deploy dir'
 
                 from project.dopplConfig.destDopplFolder
                 extension 'dop'
             }
+
+            /*// j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder
+           tasks.create(name: 'j2objcCycleFinder', type: CycleFinderTask,
+                   dependsOn: 'j2objcPreBuild') {
+               group 'doppl'
+               description "Run the cycle_finder tool on all Java source files"
+
+               outputs.upToDateWhen { false }
+           }*/
         }
     }
 }
