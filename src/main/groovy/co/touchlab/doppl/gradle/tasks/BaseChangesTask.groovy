@@ -1,5 +1,6 @@
 package co.touchlab.doppl.gradle.tasks
 
+import co.touchlab.doppl.gradle.BuildContext
 import co.touchlab.doppl.gradle.DopplConfig
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
@@ -11,6 +12,9 @@ import org.gradle.api.tasks.Input
  * Created by kgalligan on 3/21/17.
  */
 class BaseChangesTask extends DefaultTask{
+
+    BuildContext _buildContext;
+
     @Input
     Map<String, String> getPrefixes() {
         DopplConfig.from(project).translatedPathPrefix
@@ -35,5 +39,9 @@ class BaseChangesTask extends DefaultTask{
 
     @Input String mappingsInputPath() {
         DopplConfig.from(project).mappingsInput
+    }
+
+    @Input boolean isCopyDependencies() {
+        DopplConfig.from(project).copyDependencies
     }
 }

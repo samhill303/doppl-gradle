@@ -4,6 +4,7 @@ import co.touchlab.doppl.gradle.tasks.Utils
 import org.gradle.api.Project
 import org.gradle.api.ProjectConfigurationException
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileTree
 
@@ -73,6 +74,20 @@ class AndroidBuildTypeProvider implements BuildTypeProvider{
             List<ConfigurableFileTree> trees = Utils.javaTrees(project, generatedSourceDirs)
             for (ConfigurableFileTree tree : trees) {
                 paths.add(tree)
+            }
+        }
+
+        //annotationProcessor doesn't show up in collection of added source directories (or I haven't found it)
+        if(test) {
+            Configuration testAnnotationProcessorConfig = project.configurations.findByName("testAnnotationProcessor")
+            if (testAnnotationProcessorConfig != null) {
+                paths.add(project.fileTree('build/generated/source/apt/test/' + dopplConfig.targetVariant))
+            }
+        }else{
+            Configuration annotationProcessorConfig = project.configurations.findByName("annotationProcessor")
+            if(annotationProcessorConfig != null)
+            {
+                paths.add(project.fileTree('build/generated/source/apt/'+ dopplConfig.targetVariant))
             }
         }
 

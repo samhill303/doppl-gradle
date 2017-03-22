@@ -1,12 +1,10 @@
 package co.touchlab.doppl.gradle.tasks
 
-import co.touchlab.doppl.gradle.BuildContext
 import co.touchlab.doppl.gradle.DependencyResolver
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
-import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Optional
@@ -19,7 +17,9 @@ import org.gradle.api.tasks.incremental.InputFileDetails
  * Created by kgalligan on 3/15/17.
  */
 @CompileStatic
-class DeployTask extends DefaultTask{
+class DeployTask extends BaseChangesTask{
+
+    boolean testCode;
 
     @InputDirectory
     File srcGenDir
@@ -41,18 +41,6 @@ class DeployTask extends DefaultTask{
 
         return depStrings
     }
-
-    @Input boolean copyDependencies() {
-        DopplConfig.from(project).copyDependencies
-    }
-
-    @Input
-    Map<String, String> getPrefixes() {
-        DopplConfig.from(project).translatedPathPrefix
-    }
-
-    BuildContext _buildContext;
-    boolean testCode;
 
     @OutputDirectory
     @Optional
@@ -147,7 +135,7 @@ class DeployTask extends DefaultTask{
 
             Properties properties = new Properties();
 
-            if (copyDependencies()) {
+            if (isCopyDependencies()) {
 
                 if(testCode)
                 {
