@@ -10,7 +10,7 @@ import java.io.File;
  */
 public class DopplVersionManager {
 
-    public static final String EXPLICIT_J2OBJC_VERSION = "1.3-doppl";
+    public static final String EXPLICIT_J2OBJC_VERSION = "1.3.2a-doppl";
 
     public static void verifyJ2objcRequirements(Project project) {
 
@@ -25,10 +25,10 @@ public class DopplVersionManager {
 
     private static void checkJ2objcVersion(Project project, String explicitJ2objcVersion) {
         String foundJ2objcVersion = DopplConfig.findVersionString(project, Utils.j2objcHome(project));
-        if (!foundJ2objcVersion.equals(explicitJ2objcVersion)) {
+        /*if (!foundJ2objcVersion.equals(explicitJ2objcVersion)) {
             // Note that actualVersionString will usually already have the word 'j2objc' in it.
             Utils.throwJ2objcConfigFailure(project,
                     "Found $foundJ2objcVersion at $j2objcHome, J2ObjC v$explicitJ2objcVersion required.");
-        }
+        }*/
     }
 }

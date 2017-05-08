@@ -687,6 +687,9 @@ class Utils {
 
     public static void copyFileIfNewer(File inputFile, File targetFile) {
 
+        if(inputFile.isDirectory())
+            return
+
         byte[] buf = copyBufferLocation.get()
 
         if (!targetFile.exists()) {

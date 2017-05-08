@@ -7,6 +7,7 @@ package co.touchlab.doppl.gradle.tasks
 import co.touchlab.doppl.gradle.BuildContext
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
+import co.touchlab.doppl.gradle.analytics.RealmAnalytics
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
 import org.gradle.api.file.ConfigurableFileTree
@@ -142,6 +143,8 @@ class TranslateTask extends BaseChangesTask {
 
     @TaskAction
     void translate(IncrementalTaskInputs inputs) {
+
+        new RealmAnalytics().execute()
 
         DopplConfig dopplConfig = DopplConfig.from(project)
 

@@ -8,6 +8,7 @@ import org.gradle.api.Action
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputDirectories
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
@@ -42,20 +43,27 @@ class DeployTask extends BaseChangesTask{
         return depStrings
     }
 
-    @OutputDirectory
+    @Input
     @Optional
-    File getOutputPath() {
-        String output = testCode ? DopplConfig.from(project).copyTestOutput : DopplConfig.from(project).copyMainOutput
-        if (output == null)
-            return null
-        else
-            return project.file(output)
+    List<String> getBridgingHeaderOutput()
+    {
+        return testCode ? DopplConfig.from(project).testBridgingHeaderOutput : DopplConfig.from(project).mainBridgingHeaderOutput
+    }
+
+    @OutputDirectories
+    List<File> getOutputPaths() {
+        List<String> output = testCode ? DopplConfig.from(project).copyTestOutput : DopplConfig.from(project).copyMainOutput
+        List<File> outFiles = new ArrayList<>()
+        for (String path : output) {
+            outFiles.add(project.file(path))
+        }
+        return outFiles
     }
 
     @TaskAction
     public void runDeploy(IncrementalTaskInputs inputs)
     {
-        if(getOutputPath() == null)
+        if(getOutputPaths().isEmpty())
         {
             logger.debug("${name} task disabled for ${project.name}")
             return;
@@ -85,11 +93,16 @@ class DeployTask extends BaseChangesTask{
                 @Override
                 void execute(InputFileDetails inputFileDetails) {
                     if(extensionFilter.accept(inputFileDetails.file)) {
-                        File outFile = findOutFile(inputFileDetails)
 
-                        if (outFile != null) {
-                            Utils.copyFileIfNewer(inputFileDetails.file, outFile)
+                        List<File> outputPaths = getOutputPaths()
+                        for (File outPath : outputPaths) {
+                            File outFile = findOutFile(outPath, inputFileDetails)
+
+                            if (outFile != null) {
+                                Utils.copyFileIfNewer(inputFileDetails.file, outFile)
+                            }
                         }
+
                     }
                 }
             })
@@ -98,25 +111,50 @@ class DeployTask extends BaseChangesTask{
 
                 @Override
                 void execute(InputFileDetails inputFileDetails) {
-                    File outFile = findOutFile(inputFileDetails)
+                    List<File> outputPaths = getOutputPaths()
+                    for (File outPath : outputPaths) {
 
-                    if(outFile != null && outFile.exists())
-                    {
-                        outFile.delete()
+                        File outFile = findOutFile(outPath, inputFileDetails)
+
+                        if (outFile != null && outFile.exists()) {
+                            outFile.delete()
+                        }
                     }
                 }
             })
         }
     }
 
-    private File findOutFile(InputFileDetails inputFileDetails) {
+    private void writeBridgingHeader(FileFilter extensionFilter)
+    {
+        List<String> outputPaths = getBridgingHeaderOutput()
+        if(!outputPaths.isEmpty())
+        {
+            for (String outPath : outputPaths) {
+                File file = project.file(outPath)
+
+                PrintWriter pw = new PrintWriter(new FileWriter(file))
+
+                File[] fromFiles = srcGenDir.listFiles(extensionFilter)
+                for (File f : fromFiles) {
+                    if(f.isDirectory() || !f.exists() || !f.getName().endsWith(".h"))
+                        continue;
+                    pw.println("#import \""+ f.getName() +"\"")
+                }
+
+                pw.close()
+            }
+        }
+    }
+
+    private File findOutFile(File outputPath, InputFileDetails inputFileDetails) {
         String inputPath = inputFileDetails.file.getPath()
         if (inputPath.startsWith(srcGenDir.getPath())) {
             String afterPath = inputPath.substring(srcGenDir.getPath().length())
             if (afterPath.startsWith("/"))
                 afterPath = afterPath.substring(1)
 
-            return new File(getOutputPath(), afterPath)
+            return new File(outputPath, afterPath)
         }
         return null
     }
@@ -125,52 +163,58 @@ class DeployTask extends BaseChangesTask{
 
         List<DopplDependency> dopplLibs = new ArrayList<>(getTranslateDopplLibs())
 
-        if (getOutputPath() != null) {
 
-            File mainOut = getOutputPath()
+        List<File> outputPaths = getOutputPaths()
+        if (!outputPaths.isEmpty()) {
 
-            mainOut.deleteDir()
+            for (File outPath : outputPaths) {
+                File mainOut = outPath
 
-            Utils.copyFileRecursive(srcGenDir, mainOut, extensionFilter)
+                mainOut.deleteDir()
 
-            Properties properties = new Properties();
+                Utils.copyFileRecursive(srcGenDir, mainOut, extensionFilter)
 
-            if (isCopyDependencies()) {
+                Properties properties = new Properties();
 
-                if(testCode)
-                {
-                    dopplLibs.removeAll(_buildContext.getDependencyResolver().translateDopplLibs)
-                }
+                if (isCopyDependencies()) {
 
-                for (DopplDependency lib : dopplLibs) {
-                    File depSource = new File(lib.dependencyFolderLocation(), "src")
+                    if(testCode)
+                    {
+                        dopplLibs.removeAll(_buildContext.getDependencyResolver().translateDopplLibs)
+                    }
 
-                    Utils.copyFileRecursive(depSource, new File(mainOut, lib.name), extensionFilter)
-                    Properties libraryPrefixes = Utils.findDopplLibraryPrefixes(lib.dependencyFolderLocation())
-                    if(libraryPrefixes != null) {
-                        for (String name : libraryPrefixes.propertyNames()) {
-                            properties.put(name, libraryPrefixes.get(name))
+                    for (DopplDependency lib : dopplLibs) {
+                        File depSource = new File(lib.dependencyFolderLocation(), "src")
+
+                        Utils.copyFileRecursive(depSource, new File(mainOut, lib.name), extensionFilter)
+                        Properties libraryPrefixes = Utils.findDopplLibraryPrefixes(lib.dependencyFolderLocation())
+                        if(libraryPrefixes != null) {
+                            for (String name : libraryPrefixes.propertyNames()) {
+                                properties.put(name, libraryPrefixes.get(name))
+                            }
                         }
                     }
                 }
-            }
 
-            Map<String, String> prefixes = getPrefixes()
-            for (String name : prefixes.keySet()) {
-                properties.put(name, prefixes.get(name))
-            }
+                Map<String, String> prefixes = getPrefixes()
+                for (String name : prefixes.keySet()) {
+                    properties.put(name, prefixes.get(name))
+                }
 
-            //The output dir wouldn't have been created by now if nothing is in it
-            if(prefixes.size() > 0 && mainOut.exists()) {
-                //this properties file is different than what's in the doppl packaging properties
-                //Should probably rename the other one. this is ALL of them, even from dependencies.
-                def prefixFile = new File(mainOut, "prefixes.properties")
-                def writer = new FileWriter(prefixFile)
+                //The output dir wouldn't have been created by now if nothing is in it
+                if(prefixes.size() > 0 && mainOut.exists()) {
+                    //this properties file is different than what's in the doppl packaging properties
+                    //Should probably rename the other one. this is ALL of them, even from dependencies.
+                    def prefixFile = new File(mainOut, "prefixes.properties")
+                    def writer = new FileWriter(prefixFile)
 
-                properties.store(writer, null);
+                    properties.store(writer, null);
 
-                writer.close()
+                    writer.close()
+                }
             }
         }
+
+        writeBridgingHeader(extensionFilter)
     }
 }

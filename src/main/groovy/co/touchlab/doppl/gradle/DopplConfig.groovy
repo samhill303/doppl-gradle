@@ -68,12 +68,18 @@ class DopplConfig {
     boolean useArc = false;
 
     String mappingsInput = null;
-    String copyMainOutput = null;
-    String copyTestOutput = null;
+    List<String> copyMainOutput = new ArrayList<>();
+    List<String> copyTestOutput = new ArrayList<>();
     boolean copyDependencies = false;
+
+    List<String> mainBridgingHeaderOutput = new ArrayList<>();
+    List<String> testBridgingHeaderOutput = new ArrayList<>();
+
     boolean emitLineDirectives = false;
 
     boolean ignoreWeakAnnotations = false;
+
+    boolean skipDependsTasks = false
 
     String targetVariant = "debug"
 
@@ -169,6 +175,42 @@ class DopplConfig {
 
     File getDestDopplDirFile(){
         return project.file(destDopplFolder)
+    }
+
+    /**
+     * Add output path for objective c files
+     */
+    void copyMainOutput(String... paths) {
+        for (String p : paths) {
+            this.copyMainOutput.add(p)
+        }
+    }
+
+    /**
+     * Add output path for objective c test files
+     */
+    void copyTestOutput(String... paths) {
+        for (String p : paths) {
+            this.copyTestOutput.add(p)
+        }
+    }
+
+    /**
+     * Add output path for objective c files
+     */
+    void mainBridgingHeaderOutput(String... paths) {
+        for (String p : paths) {
+            this.mainBridgingHeaderOutput.add(p)
+        }
+    }
+
+    /**
+     * Add output path for objective c test files
+     */
+    void testBridgingHeaderOutput(String... paths) {
+        for (String p : paths) {
+            this.testBridgingHeaderOutput.add(p)
+        }
     }
 
     /**
