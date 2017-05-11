@@ -50,6 +50,8 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:1.0.5-2"
     compile "org.jetbrains.kotlin:kotlin-reflect:1.0.5-2"
     compile 'com.google.apis:google-api-services-analytics:v3-rev137-1.22.0'
+    compile 'com.google.code.gson:gson:2.7'
+
 
     testCompile 'junit:junit:4.11'
     // https://mvnrepository.com/artifact/org.testng/testng
@@ -62,7 +64,7 @@ task wrapper(type: Wrapper) {
 }
 
 group = 'co.touchlab.doppl'
-version = "0.6.1-SNAPSHOT"
+version = "0.6.4-SNAPSHOT"
 
 test {
     enabled = false

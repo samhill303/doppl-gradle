@@ -83,6 +83,8 @@ class DopplConfig {
 
     String targetVariant = "debug"
 
+    boolean disableAnalytics = false;
+
     /**
      * Additional generated source files directories
      */

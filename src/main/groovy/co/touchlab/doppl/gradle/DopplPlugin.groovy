@@ -16,6 +16,7 @@
 
 package co.touchlab.doppl.gradle
 
+import co.touchlab.doppl.gradle.analytics.DopplAnalytics
 import co.touchlab.doppl.gradle.tasks.DeployTask
 import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
 import co.touchlab.doppl.gradle.tasks.TranslateTask
@@ -25,7 +26,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.ProjectConfigurationException
 import org.gradle.api.Task
-import org.gradle.api.artifacts.Configuration
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.bundling.Jar
 
@@ -195,5 +195,7 @@ class DopplPlugin implements Plugin<Project> {
                outputs.upToDateWhen { false }
            }*/
         }
+
+
     }
 }
