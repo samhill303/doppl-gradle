@@ -16,7 +16,6 @@
 
 package co.touchlab.doppl.gradle
 
-import co.touchlab.doppl.gradle.analytics.DopplAnalytics
 import co.touchlab.doppl.gradle.tasks.DeployTask
 import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
 import co.touchlab.doppl.gradle.tasks.TranslateTask
@@ -40,6 +39,9 @@ class DopplPlugin implements Plugin<Project> {
 
     public static final String TASK_DOPPL_ASSEMBLY = 'dopplAssembly'
     public static final String TASK_DOPPL_ARCHIVE = 'dopplArchive'
+    public static final String TASK_J2OBJC_MAIN_TRANSLATE = 'j2objcMainTranslate'
+    public static final String TASK_J2OBJC_TEST_TRANSLATE = 'j2objcTestTranslate'
+    public static final String TASK_J2OBJC_TRANSLATE = 'j2objcTranslate'
 
     @Override
     void apply(Project project) {
@@ -110,35 +112,52 @@ class DopplPlugin implements Plugin<Project> {
             //What runs before you run
             buildContext.getBuildTypeProvider().configureDependsOn(project, prebuildTask)
 
-            tasks.create(name: 'j2objcTranslate', type: TranslateTask,
+            tasks.create(name: TASK_J2OBJC_MAIN_TRANSLATE, type: TranslateTask,
                     dependsOn: 'j2objcPreBuild') {
                 group 'doppl'
-                description "Translates all the java source files in to Objective-C using 'j2objc'"
+                description "Translates main java source files to Objective-C"
                 _buildContext = buildContext
 
                 // Output directories of 'j2objcTranslate', input for all other tasks
-                srcGenMainDir = j2objcSrcGenMainDir
-                srcGenTestDir = j2objcSrcGenTestDir
+                srcGenDir = j2objcSrcGenMainDir
                 try {
                     //TODO: This should probably be more configurable
                     def file = file('src/main/objc')
                     if(file.exists())
-                        srcMainObjcDir = file
+                        srcObjcDir = file
                 } catch (Exception e) {
                     //Ugh
                 }
+            }
+
+            tasks.create(name: TASK_J2OBJC_TEST_TRANSLATE, type: TranslateTask,
+                    dependsOn: 'j2objcPreBuild') {
+                group 'doppl'
+                description "Translates test java source files to Objective-C"
+                _buildContext = buildContext
+
+                // Output directories of 'j2objcTranslate', input for all other tasks
+                srcGenDir = j2objcSrcGenTestDir
                 try {
                     //TODO: This should probably be more configurable
                     def file = file('src/test/objc')
                     if(file.exists())
-                        srcTestObjcDir = file
+                        srcObjcDir = file
                 } catch (Exception e) {
-                    //Don't care
+                    //Ugh
                 }
             }
 
+            tasks.create(name: TASK_J2OBJC_TRANSLATE, type: DefaultTask, dependsOn: [
+                    TASK_J2OBJC_MAIN_TRANSLATE,
+                    TASK_J2OBJC_TEST_TRANSLATE
+            ]) {
+                group 'doppl'
+                description "Marker task for all tasks that must be complete before j2objc building"
+            }
+
             tasks.create(name: TASK_DOPPL_DEPLOY_MAIN, type: DeployTask,
-                    dependsOn: 'j2objcTranslate') {
+                    dependsOn: TASK_J2OBJC_MAIN_TRANSLATE) {
                 group 'doppl'
                 description 'Push main code to Xcode directory (or wherever you want)'
 
@@ -148,7 +167,7 @@ class DopplPlugin implements Plugin<Project> {
             }
 
             tasks.create(name: TASK_DOPPL_DEPLOY_TEST, type: DeployTask,
-                    dependsOn: 'j2objcTranslate') {
+                    dependsOn: TASK_J2OBJC_TEST_TRANSLATE) {
                 group 'doppl'
                 description 'Push test code to Xcode directory (or wherever you want)'
 
@@ -169,7 +188,7 @@ class DopplPlugin implements Plugin<Project> {
             //The following tasks are geared towards library assembly and archiving
 
             tasks.create(name: TASK_DOPPL_ASSEMBLY, type: DopplAssemblyTask,
-                    dependsOn: 'j2objcTranslate') {
+                    dependsOn: TASK_J2OBJC_MAIN_TRANSLATE) {
                 group 'doppl'
                 description 'Pull together doppl pieces for library projects'
 

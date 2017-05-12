@@ -90,7 +90,7 @@ public class DopplAnalytics {
         analyticsPackage.externalUser = false;
         analyticsPackage.anonMacAddress = analyticsPackage.distinct_id;
         analyticsPackage.j2objcVersion = this.j2objcVersion;
-        analyticsPackage.dopplVersion = "0.6.4-SNAPSHOT";
+        analyticsPackage.dopplVersion = "0.7.0-SNAPSHOT";
         analyticsPackage.hostOs = System.getProperty("os.name");
         analyticsPackage.hostOsVersion = System.getProperty("os.version");
         analyticsPackage.useArc = config.getUseArc();

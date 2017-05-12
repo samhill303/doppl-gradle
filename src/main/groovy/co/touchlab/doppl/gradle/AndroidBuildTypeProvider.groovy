@@ -38,6 +38,13 @@ class AndroidBuildTypeProvider implements BuildTypeProvider{
     }
 
     @Override
+    void configureTestDependsOn(Project project, Task prebuildTask) {
+        if(!dopplConfig.skipDependsTasks) {
+            prebuildTask.dependsOn('test')
+        }
+    }
+
+    @Override
     List<FileTree> testSourceSets(Project project) {
         return sourceSets(project, true)
     }

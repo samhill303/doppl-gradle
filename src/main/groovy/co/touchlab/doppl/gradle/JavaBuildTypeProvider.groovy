@@ -11,9 +11,25 @@ import org.gradle.api.file.FileTree
  * Created by kgalligan on 3/12/17.
  */
 class JavaBuildTypeProvider implements BuildTypeProvider{
+
+    private final DopplConfig dopplConfig;
+
+    JavaBuildTypeProvider(Project project) {
+        dopplConfig = DopplConfig.from(project)
+    }
+
     @Override
     void configureDependsOn(Project project, Task prebuildTask) {
-        prebuildTask.dependsOn('jar')
+        if(!dopplConfig.skipDependsTasks) {
+            prebuildTask.dependsOn('jar')
+        }
+    }
+
+    @Override
+    void configureTestDependsOn(Project project, Task prebuildTask) {
+        if(!dopplConfig.skipDependsTasks) {
+            prebuildTask.dependsOn('test')
+        }
     }
 
     @Override

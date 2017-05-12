@@ -9,6 +9,7 @@ import org.gradle.api.file.FileTree
  */
 interface BuildTypeProvider {
     void configureDependsOn(Project project, Task prebuildTask)
+    void configureTestDependsOn(Project project, Task prebuildTask)
 
     List<FileTree> testSourceSets(Project project)
 
