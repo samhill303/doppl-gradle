@@ -24,7 +24,7 @@ public class DopplVersionManager {
     }
 
     private static void checkJ2objcVersion(Project project, String explicitJ2objcVersion) {
-        String foundJ2objcVersion = DopplConfig.findVersionString(project, Utils.j2objcHome(project));
+        String foundJ2objcVersion = Utils.findVersionString(project, Utils.j2objcHome(project));
         /*if (!foundJ2objcVersion.equals(explicitJ2objcVersion)) {
             // Note that actualVersionString will usually already have the word 'j2objc' in it.
             Utils.throwJ2objcConfigFailure(project,

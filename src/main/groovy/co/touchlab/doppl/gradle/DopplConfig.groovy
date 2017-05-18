@@ -19,11 +19,9 @@ package co.touchlab.doppl.gradle
 import co.touchlab.doppl.gradle.tasks.Utils
 import com.google.common.annotations.VisibleForTesting
 import groovy.transform.CompileStatic
-import org.gradle.api.InvalidUserDataException
 import org.gradle.api.Project
 import org.gradle.api.tasks.util.PatternSet
 import org.gradle.util.ConfigureUtil
-
 /**
  * dopplConfig is used to configure the plugin with the project's build.gradle.
  */
@@ -221,7 +219,7 @@ class DopplConfig {
      * @param generatedSourceDirs adds generated source directories for j2objc translate
      */
     void generatedSourceDirs(String... generatedSourceDirs) {
-        appendArgs(this.generatedSourceDirs, 'generatedSourceDirs', true, generatedSourceDirs)
+        Utils.appendArgs(this.generatedSourceDirs, 'generatedSourceDirs', true, generatedSourceDirs)
     }
 
     /**
@@ -239,7 +237,7 @@ class DopplConfig {
      * @param generatedSourceDirs adds generated source directories for j2objc translate
      */
     void generatedTestSourceDirs(String... generatedTestSourceDirs) {
-        appendArgs(this.generatedTestSourceDirs, 'generatedTestSourceDirs', true, generatedTestSourceDirs)
+        Utils.appendArgs(this.generatedTestSourceDirs, 'generatedTestSourceDirs', true, generatedTestSourceDirs)
     }
 
     /**
@@ -251,7 +249,7 @@ class DopplConfig {
      * @param cycleFinderArgs add args for 'cycle_finder' tool
      */
     void cycleFinderArgs(String... cycleFinderArgs) {
-        appendArgs(this.cycleFinderArgs, 'cycleFinderArgs', true, cycleFinderArgs)
+        Utils.appendArgs(this.cycleFinderArgs, 'cycleFinderArgs', true, cycleFinderArgs)
     }
 
     /**
@@ -263,7 +261,7 @@ class DopplConfig {
      * @param translateArgs add args for the 'j2objc' tool
      */
     void translateArgs(String... translateArgs) {
-        appendArgs(this.translateArgs, 'translateArgs', true, translateArgs)
+        Utils.appendArgs(this.translateArgs, 'translateArgs', true, translateArgs)
     }
 
     List<String> processedTranslateArgs()
@@ -305,7 +303,7 @@ class DopplConfig {
      *  @param translateClasspaths add libraries for -classpath argument
      */
     void translateClasspaths(String... translateClasspaths) {
-        appendArgs(this.translateClasspaths, 'translateClasspaths', true, translateClasspaths)
+        Utils.appendArgs(this.translateClasspaths, 'translateClasspaths', true, translateClasspaths)
     }
 
     /**
@@ -338,69 +336,6 @@ class DopplConfig {
      */
     void translateSourceMapping(String before, String after) {
         translateSourceMapping.put(before, after)
-    }
-
-    public static String findVersionString(Project project, String j2objcHome) {
-        String j2objcExecutable = "$j2objcHome/j2objc"
-
-        ByteArrayOutputStream stdout = new ByteArrayOutputStream()
-        ByteArrayOutputStream stderr = new ByteArrayOutputStream()
-
-        project.logger.debug('VerifyJ2objcRequirements - projectExec:')
-        try {
-            Utils.projectExec(project, stdout, stderr, null, {
-                executable j2objcExecutable
-
-                // Arguments
-                args "-version"
-
-                setStandardOutput stdout
-                setErrorOutput stderr
-            })
-
-        } catch (Exception exception) {
-            throw new RuntimeException(exception.toString() + "\n\n" +
-                                       "J2ObjC binary at $j2objcHome failed version call.", exception)
-        }
-        // Yes, J2ObjC uses stderr to output the version.
-        String actualVersionString = stderr.toString().trim()
-        if(actualVersionString.startsWith("j2objc "))
-            actualVersionString = actualVersionString.substring("j2objc ".length())
-        return actualVersionString
-    }
-
-    // Provides a subset of "args" interface from project.exec as implemented by ExecHandleBuilder:
-    // https://github.com/gradle/gradle/blob/master/subprojects/core/src/main/groovy/org/gradle/process/internal/ExecHandleBuilder.java
-    // Allows the following:
-    // dopplConfig {
-    //     translateArgs '--no-package-directories', '--prefixes', 'prefixes.properties'
-    // }
-    @VisibleForTesting
-    static void appendArgs(List<String> listArgs, String nameArgs, boolean rejectSpaces, String... args) {
-        verifyArgs(nameArgs, rejectSpaces, args)
-        listArgs.addAll(Arrays.asList(args))
-    }
-
-    // Verify that no argument contains a space
-    @VisibleForTesting
-    static void verifyArgs(String nameArgs, boolean rejectSpaces, String... args) {
-        if (args == null) {
-            throw new InvalidUserDataException("$nameArgs == null!")
-        }
-        for (String arg in args) {
-            if (arg.isAllWhitespace()) {
-                throw new InvalidUserDataException(
-                        "$nameArgs is all whitespace: '$arg'")
-            }
-            if (rejectSpaces) {
-                if (arg.contains(' ')) {
-                    String rewrittenArgs = "'" + arg.split(' ').join("', '") + "'"
-                    throw new InvalidUserDataException(
-                            "'$arg' argument should not contain spaces and be written out as distinct entries:\n" +
-                            "$nameArgs $rewrittenArgs")
-                }
-            }
-        }
     }
 
     @VisibleForTesting

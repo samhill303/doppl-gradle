@@ -139,7 +139,7 @@ class TranslateTask extends BaseChangesTask {
         DopplConfig dopplConfig = DopplConfig.from(project)
 
         if(!dopplConfig.disableAnalytics) {
-            new DopplAnalytics(dopplConfig, DopplConfig.findVersionString(project, Utils.j2objcHome(project))).execute()
+            new DopplAnalytics(dopplConfig, Utils.findVersionString(project, Utils.j2objcHome(project))).execute()
         }
 
         List<String> translateArgs = getTranslateArgs()

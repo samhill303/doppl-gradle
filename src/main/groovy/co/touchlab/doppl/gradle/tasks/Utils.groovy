@@ -315,7 +315,7 @@ class Utils {
         // This can be null in tests!
         DopplConfig config = DopplConfig.from(proj)
         String j2objcHomeDir = Utils.j2objcHomeOrNull(proj)
-        String ver = j2objcHomeDir == null ? "(unknown)" : DopplConfig.findVersionString(proj, j2objcHomeDir)
+        String ver = j2objcHomeDir == null ? "(unknown)" : findVersionString(proj, j2objcHomeDir)
 
         String message = ">>>>>>>>>>>>>>>> J2ObjC Tool Configuration Failure <<<<<<<<<<<<<<<<\n" +
                          "$preamble\n" +
@@ -363,6 +363,69 @@ class Utils {
         }else{
             def asdf = proj['android']['sourceSets'][sourceSetName][fileType]
             return (Set<File>)asdf['srcDirs']
+        }
+    }
+
+    public static String findVersionString(Project project, String j2objcHome) {
+        String j2objcExecutable = "$j2objcHome/j2objc"
+
+        ByteArrayOutputStream stdout = new ByteArrayOutputStream()
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream()
+
+        project.logger.debug('VerifyJ2objcRequirements - projectExec:')
+        try {
+            projectExec(project, stdout, stderr, null, {
+                executable j2objcExecutable
+
+                // Arguments
+                args "-version"
+
+                setStandardOutput stdout
+                setErrorOutput stderr
+            })
+
+        } catch (Exception exception) {
+            throw new RuntimeException(exception.toString() + "\n\n" +
+                                       "J2ObjC binary at $j2objcHome failed version call.", exception)
+        }
+        // Yes, J2ObjC uses stderr to output the version.
+        String actualVersionString = stderr.toString().trim()
+        if(actualVersionString.startsWith("j2objc "))
+            actualVersionString = actualVersionString.substring("j2objc ".length())
+        return actualVersionString
+    }
+
+    // Provides a subset of "args" interface from project.exec as implemented by ExecHandleBuilder:
+    // https://github.com/gradle/gradle/blob/master/subprojects/core/src/main/groovy/org/gradle/process/internal/ExecHandleBuilder.java
+    // Allows the following:
+    // dopplConfig {
+    //     translateArgs '--no-package-directories', '--prefixes', 'prefixes.properties'
+    // }
+    @VisibleForTesting
+    static void appendArgs(List<String> listArgs, String nameArgs, boolean rejectSpaces, String... args) {
+        verifyArgs(nameArgs, rejectSpaces, args)
+        listArgs.addAll(Arrays.asList(args))
+    }
+
+    // Verify that no argument contains a space
+    @VisibleForTesting
+    static void verifyArgs(String nameArgs, boolean rejectSpaces, String... args) {
+        if (args == null) {
+            throw new InvalidUserDataException("$nameArgs == null!")
+        }
+        for (String arg in args) {
+            if (arg.isAllWhitespace()) {
+                throw new InvalidUserDataException(
+                        "$nameArgs is all whitespace: '$arg'")
+            }
+            if (rejectSpaces) {
+                if (arg.contains(' ')) {
+                    String rewrittenArgs = "'" + arg.split(' ').join("', '") + "'"
+                    throw new InvalidUserDataException(
+                            "'$arg' argument should not contain spaces and be written out as distinct entries:\n" +
+                            "$nameArgs $rewrittenArgs")
+                }
+            }
         }
     }
 
