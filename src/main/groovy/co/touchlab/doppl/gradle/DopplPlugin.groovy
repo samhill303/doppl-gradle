@@ -109,10 +109,7 @@ class DopplPlugin implements Plugin<Project> {
                 description "Marker task for all tasks that must be complete before j2objc building"
             }
 
-            //What runs before you run
-            buildContext.getBuildTypeProvider().configureDependsOn(project, prebuildTask)
-
-            tasks.create(name: TASK_J2OBJC_MAIN_TRANSLATE, type: TranslateTask,
+            Task translateMain = tasks.create(name: TASK_J2OBJC_MAIN_TRANSLATE, type: TranslateTask,
                     dependsOn: 'j2objcPreBuild') {
                 group 'doppl'
                 description "Translates main java source files to Objective-C"
@@ -123,14 +120,16 @@ class DopplPlugin implements Plugin<Project> {
                 try {
                     //TODO: This should probably be more configurable
                     def file = file('src/main/objc')
-                    if(file.exists())
+                    if (file.exists())
                         srcObjcDir = file
                 } catch (Exception e) {
                     //Ugh
                 }
             }
 
-            tasks.create(name: TASK_J2OBJC_TEST_TRANSLATE, type: TranslateTask,
+            buildContext.getBuildTypeProvider().configureDependsOn(project, translateMain)
+
+            Task translateTest = tasks.create(name: TASK_J2OBJC_TEST_TRANSLATE, type: TranslateTask,
                     dependsOn: 'j2objcPreBuild') {
                 group 'doppl'
                 description "Translates test java source files to Objective-C"
@@ -138,15 +137,18 @@ class DopplPlugin implements Plugin<Project> {
 
                 // Output directories of 'j2objcTranslate', input for all other tasks
                 srcGenDir = j2objcSrcGenTestDir
+                testBuild = true
                 try {
                     //TODO: This should probably be more configurable
                     def file = file('src/test/objc')
-                    if(file.exists())
+                    if (file.exists())
                         srcObjcDir = file
                 } catch (Exception e) {
                     //Ugh
                 }
             }
+
+            buildContext.getBuildTypeProvider().configureTestDependsOn(project, translateTest)
 
             tasks.create(name: TASK_J2OBJC_TRANSLATE, type: DefaultTask, dependsOn: [
                     TASK_J2OBJC_MAIN_TRANSLATE,

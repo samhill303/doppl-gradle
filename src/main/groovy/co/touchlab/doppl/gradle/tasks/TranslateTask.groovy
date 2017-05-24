@@ -92,7 +92,7 @@ class TranslateTask extends BaseChangesTask {
 
         for (String sd  : overlaySourceDirs) {
             ConfigurableFileTree fileTree = project.fileTree(dir: sd, includes: ["**/*.java"])
-            FileTree matchingFileTree = fileTree.matching(dopplConfig.translatePattern)
+            FileTree matchingFileTree = dopplConfig.translatePattern == null? fileTree : fileTree.matching(dopplConfig.translatePattern)
 
             for (File overlayFile : matchingFileTree.files) {
                 overlayClasses.add(overlayFile.getPath().substring(fileTree.getDir().getPath().length()))
