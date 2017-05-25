@@ -13,11 +13,22 @@ public class DopplVersionManager {
     public static final String EXPLICIT_J2OBJC_VERSION = "1.3.2a-doppl";
 
     public static void verifyJ2objcRequirements(Project project) {
+        String j2objcHome = Utils.j2objcHomeOrNull(project);
+
+        if (j2objcHome == null) {
+            Utils.throwJ2objcConfigFailure("J2ObjC Home not set. Please check local.properties to make sure your j2objc.home is set.");
+        }
+
+        File j2objcHomeFile = new File(j2objcHome);
+
+        if (!j2objcHomeFile.exists()) {
+            Utils.throwJ2objcConfigFailure("J2ObjC Home directory not found, expected at " + j2objcHome);
+        }
 
         // Verify that underlying J2ObjC binary exists at all.
         File j2objcJar = Utils.j2objcJar(project);
         if (!j2objcJar.exists()) {
-            Utils.throwJ2objcConfigFailure(project, "J2ObjC binary does not exist at ${j2objcJar.absolutePath}.");
+            Utils.throwJ2objcConfigFailure("J2ObjC binary does not exist at " + j2objcJar.getAbsolutePath());
         }
 
         checkJ2objcVersion(project, EXPLICIT_J2OBJC_VERSION);

@@ -5,7 +5,6 @@
 package co.touchlab.doppl.gradle.tasks
 
 import co.touchlab.doppl.gradle.DopplDependency
-import co.touchlab.doppl.gradle.DopplConfig
 import com.google.common.annotations.VisibleForTesting
 import groovy.transform.CompileStatic
 import groovy.transform.TypeCheckingMode
@@ -30,7 +29,6 @@ import org.gradle.process.internal.ExecException
 import org.gradle.util.GradleVersion
 
 import java.util.regex.Matcher
-
 /**
  * Internal utilities supporting plugin implementation.
  */
@@ -277,20 +275,8 @@ class Utils {
         return result == null ? defaultValue : result
     }
 
-    // MUST be used only in @Input getJ2objcHome() methods to ensure up-to-date checks are correct
-    // @Input getJ2objcHome() method can be used freely inside the task action
     static String j2objcHome(Project proj) {
-        String j2objcHome = j2objcHomeOrNull(proj)
-        if (j2objcHome == null) {
-            throwJ2objcConfigFailure(proj, "J2ObjC Home not set.")
-        }
-        File j2objcHomeFile = new File(j2objcHome)
-
-        if (!j2objcHomeFile.exists()) {
-            throwJ2objcConfigFailure(proj, "J2ObjC Home directory not found, expected at $j2objcHome.")
-        }
-        // File removes trailing slashes cause problems with string concatenation logic
-        return j2objcHomeFile.absolutePath
+        return new File(j2objcHomeOrNull(proj)).absolutePath
     }
 
     static String j2objcHomeOrNull(Project proj)
@@ -310,41 +296,11 @@ class Utils {
         return proj.file("${j2objcHome(proj)}/lib/cycle_finder.jar")
     }
 
-    static void throwJ2objcConfigFailure(Project proj, String preamble) {
-        String propFile = "${proj.rootDir.absolutePath}/local.properties"
-        // This can be null in tests!
-        DopplConfig config = DopplConfig.from(proj)
-        String j2objcHomeDir = Utils.j2objcHomeOrNull(proj)
-        String ver = j2objcHomeDir == null ? "(unknown)" : findVersionString(proj, j2objcHomeDir)
-
-        String message = ">>>>>>>>>>>>>>>> J2ObjC Tool Configuration Failure <<<<<<<<<<<<<<<<\n" +
+    static void throwJ2objcConfigFailure(String preamble) {
+        String message = ">>>>>>>>>>>>>>>> Doppl Tool Configuration Error <<<<<<<<<<<<<<<<\n" +
                          "$preamble\n" +
                          "\n" +
-                         "If you do not have a J2ObjC v${ver} distribution,\n" +
-                         "you can initiate a default installation of J2ObjC\n" +
-                         "by running the following from a Terminal:\n" +
-                         "\n" +
-                         "  J2OBJC_ROOT=~/j2objcDist\n" +
-                         // Create a distribution parent directory for all versions.
-                         "  mkdir -p \$J2OBJC_ROOT; pushd \$J2OBJC_ROOT\n" +
-                         // Download an official release.
-                         "  curl -L https://github.com/google/j2objc/releases/download/${ver}/j2objc-${ver}.zip > j2objc-${ver}.zip\n" +
-                         // Unzip the distribution (only).
-                         "  unzip j2objc-${ver}.zip; popd\n" +
-                         // Eliminate any existing value in local.properties.
-                         "  sed -i '' '/j2objc.home/d' $propFile\n" +
-                         // Add a new value for j2objc.home to local.properties.
-                         "  echo j2objc.home=\$J2OBJC_ROOT/j2objc-${ver} >> $propFile\n" +
-                         "\n" +
-                         "Then rerun your Gradle build.\n" +
-                         "\n" +
-                         "For advanced configuration of J2ObjC, please see http://j2objc.org/\n" +
-                         "If J2ObjC v${ver} is already installed, set J2ObjC Home either:\n" +
-                         "1) in a 'local.properties' file in the project root directory as:\n" +
-                         "   j2objc.home=/LOCAL_J2OBJC_PATH\n" +
-                         "2) as the J2OBJC_HOME system environment variable\n" +
-                         "\n" +
-                         "If both are configured the value in the properties file will be used."
+                         "See 'Getting Started' at http://doppl.co\n"
         throw new InvalidUserDataException(message)
     }
 
