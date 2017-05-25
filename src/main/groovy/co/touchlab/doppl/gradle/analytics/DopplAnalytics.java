@@ -32,17 +32,11 @@ public class DopplAnalytics {
     // The list of packages the model classes reside in
     private Set<String> packages;
     private DopplConfig config;
-//    boolean javaType;
-//    boolean androidType;
     String j2objcVersion;
 
     public DopplAnalytics(DopplConfig config,
-//                          boolean javaType,
-//                          boolean androidType,
                           String j2objcVersion) {
         this.config = config;
-//        this.javaType = javaType;
-//        this.androidType = androidType;
         this.j2objcVersion = j2objcVersion;
     }
 
@@ -106,8 +100,6 @@ public class DopplAnalytics {
         analyticsPackage.anyOverlaySourceDirs = !config.getOverlaySourceDirs().isEmpty();
         analyticsPackage.anyTranslateArgs = !config.getTranslateArgs().isEmpty();
         analyticsPackage.anyTranslateClasspaths = !config.getTranslateClasspaths().isEmpty();
-//        analyticsPackage.javaType = this.javaType;
-//        analyticsPackage.androidType = this.androidType;
 
         JsonWrapper jsonWrapper = new JsonWrapper();
         jsonWrapper.properties = analyticsPackage;

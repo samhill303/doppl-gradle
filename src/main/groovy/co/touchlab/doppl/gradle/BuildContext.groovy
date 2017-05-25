@@ -27,7 +27,7 @@ class BuildContext {
     synchronized BuildTypeProvider getBuildTypeProvider() {
         if(buildTypeProvider == null) {
             boolean androidTypeProject = Utils.isAndroidTypeProject(project);
-            buildTypeProvider = androidTypeProject ? new AndroidBuildTypeProvider(project) : new JavaBuildTypeProvider()
+            buildTypeProvider = androidTypeProject ? new AndroidBuildTypeProvider(project) : new JavaBuildTypeProvider(project)
         }
 
         return buildTypeProvider
