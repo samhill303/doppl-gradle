@@ -153,6 +153,8 @@ class DopplConfig {
      */
     PatternSet translatePattern = null
 
+    PatternSet testTranslatePattern = null
+
     //KPG: Review if this is still useful
     /**
      * A mapping from source file names (in the project Java sourcesets) to alternate
@@ -328,6 +330,13 @@ class DopplConfig {
             translatePattern = new PatternSet()
         }
         return ConfigureUtil.configure(cl, translatePattern)
+    }
+
+    PatternSet testTranslatePattern(@DelegatesTo(strategy =  Closure.DELEGATE_FIRST, value = PatternSet) Closure cl) {
+        if (testTranslatePattern == null) {
+            testTranslatePattern = new PatternSet()
+        }
+        return ConfigureUtil.configure(cl, testTranslatePattern)
     }
 
     /**

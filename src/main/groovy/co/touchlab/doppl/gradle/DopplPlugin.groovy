@@ -18,6 +18,7 @@ package co.touchlab.doppl.gradle
 
 import co.touchlab.doppl.gradle.tasks.DeployTask
 import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
+import co.touchlab.doppl.gradle.tasks.TestTranslateTask
 import co.touchlab.doppl.gradle.tasks.TranslateTask
 import co.touchlab.doppl.gradle.tasks.Utils
 import org.gradle.api.DefaultTask
@@ -36,6 +37,7 @@ class DopplPlugin implements Plugin<Project> {
     public static final String TASK_DOPPL_DEPLOY_MAIN = 'dopplDeployMain'
     public static final String TASK_DOPPL_DEPLOY_TEST = 'dopplDeployTest'
     public static final String TASK_DOPPL_DEPLOY = 'dopplDeploy'
+    public static final String TASK_DOPPL_TEST_TRANSLATE = 'dopplTest'
 
     public static final String TASK_DOPPL_ASSEMBLY = 'dopplAssembly'
     public static final String TASK_DOPPL_ARCHIVE = 'dopplArchive'
@@ -149,6 +151,14 @@ class DopplPlugin implements Plugin<Project> {
             }
 
             buildContext.getBuildTypeProvider().configureTestDependsOn(project, translateTest)
+
+            tasks.create(name: TASK_DOPPL_TEST_TRANSLATE, type: TestTranslateTask) {
+                group 'doppl'
+                description "Compiles a list of the test classes in your project"
+                _buildContext = buildContext
+
+                output = file("${buildDir}/dopplTests.txt")
+            }
 
             tasks.create(name: TASK_J2OBJC_TRANSLATE, type: DefaultTask, dependsOn: [
                     TASK_J2OBJC_MAIN_TRANSLATE,
