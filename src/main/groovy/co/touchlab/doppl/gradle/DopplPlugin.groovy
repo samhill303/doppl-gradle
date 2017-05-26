@@ -157,7 +157,7 @@ class DopplPlugin implements Plugin<Project> {
                 description "Compiles a list of the test classes in your project"
                 _buildContext = buildContext
 
-                output = file("${buildDir}/dopplTests.txt")
+                output = file("${rootDir}/app/src/test/java/dopplTests.txt")
             }
 
             tasks.create(name: TASK_J2OBJC_TRANSLATE, type: DefaultTask, dependsOn: [
