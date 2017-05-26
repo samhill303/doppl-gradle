@@ -73,8 +73,6 @@ class DopplConfig {
     List<String> mainBridgingHeaderOutput = new ArrayList<>();
     List<String> testBridgingHeaderOutput = new ArrayList<>();
 
-    List<String> testIdentifier = new ArrayList<>()
-
     boolean emitLineDirectives = false;
 
     boolean ignoreWeakAnnotations = false;
@@ -155,7 +153,7 @@ class DopplConfig {
      */
     PatternSet translatePattern = null
 
-    PatternSet testTranslatePattern = null
+    PatternSet testIdentifier = null
 
     //KPG: Review if this is still useful
     /**
@@ -214,12 +212,6 @@ class DopplConfig {
     void testBridgingHeaderOutput(String... paths) {
         for (String p : paths) {
             this.testBridgingHeaderOutput.add(p)
-        }
-    }
-
-    void testIdentifier(String... idenetifiers) {
-        for (String i : idenetifiers) {
-            this.testIdentifier.add(i)
         }
     }
 
@@ -340,11 +332,11 @@ class DopplConfig {
         return ConfigureUtil.configure(cl, translatePattern)
     }
 
-    PatternSet testTranslatePattern(@DelegatesTo(strategy =  Closure.DELEGATE_FIRST, value = PatternSet) Closure cl) {
-        if (testTranslatePattern == null) {
-            testTranslatePattern = new PatternSet()
+    PatternSet testIdentifier(@DelegatesTo(strategy = Closure.DELEGATE_FIRST, value = PatternSet) Closure cl) {
+        if (testIdentifier == null) {
+            testIdentifier = new PatternSet()
         }
-        return ConfigureUtil.configure(cl, testTranslatePattern)
+        return ConfigureUtil.configure(cl, testIdentifier)
     }
 
     /**

@@ -29,18 +29,18 @@ class TestTranslateTask extends BaseChangesTask {
 
         DopplConfig dopplConfig = DopplConfig.from(project)
 
-        List<String> testIdentifiers = new ArrayList<>()
+        PatternSet testIdentifier = new ArrayList<>()
 
         if (dopplConfig.testIdentifier.isEmpty()) {
-            testIdentifiers.add("**/*Test.java")
+            testIdentifier.include("**/*Test.java")
         } else {
-            testIdentifiers.addAll(dopplConfig.testIdentifier)
+            testIdentifier = dopplConfig.testIdentifier
         }
 
-        FileCollection resultCollection = allFiles.matching(new PatternSet().include(testIdentifiers))
+        FileCollection resultCollection = allFiles.matching(testIdentifier)
 
-        if (dopplConfig.testTranslatePattern != null) {
-            resultCollection = resultCollection.matching(dopplConfig.testTranslatePattern)
+        if (dopplConfig.translatePattern != null) {
+            resultCollection = resultCollection.matching(dopplConfig.translatePattern)
         }
 
         return Utils.mapSourceFiles(project, resultCollection, dopplConfig.getTranslateSourceMapping())
@@ -49,10 +49,6 @@ class TestTranslateTask extends BaseChangesTask {
     @TaskAction
     void writeTestList() {
         DopplConfig dopplConfig = DopplConfig.from(project)
-
-        if (!dopplConfig.disableAnalytics) {
-            new DopplAnalytics(dopplConfig, Utils.findVersionString(project, Utils.j2objcHome(project))).execute()
-        }
 
         // Don't evaluate this expensive property multiple times.
         FileCollection originalSrcFiles = getSrcFiles()
