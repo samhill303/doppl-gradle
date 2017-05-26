@@ -95,7 +95,7 @@ class DopplPlugin implements Plugin<Project> {
                     provided project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
                 }
 
-                compile 'com.google.j2objc:j2objc-annotations:0.2.1'
+                compile project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
             }
 
             // Produces a modest amount of output
