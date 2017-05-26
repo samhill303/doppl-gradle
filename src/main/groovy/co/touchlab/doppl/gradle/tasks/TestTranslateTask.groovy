@@ -72,7 +72,7 @@ class TestTranslateTask extends BaseChangesTask {
         int index = file.path.indexOf(treeDir)
 
         if (index >= 0) {
-            filepath = file.path.replace("$treeDir/", "")
+            filepath = file.path - "$treeDir/"
             filepath = filepath.replace('/', '.')
             filepath = filepath.replace(".java", ".class")
         }
