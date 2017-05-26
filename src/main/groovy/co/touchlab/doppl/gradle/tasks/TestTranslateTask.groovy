@@ -20,16 +20,24 @@ class TestTranslateTask extends BaseChangesTask {
     @InputFiles
     FileCollection getSrcFiles() {
         sourceSets = _buildContext.getBuildTypeProvider().testSourceSets(project)
-        return replaceOverlayFilterJava(sourceSets)
+        return locateTestFiles(sourceSets)
     }
 
-    private FileCollection replaceOverlayFilterJava(List<FileTree> sourceDirs) {
+    private FileCollection locateTestFiles(List<FileTree> sourceDirs) {
 
         FileTree allFiles = new UnionFileTree("testClasses", (Collection<? extends FileTree>) sourceDirs)
 
         DopplConfig dopplConfig = DopplConfig.from(project)
 
-        FileCollection resultCollection = allFiles.matching(new PatternSet().include("**/*Test.java"))
+        List<String> testIdentifiers = new ArrayList<>()
+
+        if (dopplConfig.testIdentifier.isEmpty()) {
+            testIdentifiers.add("**/*Test.java")
+        } else {
+            testIdentifiers.addAll(dopplConfig.testIdentifier)
+        }
+
+        FileCollection resultCollection = allFiles.matching(new PatternSet().include(testIdentifiers))
 
         if (dopplConfig.testTranslatePattern != null) {
             resultCollection = resultCollection.matching(dopplConfig.testTranslatePattern)

@@ -73,6 +73,8 @@ class DopplConfig {
     List<String> mainBridgingHeaderOutput = new ArrayList<>();
     List<String> testBridgingHeaderOutput = new ArrayList<>();
 
+    List<String> testIdentifier = new ArrayList<>()
+
     boolean emitLineDirectives = false;
 
     boolean ignoreWeakAnnotations = false;
@@ -212,6 +214,12 @@ class DopplConfig {
     void testBridgingHeaderOutput(String... paths) {
         for (String p : paths) {
             this.testBridgingHeaderOutput.add(p)
+        }
+    }
+
+    void testIdentifier(String... idenetifiers) {
+        for (String i : idenetifiers) {
+            this.testIdentifier.add(i)
         }
     }
 
