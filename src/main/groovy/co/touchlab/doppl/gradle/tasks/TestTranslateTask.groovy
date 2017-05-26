@@ -1,7 +1,6 @@
 package co.touchlab.doppl.gradle.tasks
 
 import co.touchlab.doppl.gradle.DopplConfig
-import co.touchlab.doppl.gradle.analytics.DopplAnalytics
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileTree
@@ -9,7 +8,6 @@ import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.util.PatternSet
-
 
 class TestTranslateTask extends BaseChangesTask {
     List<FileTree> sourceSets
@@ -29,10 +27,10 @@ class TestTranslateTask extends BaseChangesTask {
 
         DopplConfig dopplConfig = DopplConfig.from(project)
 
-        PatternSet testIdentifier = new ArrayList<>()
+        PatternSet testIdentifier
 
-        if (dopplConfig.testIdentifier.isEmpty()) {
-            testIdentifier.include("**/*Test.java")
+        if (dopplConfig.testIdentifier == null) {
+            testIdentifier = new PatternSet().include("**/*Test.java")
         } else {
             testIdentifier = dopplConfig.testIdentifier
         }
@@ -48,8 +46,6 @@ class TestTranslateTask extends BaseChangesTask {
 
     @TaskAction
     void writeTestList() {
-        DopplConfig dopplConfig = DopplConfig.from(project)
-
         // Don't evaluate this expensive property multiple times.
         FileCollection originalSrcFiles = getSrcFiles()
 
