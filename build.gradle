@@ -18,24 +18,21 @@ buildscript {
     repositories {
         jcenter()
         maven { url 'https://plugins.gradle.org/m2/' }
-        maven { url dopplIvyDeploy }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.1.0'
-
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.0.5-2'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
     }
 }
 
 apply plugin: 'groovy'
-apply plugin: 'kotlin'
-apply plugin: 'ivy-publish'
+apply plugin: 'maven-publish'
+apply plugin: 'com.jfrog.bintray'
 
 allprojects {
     repositories {
         jcenter()
         mavenCentral()
-        ivy { url dopplIvyDeploy }
     }
 }
 
@@ -47,16 +44,9 @@ dependencies {
     compile localGroovy()
     compile 'com.android.tools.build:gradle:2.2.1'
     compile 'org.codehaus.groovy:groovy-android-gradle-plugin:1.1.0'
-    compile "org.jetbrains.kotlin:kotlin-stdlib:1.0.5-2"
-    compile "org.jetbrains.kotlin:kotlin-reflect:1.0.5-2"
     compile 'com.google.apis:google-api-services-analytics:v3-rev137-1.22.0'
     compile 'com.google.code.gson:gson:2.7'
-
-
-
     testCompile 'junit:junit:4.11'
-    // https://mvnrepository.com/artifact/org.testng/testng
-    testCompile group: 'org.testng', name: 'testng', version: '6.10'
 }
 
 task wrapper(type: Wrapper) {
@@ -64,8 +54,8 @@ task wrapper(type: Wrapper) {
     distributionUrl = 'https://services.gradle.org/distributions/gradle-2.14.1-all.zip'
 }
 
-group = 'co.touchlab.doppl'
-version = "0.7.0-SNAPSHOT"
+group = 'co.doppl'
+version = '0.7.0'
 
 test {
     enabled = false
@@ -81,17 +71,31 @@ configurations {
     includeInJar
 }
 
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourcesJar
+}
+
 publishing {
     publications {
-        ivy(IvyPublication) {
-            module 'gradle'
+        mavenJava(MavenPublication) {
             from components.java
+            artifactId 'gradle'
+            artifact sourcesJar
         }
     }
     repositories {
-        ivy {
-            // change to point to your repo, e.g. http://my.org/repo
-            url dopplIvyDeploy
+        maven {
+            url dopplMavenDeploy
         }
     }
 }
+
+ext.bintrayGitUrl ='https://github.com/doppllib/doppl-gradle.git'
+ext.bintrayName = 'gradle'
+
+apply from: "$dopplSharedScriptHome/bintray.gradle"
