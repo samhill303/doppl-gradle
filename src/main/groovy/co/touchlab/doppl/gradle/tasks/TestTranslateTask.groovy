@@ -63,7 +63,7 @@ class TestTranslateTask extends BaseChangesTask {
                 classes.add(filepath)
         }
 
-        output.write(String.join(",\n", classes))
+        output.write(String.join("\n", classes))
     }
 
     private String processFileTree(File file, FileTree tree) {
