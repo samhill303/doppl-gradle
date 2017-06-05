@@ -178,8 +178,10 @@ class DopplPlugin implements Plugin<Project> {
                 _buildContext = buildContext
             }
 
-            tasks.create(name: TASK_DOPPL_DEPLOY_TEST, type: DeployTask,
-                    dependsOn: TASK_J2OBJC_TEST_TRANSLATE) {
+            tasks.create(name: TASK_DOPPL_DEPLOY_TEST, type: DeployTask, dependsOn: [
+                    TASK_J2OBJC_TEST_TRANSLATE,
+                    TASK_DOPPL_TEST_TRANSLATE
+            ]) {
                 group 'doppl'
                 description 'Push test code to Xcode directory (or wherever you want)'
 

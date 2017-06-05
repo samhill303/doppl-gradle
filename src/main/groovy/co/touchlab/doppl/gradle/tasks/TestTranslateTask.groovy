@@ -69,9 +69,8 @@ class TestTranslateTask extends BaseChangesTask {
     private String processFileTree(File file, FileTree tree) {
         String filepath
         String treeDir = tree.dir.toString()
-        int index = file.path.indexOf(treeDir)
 
-        if (index >= 0) {
+        if (file.path.startsWith(treeDir)) {
             filepath = file.path - "$treeDir/"
             filepath = filepath.replace('/', '.')
             filepath = filepath.replace(".java", ".class")
