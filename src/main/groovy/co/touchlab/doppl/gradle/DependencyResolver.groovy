@@ -63,8 +63,8 @@ public class DependencyResolver {
         //Add external "dop" file dependencies
         dopplConfig.resolvedConfiguration.resolvedArtifacts.each { ResolvedArtifact ra ->
 
-            def classifier = ra.classifier
-            if(classifier != null && classifier.equals("doppl")) {
+            def extension = ra.extension
+            if(extension != null && extension.equals("dop")) {
                 def group = ra.moduleVersion.id.group
                 def name = ra.moduleVersion.id.name
                 def version = ra.moduleVersion.id.version
