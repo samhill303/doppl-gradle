@@ -75,6 +75,7 @@ class DeployTask extends BaseChangesTask{
                 String name = pathname.getName()
                 return pathname.isDirectory() ||
                        name.endsWith(".h") ||
+                       name.equalsIgnoreCase("dopplTests.txt") ||
                        name.endsWith(".m") ||
                        name.endsWith(".cpp") ||
                        name.endsWith(".hpp") ||
