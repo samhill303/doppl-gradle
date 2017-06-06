@@ -56,7 +56,7 @@ task wrapper(type: Wrapper) {
 
 group = 'co.doppl'
 //Changed this a whole number to differentiate it from the core stuff. Confusing.
-version = '0.8.1-SNAPSHOT'
+version = '0.8.0'
 
 test {
     enabled = false
@@ -97,6 +97,6 @@ publishing {
 }
 
 ext.bintrayGitUrl ='https://github.com/doppllib/doppl-gradle.git'
-ext.artifactId = 'gradle'
+ext.bintrayName = 'gradle'
 
 apply from: "$dopplSharedScriptHome/bintray.gradle"
