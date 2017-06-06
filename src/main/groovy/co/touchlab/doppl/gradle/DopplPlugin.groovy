@@ -152,12 +152,13 @@ class DopplPlugin implements Plugin<Project> {
 
             buildContext.getBuildTypeProvider().configureTestDependsOn(project, translateTest)
 
-            tasks.create(name: TASK_DOPPL_TEST_TRANSLATE, type: TestTranslateTask) {
+            tasks.create(name: TASK_DOPPL_TEST_TRANSLATE, type: TestTranslateTask,
+                    dependsOn: TASK_J2OBJC_TEST_TRANSLATE) {
                 group 'doppl'
                 description "Compiles a list of the test classes in your project"
                 _buildContext = buildContext
 
-                output = file("${rootDir}/app/src/test/java/dopplTests.txt")
+                output = file("$j2objcSrcGenTestDir/dopplTests.txt")
             }
 
             tasks.create(name: TASK_J2OBJC_TRANSLATE, type: DefaultTask, dependsOn: [
@@ -178,8 +179,10 @@ class DopplPlugin implements Plugin<Project> {
                 _buildContext = buildContext
             }
 
-            tasks.create(name: TASK_DOPPL_DEPLOY_TEST, type: DeployTask,
-                    dependsOn: TASK_J2OBJC_TEST_TRANSLATE) {
+            tasks.create(name: TASK_DOPPL_DEPLOY_TEST, type: DeployTask, dependsOn: [
+                    TASK_J2OBJC_TEST_TRANSLATE,
+                    TASK_DOPPL_TEST_TRANSLATE
+            ]) {
                 group 'doppl'
                 description 'Push test code to Xcode directory (or wherever you want)'
 
