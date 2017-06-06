@@ -73,7 +73,7 @@ class TestTranslateTask extends BaseChangesTask {
         if (file.path.startsWith(treeDir)) {
             filepath = file.path - "$treeDir/"
             filepath = filepath.replace('/', '.')
-            filepath = filepath.replace(".java", ".class")
+            filepath = filepath - ".java"
         }
 
         return filepath
