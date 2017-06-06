@@ -29,7 +29,7 @@ import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 /**
  * Copies artifacts into doppl directory structure
  */
-@CompileStatic
+
 class DopplAssemblyTask extends DefaultTask {
 
     @InputDirectory
@@ -63,7 +63,7 @@ class DopplAssemblyTask extends DefaultTask {
             })
 
             Utils.projectCopy(project, {
-                from inputJavaJarFile()
+                from project.configurations.archives.artifacts[0].file
                 into getDestDopplDirFile().absolutePath + "/lib"
                 include '**/*.jar'
             })

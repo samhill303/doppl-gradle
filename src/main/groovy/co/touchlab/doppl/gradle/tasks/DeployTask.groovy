@@ -89,6 +89,9 @@ class DeployTask extends BaseChangesTask{
         }
         else
         {
+            //We don't worry about dependencies here. Dependency changes should trigger a fully copy.
+            //SNAPSHOT builds aren't currently supported if the dependency package itself changes, but a clean
+            //build should redeploy everything.
             inputs.outOfDate(new Action<InputFileDetails>() {
                 @Override
                 void execute(InputFileDetails inputFileDetails) {
@@ -183,10 +186,14 @@ class DeployTask extends BaseChangesTask{
                         dopplLibs.removeAll(_buildContext.getDependencyResolver().translateDopplLibs)
                     }
 
+
                     for (DopplDependency lib : dopplLibs) {
                         File depSource = new File(lib.dependencyFolderLocation(), "src")
 
-                        Utils.copyFileRecursive(depSource, new File(mainOut, lib.name), extensionFilter)
+                        File dependencyFolder = new File(mainOut, lib.name)
+                        dependencyFolder.deleteDir()
+
+                        Utils.copyFileRecursive(depSource, dependencyFolder, extensionFilter)
                         Properties libraryPrefixes = Utils.findDopplLibraryPrefixes(lib.dependencyFolderLocation())
                         if(libraryPrefixes != null) {
                             for (String name : libraryPrefixes.propertyNames()) {

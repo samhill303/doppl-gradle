@@ -44,4 +44,8 @@ class BaseChangesTask extends DefaultTask{
     @Input boolean isCopyDependencies() {
         DopplConfig.from(project).copyDependencies
     }
+
+    @Input boolean isEmitLineDirectives() {
+        DopplConfig.from(project).emitLineDirectives
+    }
 }

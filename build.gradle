@@ -55,7 +55,8 @@ task wrapper(type: Wrapper) {
 }
 
 group = 'co.doppl'
-version = '0.7.0'
+//Changed this a whole number to differentiate it from the core stuff. Confusing.
+version = '0.8.0-SNAPSHOT'
 
 test {
     enabled = false

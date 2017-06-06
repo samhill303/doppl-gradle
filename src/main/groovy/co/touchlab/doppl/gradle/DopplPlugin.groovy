@@ -215,7 +215,12 @@ class DopplPlugin implements Plugin<Project> {
                 extension 'dop'
             }
 
-
+            //Clean all the things
+            tasks.findByName("clean").doFirst {
+                DopplConfig dopplConfig = DopplConfig.from(project)
+                project.delete(dopplConfig.copyMainOutput)
+                project.delete(dopplConfig.copyTestOutput)
+            }
 
             /*// j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder
            tasks.create(name: 'j2objcCycleFinder', type: CycleFinderTask,

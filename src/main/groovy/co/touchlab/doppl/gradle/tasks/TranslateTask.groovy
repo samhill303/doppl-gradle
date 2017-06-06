@@ -198,7 +198,7 @@ class TranslateTask extends BaseChangesTask {
                 srcFilesChanged,
                 "mainSrcFilesArgFile",
                 false,
-                dopplConfig.emitLineDirectives
+                isEmitLineDirectives()
         )
 
         Utils.projectCopy(project, {
@@ -305,6 +305,11 @@ class TranslateTask extends BaseChangesTask {
 
         String path = mappingsInputPath()
         if (path != null) {
+            if(!project.file(path).exists())
+            {
+                throw new FileNotFoundException("mappingsInput '"+ path +"' does not exist")
+            }
+
             mappingFiles.add(path);
         }
 
