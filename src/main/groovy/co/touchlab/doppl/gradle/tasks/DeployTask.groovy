@@ -211,12 +211,25 @@ class DeployTask extends BaseChangesTask{
 
                 //The output dir wouldn't have been created by now if nothing is in it
                 if(prefixes.size() > 0 && mainOut.exists()) {
+
+                    StringWriter stringWriter = new StringWriter();
+                    properties.store(stringWriter, null);
+                    stringWriter.close();
+
+                    BufferedReader propsReader = new BufferedReader(new StringReader(stringWriter.toString()))
+
                     //this properties file is different than what's in the doppl packaging properties
                     //Should probably rename the other one. this is ALL of them, even from dependencies.
                     def prefixFile = new File(mainOut, "prefixes.properties")
                     def writer = new FileWriter(prefixFile)
 
-                    properties.store(writer, null);
+                    String line
+                    while((line = propsReader.readLine()) != null)
+                    {
+                        if(!line.startsWith("#")) {
+                            writer.append(line).append("\n")
+                        }
+                    }
 
                     writer.close()
                 }
