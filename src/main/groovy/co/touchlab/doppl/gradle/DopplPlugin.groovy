@@ -21,6 +21,7 @@ import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
 import co.touchlab.doppl.gradle.tasks.TestTranslateTask
 import co.touchlab.doppl.gradle.tasks.TranslateTask
 import co.touchlab.doppl.gradle.tasks.Utils
+import co.touchlab.doppl.gradle.tasks.WriteBridgingHeaderTask
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -58,17 +59,6 @@ class DopplPlugin implements Plugin<Project> {
             throw new ProjectConfigurationException("Doppl depends on running java or one of the Android gradle plugins. None of those were found. If you have one, please make sure to apply doppl AFTER the other plugin(s)", null)
         }
 
-        if(javaTypeProject) {
-            project.configurations {
-                provided {
-                    dependencies.all { dep ->
-                        project.configurations.default.exclude group: dep.group, module: dep.name
-                    }
-                }
-                compile.extendsFrom provided
-            }
-        }
-
         project.with {
             extensions.create('dopplConfig', DopplConfig, project)
 
@@ -94,7 +84,8 @@ class DopplPlugin implements Plugin<Project> {
 
             dependencies {
                 if(javaTypeProject) {
-                    provided project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
+                    compileOnly project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
+                    testCompile project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
                 }
 
                 compile project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
@@ -223,6 +214,15 @@ class DopplPlugin implements Plugin<Project> {
                 DopplConfig dopplConfig = DopplConfig.from(project)
                 project.delete(dopplConfig.copyMainOutput)
                 project.delete(dopplConfig.copyTestOutput)
+            }
+
+            tasks.create(name: "bridgingHeader", type: WriteBridgingHeaderTask) {
+                group 'doppl'
+                description 'Print out header file imports to help create bridging headers'
+
+                srcGenDir = j2objcSrcGenMainDir
+                testCode = false
+                _buildContext = buildContext
             }
 
             /*// j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder

@@ -48,4 +48,19 @@ class BaseChangesTask extends DefaultTask{
     @Input boolean isEmitLineDirectives() {
         DopplConfig.from(project).emitLineDirectives
     }
+
+    static FileFilter extensionFilter = new FileFilter() {
+        @Override
+        boolean accept(File pathname) {
+            String name = pathname.getName()
+            return pathname.isDirectory() ||
+                   name.endsWith(".h") ||
+                   name.equalsIgnoreCase("dopplTests.txt") ||
+                   name.endsWith(".m") ||
+                   name.endsWith(".cpp") ||
+                   name.endsWith(".hpp") ||
+                   name.endsWith(".java") ||
+                   name.endsWith(".modulemap")
+        }
+    }
 }

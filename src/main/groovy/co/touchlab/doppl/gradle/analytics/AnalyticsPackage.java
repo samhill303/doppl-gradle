@@ -25,8 +25,6 @@ public class AnalyticsPackage {
     boolean anyMainOutputs;
     boolean anyTestOutputs;
     boolean copyDependencies = false;
-    boolean anyMainBridgingHeaderOutput;
-    boolean anyTestBridgingHeaderOutput;
     boolean emitLineDirectives = false;
     String targetVariant;
     boolean anyGeneratedSourceDirs;

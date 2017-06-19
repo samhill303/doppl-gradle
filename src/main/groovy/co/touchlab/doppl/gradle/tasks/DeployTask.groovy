@@ -18,7 +18,7 @@ import org.gradle.api.tasks.incremental.InputFileDetails
  * Created by kgalligan on 3/15/17.
  */
 @CompileStatic
-class DeployTask extends BaseChangesTask{
+class DeployTask extends BaseChangesTask {
 
     boolean testCode;
 
@@ -31,8 +31,7 @@ class DeployTask extends BaseChangesTask{
     }
 
     @Input
-    List<String> getDependencySimpleList()
-    {
+    List<String> getDependencySimpleList() {
         List<String> depStrings = new ArrayList<>()
 
         List<DopplDependency> libs = getTranslateDopplLibs()
@@ -43,16 +42,10 @@ class DeployTask extends BaseChangesTask{
         return depStrings
     }
 
-    @Input
-    @Optional
-    List<String> getBridgingHeaderOutput()
-    {
-        return testCode ? DopplConfig.from(project).testBridgingHeaderOutput : DopplConfig.from(project).mainBridgingHeaderOutput
-    }
-
     @OutputDirectories
     List<File> getOutputPaths() {
-        List<String> output = testCode ? DopplConfig.from(project).copyTestOutput : DopplConfig.from(project).copyMainOutput
+        List<String> output = testCode ? DopplConfig.from(project).copyTestOutput : DopplConfig.from(project)
+                .copyMainOutput
         List<File> outFiles = new ArrayList<>()
         for (String path : output) {
             outFiles.add(project.file(path))
@@ -61,10 +54,8 @@ class DeployTask extends BaseChangesTask{
     }
 
     @TaskAction
-    public void runDeploy(IncrementalTaskInputs inputs)
-    {
-        if(getOutputPaths().isEmpty())
-        {
+    public void runDeploy(IncrementalTaskInputs inputs) {
+        if (getOutputPaths().isEmpty()) {
             logger.debug("${name} task disabled for ${project.name}")
             return;
         }
@@ -84,19 +75,16 @@ class DeployTask extends BaseChangesTask{
             }
         }
 
-        if (!inputs.incremental)
-        {
+        if (!inputs.incremental) {
             copyEverything(extensionFilter)
-        }
-        else
-        {
+        } else {
             //We don't worry about dependencies here. Dependency changes should trigger a fully copy.
             //SNAPSHOT builds aren't currently supported if the dependency package itself changes, but a clean
             //build should redeploy everything.
             inputs.outOfDate(new Action<InputFileDetails>() {
                 @Override
                 void execute(InputFileDetails inputFileDetails) {
-                    if(extensionFilter.accept(inputFileDetails.file)) {
+                    if (extensionFilter.accept(inputFileDetails.file)) {
 
                         List<File> outputPaths = getOutputPaths()
                         for (File outPath : outputPaths) {
@@ -129,25 +117,39 @@ class DeployTask extends BaseChangesTask{
         }
     }
 
-    private void writeBridgingHeader(FileFilter extensionFilter)
-    {
+   /* private void writeBridgingHeader(FileFilter extensionFilter) {
         List<String> outputPaths = getBridgingHeaderOutput()
-        if(!outputPaths.isEmpty())
-        {
+        if (!outputPaths.isEmpty()) {
             for (String outPath : outputPaths) {
                 File file = project.file(outPath)
 
                 PrintWriter pw = new PrintWriter(new FileWriter(file))
 
-                File[] fromFiles = srcGenDir.listFiles(extensionFilter)
-                for (File f : fromFiles) {
-                    if(f.isDirectory() || !f.exists() || !f.getName().endsWith(".h"))
-                        continue;
-                    pw.println("#import \""+ f.getName() +"\"")
+                addFolderToHeader(srcGenDir, extensionFilter, pw)
+
+
+                List<DopplDependency> dopplLibs = new ArrayList<>(getTranslateDopplLibs())
+
+                if (testCode) {
+                    dopplLibs.removeAll(_buildContext.getDependencyResolver().translateDopplLibs)
+                }
+
+                for (DopplDependency lib : dopplLibs) {
+                    File depSource = new File(lib.dependencyFolderLocation(), "src")
+                    addFolderToHeader(depSource, extensionFilter, pw)
                 }
 
                 pw.close()
             }
+        }
+    }*/
+
+    private void addFolderToHeader(File dir, FileFilter extensionFilter, PrintWriter pw) {
+        File[] fromFiles = dir.listFiles(extensionFilter)
+        for (File f : fromFiles) {
+            if (f.isDirectory() || !f.exists() || !f.getName().endsWith(".h"))
+                continue;
+            pw.println("#import \"" + f.getName() + "\"")
         }
     }
 
@@ -182,8 +184,7 @@ class DeployTask extends BaseChangesTask{
 
                 if (isCopyDependencies()) {
 
-                    if(testCode)
-                    {
+                    if (testCode) {
                         dopplLibs.removeAll(_buildContext.getDependencyResolver().translateDopplLibs)
                     }
 
@@ -196,7 +197,7 @@ class DeployTask extends BaseChangesTask{
 
                         Utils.copyFileRecursive(depSource, dependencyFolder, extensionFilter)
                         Properties libraryPrefixes = Utils.findDopplLibraryPrefixes(lib.dependencyFolderLocation())
-                        if(libraryPrefixes != null) {
+                        if (libraryPrefixes != null) {
                             for (String name : libraryPrefixes.propertyNames()) {
                                 properties.put(name, libraryPrefixes.get(name))
                             }
@@ -210,7 +211,7 @@ class DeployTask extends BaseChangesTask{
                 }
 
                 //The output dir wouldn't have been created by now if nothing is in it
-                if(prefixes.size() > 0 && mainOut.exists()) {
+                if (prefixes.size() > 0 && mainOut.exists()) {
 
                     StringWriter stringWriter = new StringWriter();
                     properties.store(stringWriter, null);
@@ -224,9 +225,8 @@ class DeployTask extends BaseChangesTask{
                     def writer = new FileWriter(prefixFile)
 
                     String line
-                    while((line = propsReader.readLine()) != null)
-                    {
-                        if(!line.startsWith("#")) {
+                    while ((line = propsReader.readLine()) != null) {
+                        if (!line.startsWith("#")) {
                             writer.append(line).append("\n")
                         }
                     }
@@ -235,7 +235,5 @@ class DeployTask extends BaseChangesTask{
                 }
             }
         }
-
-        writeBridgingHeader(extensionFilter)
     }
 }

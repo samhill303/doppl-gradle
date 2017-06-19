@@ -70,9 +70,6 @@ class DopplConfig {
     List<String> copyTestOutput = new ArrayList<>();
     boolean copyDependencies = false;
 
-    List<String> mainBridgingHeaderOutput = new ArrayList<>();
-    List<String> testBridgingHeaderOutput = new ArrayList<>();
-
     boolean emitLineDirectives = false;
 
     boolean ignoreWeakAnnotations = false;
@@ -194,24 +191,6 @@ class DopplConfig {
     void copyTestOutput(String... paths) {
         for (String p : paths) {
             this.copyTestOutput.add(p)
-        }
-    }
-
-    /**
-     * Add output path for objective c files
-     */
-    void mainBridgingHeaderOutput(String... paths) {
-        for (String p : paths) {
-            this.mainBridgingHeaderOutput.add(p)
-        }
-    }
-
-    /**
-     * Add output path for objective c test files
-     */
-    void testBridgingHeaderOutput(String... paths) {
-        for (String p : paths) {
-            this.testBridgingHeaderOutput.add(p)
         }
     }
 

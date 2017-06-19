@@ -91,8 +91,6 @@ public class DopplAnalytics {
         analyticsPackage.anyMainOutputs = config.getCopyMainOutput().size() > 0;
         analyticsPackage.anyTestOutputs = config.getCopyTestOutput().size() > 0;
         analyticsPackage.copyDependencies = config.getCopyDependencies();
-        analyticsPackage.anyMainBridgingHeaderOutput = config.getMainBridgingHeaderOutput().size() > 0;
-        analyticsPackage.anyTestBridgingHeaderOutput = !config.getMainBridgingHeaderOutput().isEmpty();
         analyticsPackage.emitLineDirectives = config.getEmitLineDirectives();
         analyticsPackage.targetVariant = config.getTargetVariant();
         analyticsPackage.anyGeneratedSourceDirs = !config.getGeneratedSourceDirs().isEmpty();
