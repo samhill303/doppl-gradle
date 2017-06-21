@@ -1,3 +1,7 @@
+Doppl-gradle - Gradle plugin for j2objc/Doppl
+
+Copyright (c) 2017 Touchlab Inc
+
 j2objc-gradle - Gradle plugin for j2objc (Java to Objective-C transpiler)
 https://github.com/j2objc-contrib/j2objc-gradle
 

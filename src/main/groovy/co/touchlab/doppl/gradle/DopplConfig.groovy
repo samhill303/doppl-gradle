@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2015 the authors of j2objc-gradle (see AUTHORS file)
+ * Original work Copyright (c) 2015 the authors of j2objc-gradle (see AUTHORS file)
+ * Modified work Copyright (c) 2017 Touchlab Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
