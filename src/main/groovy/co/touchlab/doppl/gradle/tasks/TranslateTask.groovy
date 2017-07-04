@@ -355,6 +355,7 @@ class TranslateTask extends BaseChangesTask {
                 }
 //                args "--strip-reflection", ''
                 args "-Xuse-javac", ''
+//                args "-Xtranslate-classfiles", ''
                 args "--package-prefixed-filenames", ''
                 if (!testTranslate) {
                     args "--output-header-mapping", new File(srcDir, project.name + ".mappings").absolutePath
