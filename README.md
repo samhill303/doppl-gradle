@@ -4,7 +4,9 @@ This the Doppl framework Gradle plugin. Doppl is a build and dependency system i
 code sharing using J2ojbc.
 
 [What is Doppl?](http://doppl.co/overview.html)
+
 [Quick Start](http://doppl.co/docs/quicktutorial.html)
+
 [Doppl Gradle Plugin](http://doppl.co/docs/gradleplugin.html)
 
 This plugin started as a fork of the [J2objc-gradle](https://github.com/j2objc-contrib/j2objc-gradle) project. It has morphed
