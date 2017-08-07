@@ -30,6 +30,7 @@ import org.gradle.api.file.CopySpec
 public class DependencyResolver {
 
     public static final String CONFIG_DOPPL = 'doppl'
+    public static final String CONFIG_DOPPL_ONLY = 'dopplOnly'
     public static final String CONFIG_TEST_DOPPL = 'testDoppl'
     final Project project
     final DopplConfig dopplConfig
@@ -46,6 +47,7 @@ public class DependencyResolver {
         //Current "lazy" plan. Just copy all dependencies. If something is changed, will need to clean.
         //TODO: Fix the lazy
         configForConfig(CONFIG_DOPPL, translateDopplLibs)
+        configForConfig(CONFIG_DOPPL_ONLY, translateDopplLibs)
         configForConfig(CONFIG_TEST_DOPPL, translateDopplTestLibs)
     }
 

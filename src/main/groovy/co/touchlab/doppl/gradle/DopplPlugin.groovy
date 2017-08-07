@@ -77,6 +77,10 @@ class DopplPlugin implements Plugin<Project> {
                     transitive = true
                     description = 'For doppl special packages'
                 }
+                dopplOnly{
+                    transitive = true
+                    description = 'For doppl special packages, do not include in dependencies'
+                }
                 testDoppl{
                     transitive = true
                     description = 'For doppl testing special packages'

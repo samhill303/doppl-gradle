@@ -208,7 +208,7 @@ class DeployTask extends BaseChangesTask {
                     for (DopplDependency lib : dopplLibs) {
                         File depSource = new File(lib.dependencyFolderLocation(), "src")
 
-                        File dependencyFolder = new File(mainOut, lib.name)
+                        File dependencyFolder = new File(mainOut, lib.dependencyFolderLocation().name)
                         dependencyFolder.deleteDir()
 
                         Utils.copyFileRecursive(depSource, dependencyFolder, extensionFilter)
