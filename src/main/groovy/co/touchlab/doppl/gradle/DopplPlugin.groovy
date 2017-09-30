@@ -19,6 +19,7 @@ package co.touchlab.doppl.gradle
 
 import co.touchlab.doppl.gradle.tasks.DeployTask
 import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
+import co.touchlab.doppl.gradle.tasks.ManageProjectTask
 import co.touchlab.doppl.gradle.tasks.TestTranslateTask
 import co.touchlab.doppl.gradle.tasks.TranslateTask
 import co.touchlab.doppl.gradle.tasks.Utils
@@ -91,9 +92,12 @@ class DopplPlugin implements Plugin<Project> {
                 if(javaTypeProject) {
                     compileOnly project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
                     testCompile project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
+                    compileOnly project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
+                    testCompile project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
                 }
-
-                compile project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
+                else {
+                    compile project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
+                }
             }
 
             // Produces a modest amount of output
@@ -230,6 +234,10 @@ class DopplPlugin implements Plugin<Project> {
                 _buildContext = buildContext
             }
 
+            tasks.create(name: "xcodeManage", type: ManageProjectTask) {
+                group 'doppl'
+                description 'Manage xcode'
+            }
             /*// j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder
            tasks.create(name: 'j2objcCycleFinder', type: CycleFinderTask,
                    dependsOn: 'j2objcPreBuild') {

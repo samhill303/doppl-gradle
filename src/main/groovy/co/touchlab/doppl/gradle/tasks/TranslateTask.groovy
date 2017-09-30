@@ -354,7 +354,6 @@ class TranslateTask extends BaseChangesTask {
                     args "-g", ''
                 }
 //                args "--strip-reflection", ''
-                args "-Xuse-javac", ''
                 args "--swift-friendly", ''
 //                args "-Xtranslate-classfiles", ''
                 args "--package-prefixed-filenames", ''
