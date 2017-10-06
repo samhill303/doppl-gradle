@@ -44,9 +44,7 @@ dependencies {
     compile localGroovy()
     compile 'com.android.tools.build:gradle:2.2.1'
     compile 'org.codehaus.groovy:groovy-android-gradle-plugin:1.1.0'
-    compile 'com.google.apis:google-api-services-analytics:v3-rev137-1.22.0'
     compile 'com.google.code.gson:gson:2.7'
-    compile 'org.jruby:jruby-complete:9.1.12.0'
 
     testCompile 'junit:junit:4.11'
 }
@@ -58,7 +56,7 @@ task wrapper(type: Wrapper) {
 
 group = 'co.doppl'
 //Changed this a whole number to differentiate it from the core stuff. Confusing.
-version = '0.8.7'
+version = '0.8.8'
 
 test {
     enabled = false
