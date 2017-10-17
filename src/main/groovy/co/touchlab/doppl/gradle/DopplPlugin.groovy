@@ -19,6 +19,8 @@ package co.touchlab.doppl.gradle
 
 import co.touchlab.doppl.gradle.tasks.DeployTask
 import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
+import co.touchlab.doppl.gradle.tasks.DopplSetupWizardTask
+import co.touchlab.doppl.gradle.tasks.FrameworkTask
 import co.touchlab.doppl.gradle.tasks.TestTranslateTask
 import co.touchlab.doppl.gradle.tasks.TranslateTask
 import co.touchlab.doppl.gradle.tasks.Utils
@@ -46,11 +48,13 @@ class DopplPlugin implements Plugin<Project> {
     public static final String TASK_J2OBJC_MAIN_TRANSLATE = 'j2objcMainTranslate'
     public static final String TASK_J2OBJC_TEST_TRANSLATE = 'j2objcTestTranslate'
     public static final String TASK_J2OBJC_TRANSLATE = 'j2objcTranslate'
+    public static final String TASK_DOPPL_FRAMEWORK_MAIN = 'dopplFrameworkMain'
+    public static final String TASK_DOPPL_FRAMEWORK_TEST = 'dopplFrameworkTest'
+    public static final String TASK_DOPPL_FRAMEWORK = 'dopplFramework'
+    public static final String TASK_DOPPL_BUILD = 'dopplBuild'
 
     @Override
     void apply(Project project) {
-
-        DopplVersionManager.verifyJ2objcRequirements(project)
 
         boolean javaTypeProject = Utils.isJavaTypeProject(project);
 
@@ -87,15 +91,16 @@ class DopplPlugin implements Plugin<Project> {
                 }
             }
 
-            dependencies {
-                if(javaTypeProject) {
-                    compileOnly project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
-                    testCompile project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
-                    compileOnly project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
-                    testCompile project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
-                }
-                else {
-                    compile project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
+            if(Utils.j2objcHomeOrNull(project) != null) {
+                dependencies {
+                    if (javaTypeProject) {
+                        compileOnly project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
+                        testCompile project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
+                        compileOnly project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
+                        testCompile project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
+                    } else {
+                        compile project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
+                    }
                 }
             }
 
@@ -108,6 +113,10 @@ class DopplPlugin implements Plugin<Project> {
             Task prebuildTask = tasks.create(name: 'j2objcPreBuild', type: DefaultTask) {
                 group 'doppl'
                 description "Marker task for all tasks that must be complete before j2objc building"
+            }
+
+            prebuildTask.doFirst {
+                DopplVersionManager.verifyJ2objcRequirements(project)
             }
 
             Task translateMain = tasks.create(name: TASK_J2OBJC_MAIN_TRANSLATE, type: TranslateTask,
@@ -168,6 +177,36 @@ class DopplPlugin implements Plugin<Project> {
                 description "Marker task for all tasks that must be complete before j2objc building"
             }
 
+            tasks.create(name: TASK_DOPPL_FRAMEWORK_MAIN, type: FrameworkTask,
+                    dependsOn: TASK_J2OBJC_MAIN_TRANSLATE) {
+                group 'doppl'
+                description 'Create framework podspec'
+
+                test = false
+                sourceFolderName = j2objcSrcGenMainDir.getName()
+            }
+
+            tasks.create(name: TASK_DOPPL_FRAMEWORK_TEST, type: FrameworkTask,
+                    dependsOn: [TASK_J2OBJC_TEST_TRANSLATE, TASK_DOPPL_TEST_TRANSLATE]) {
+                group 'doppl'
+                description 'Create framework podspec'
+
+                test = true
+                sourceFolderName = j2objcSrcGenTestDir.getName()
+            }
+
+            tasks.create(name: TASK_DOPPL_FRAMEWORK, type: DefaultTask,
+                    dependsOn: [TASK_DOPPL_FRAMEWORK_MAIN, TASK_DOPPL_FRAMEWORK_TEST]) {
+                group 'doppl'
+                description 'Create framework podspec'
+            }
+
+            tasks.create(name: TASK_DOPPL_BUILD, type: DefaultTask,
+                    dependsOn: TASK_DOPPL_FRAMEWORK) {
+                group 'doppl'
+                description 'Build doppl'
+            }
+
             tasks.create(name: TASK_DOPPL_DEPLOY_MAIN, type: DeployTask,
                     dependsOn: TASK_J2OBJC_MAIN_TRANSLATE) {
                 group 'doppl'
@@ -178,10 +217,7 @@ class DopplPlugin implements Plugin<Project> {
                 _buildContext = buildContext
             }
 
-            tasks.create(name: TASK_DOPPL_DEPLOY_TEST, type: DeployTask, dependsOn: [
-                    TASK_J2OBJC_TEST_TRANSLATE,
-                    TASK_DOPPL_TEST_TRANSLATE
-            ]) {
+            tasks.create(name: TASK_DOPPL_DEPLOY_TEST, type: DeployTask, dependsOn: TASK_J2OBJC_TEST_TRANSLATE) {
                 group 'doppl'
                 description 'Push test code to Xcode directory (or wherever you want)'
 
@@ -231,6 +267,12 @@ class DopplPlugin implements Plugin<Project> {
                 srcGenDir = j2objcSrcGenMainDir
                 testCode = false
                 _buildContext = buildContext
+            }
+
+            tasks.create(name: "setupWizard", type: DopplSetupWizardTask){
+                group 'doppl'
+                description 'Help setup dev environment'
+
             }
 
             /*// j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder

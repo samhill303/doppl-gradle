@@ -46,7 +46,11 @@ class DopplConfig {
 
         destDopplFolder = new File(project.buildDir, 'doppl').absolutePath
         dopplDependencyExploded = new File(project.buildDir, 'dopplDependencyExploded').absolutePath
+        dopplOnlyDependencyExploded = new File(project.buildDir, 'dopplOnlyDependencyExploded').absolutePath
+        testDopplDependencyExploded = new File(project.buildDir, 'testDopplDependencyExploded').absolutePath
     }
+
+    public FrameworkConfig framework = new FrameworkConfig()
 
     /**
      * Local exploded dir for doppl files
@@ -54,6 +58,8 @@ class DopplConfig {
     String destDopplFolder = null
 
     String dopplDependencyExploded = null
+    String dopplOnlyDependencyExploded = null
+    String testDopplDependencyExploded = null
 
     /**
      * Where to assemble generated main libraries.

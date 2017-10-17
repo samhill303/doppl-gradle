@@ -44,14 +44,16 @@ public class DependencyResolver {
 
     public void configureAll() {
 
+        Map<String, DopplDependency> dependencyMap = new HashMap<>()
+
         //Current "lazy" plan. Just copy all dependencies. If something is changed, will need to clean.
         //TODO: Fix the lazy
-        configForConfig(CONFIG_DOPPL, translateDopplLibs)
-        configForConfig(CONFIG_DOPPL_ONLY, translateDopplLibs)
-        configForConfig(CONFIG_TEST_DOPPL, translateDopplTestLibs)
+        configForConfig(CONFIG_DOPPL, translateDopplLibs, this.dopplConfig.dopplDependencyExploded, dependencyMap)
+        configForConfig(CONFIG_DOPPL_ONLY, translateDopplLibs, this.dopplConfig.dopplOnlyDependencyExploded, dependencyMap)
+        configForConfig(CONFIG_TEST_DOPPL, translateDopplTestLibs, this.dopplConfig.testDopplDependencyExploded, dependencyMap)
     }
 
-    void configForConfig(String configName, List<DopplDependency> dopplDependencyList){
+    void configForConfig(String configName, List<DopplDependency> dopplDependencyList, String explodedPath, Map<String, DopplDependency> dependencyMap){
         def dopplConfig = project.configurations.getByName(configName)
 
         //Add project dependencies
@@ -71,14 +73,24 @@ public class DependencyResolver {
                 def group = ra.moduleVersion.id.group
                 def name = ra.moduleVersion.id.name
                 def version = ra.moduleVersion.id.version
-                def dependency = new DopplDependency(group, name, version, new File(this.dopplConfig.dopplDependencyExploded))
 
-                project.copy { CopySpec cp ->
-                    cp.from project.zipTree(ra.file)
-                    cp.into dependency.dependencyFolderLocation()
+                String mapKey = group + "_" + name +"_"+ version
+                if(dependencyMap.containsKey(mapKey)) {
+                    dopplDependencyList.add(dependencyMap.get(mapKey))
                 }
+                else{
 
-                dopplDependencyList.add(dependency)
+                    String depFolder = explodedPath
+                    def dependency = new DopplDependency(group, name, version, new File(depFolder))
+
+                    project.copy { CopySpec cp ->
+                        cp.from project.zipTree(ra.file)
+                        cp.into dependency.dependencyFolderLocation()
+                    }
+
+                    dopplDependencyList.add(dependency)
+                    dependencyMap.put(mapKey, dependency)
+                }
             }
         }
     }

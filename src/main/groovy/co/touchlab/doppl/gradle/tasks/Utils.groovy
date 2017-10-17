@@ -288,6 +288,21 @@ class Utils {
         return result == null ? defaultValue : result
     }
 
+    static void writeLocalProperty(Project proj, String key, String value)
+    {
+        Properties localProperties = new Properties()
+        File localPropertiesFile = new File(proj.rootDir, 'local.properties')
+        if(localPropertiesFile.exists()) {
+            localPropertiesFile.withInputStream {
+                localProperties.load it
+            }
+        }
+        localProperties.put(key, value)
+        FileWriter fileWriter = new FileWriter(localPropertiesFile)
+        localProperties.store(fileWriter)
+        fileWriter.close()
+    }
+
     static String j2objcHome(Project proj) {
         return new File(j2objcHomeOrNull(proj)).absolutePath
     }
