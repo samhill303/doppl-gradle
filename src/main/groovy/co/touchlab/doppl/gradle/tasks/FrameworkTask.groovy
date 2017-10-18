@@ -23,7 +23,6 @@ import org.gradle.api.tasks.TaskAction
 class FrameworkTask extends DefaultTask{
 
     public boolean test
-    public String sourceFolderName
 
     @TaskAction
     public void writePodspec()
@@ -31,10 +30,10 @@ class FrameworkTask extends DefaultTask{
         File podspecFile = new File(project.buildDir, test ? "testdoppllib.podspec" : "doppllib.podspec")
 
         List<String> dependencyFolders = test ?
-                                         ["dopplDependencyExploded", "dopplOnlyDependencyExploded", "testDopplDependencyExploded"] :
-                                         ["dopplDependencyExploded", "dopplOnlyDependencyExploded"]
+                                         ["j2objcSrcGenMain", "j2objcSrcGenTest", "dopplDependencyExploded", "dopplOnlyDependencyExploded", "testDopplDependencyExploded"] :
+                                         ["j2objcSrcGenMain", "dopplDependencyExploded", "dopplOnlyDependencyExploded"]
 
-        def podspecTemplate = DopplConfig.from(project).framework.podspecTemplate(sourceFolderName, dependencyFolders, test ? "testdoppllib" : "doppllib")
+        def podspecTemplate = DopplConfig.from(project).framework.podspecTemplate(dependencyFolders, test ? "testdoppllib" : "doppllib")
         BufferedWriter writer = null
         try {
             writer = new BufferedWriter(new FileWriter(podspecFile))

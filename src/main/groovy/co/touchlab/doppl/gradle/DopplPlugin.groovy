@@ -19,12 +19,10 @@ package co.touchlab.doppl.gradle
 
 import co.touchlab.doppl.gradle.tasks.DeployTask
 import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
-import co.touchlab.doppl.gradle.tasks.DopplSetupWizardTask
 import co.touchlab.doppl.gradle.tasks.FrameworkTask
 import co.touchlab.doppl.gradle.tasks.TestTranslateTask
 import co.touchlab.doppl.gradle.tasks.TranslateTask
 import co.touchlab.doppl.gradle.tasks.Utils
-import co.touchlab.doppl.gradle.tasks.WriteBridgingHeaderTask
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -55,6 +53,8 @@ class DopplPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
+
+        DopplVersionManager.verifyJ2objcRequirements(project)
 
         boolean javaTypeProject = Utils.isJavaTypeProject(project);
 
@@ -115,9 +115,9 @@ class DopplPlugin implements Plugin<Project> {
                 description "Marker task for all tasks that must be complete before j2objc building"
             }
 
-            prebuildTask.doFirst {
+            /*prebuildTask.doFirst {
                 DopplVersionManager.verifyJ2objcRequirements(project)
-            }
+            }*/
 
             Task translateMain = tasks.create(name: TASK_J2OBJC_MAIN_TRANSLATE, type: TranslateTask,
                     dependsOn: 'j2objcPreBuild') {
@@ -183,7 +183,6 @@ class DopplPlugin implements Plugin<Project> {
                 description 'Create framework podspec'
 
                 test = false
-                sourceFolderName = j2objcSrcGenMainDir.getName()
             }
 
             tasks.create(name: TASK_DOPPL_FRAMEWORK_TEST, type: FrameworkTask,
@@ -192,7 +191,6 @@ class DopplPlugin implements Plugin<Project> {
                 description 'Create framework podspec'
 
                 test = true
-                sourceFolderName = j2objcSrcGenTestDir.getName()
             }
 
             tasks.create(name: TASK_DOPPL_FRAMEWORK, type: DefaultTask,
@@ -258,21 +256,6 @@ class DopplPlugin implements Plugin<Project> {
                 DopplConfig dopplConfig = DopplConfig.from(project)
                 project.delete(dopplConfig.copyMainOutput)
                 project.delete(dopplConfig.copyTestOutput)
-            }
-
-            tasks.create(name: "bridgingHeader", type: WriteBridgingHeaderTask) {
-                group 'doppl'
-                description 'Print out header file imports to help create bridging headers'
-
-                srcGenDir = j2objcSrcGenMainDir
-                testCode = false
-                _buildContext = buildContext
-            }
-
-            tasks.create(name: "setupWizard", type: DopplSetupWizardTask){
-                group 'doppl'
-                description 'Help setup dev environment'
-
             }
 
             /*// j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder

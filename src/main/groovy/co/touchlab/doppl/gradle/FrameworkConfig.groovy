@@ -22,14 +22,22 @@ class FrameworkConfig {
     String authors = "{ 'Kevin Galligan' => 'kgalligan@gmail.com' }"
     String source = "{ :git => 'https://github.com/doppllib/doppl-gradle.git'}"
 
-    String podspecTemplate (String sourceFolder, List<String> dependencyFolders, String podname){
+    String podspecTemplate (List<String> dependencyFolders, String podname){
         StringBuilder sourceFileIncludes = new StringBuilder()
         StringBuilder headerIncludes = new StringBuilder()
 
         for (String folderName : dependencyFolders) {
-            sourceFileIncludes.append(".include(\"${folderName}/**/*.{h,m,cpp,properites}\")")
-            headerIncludes.append(".include(\"${folderName}/**/*.h\")")
+            if(sourceFileIncludes.length() == 0)
+            {
+                sourceFileIncludes.append("FileList[\"${folderName}/**/*.{h,m,cpp,properites,txt}\"]")
+                headerIncludes.append("FileList[\"${folderName}/**/*.h\"]")
+            }
+            else {
+                sourceFileIncludes.append(".include(\"${folderName}/**/*.{h,m,cpp,properites}\")")
+                headerIncludes.append(".include(\"${folderName}/**/*.h\")")
+            }
         }
+
         String sourceFiles = sourceFileIncludes.toString()
         String headers = headerIncludes.toString()
 
@@ -53,16 +61,21 @@ Pod::Spec.new do |s|
 
     s.ios.deployment_target = '8.0'
 
-    s.source_files = FileList["${sourceFolder}/**/*.{h,m,cpp,properites,txt}"]${sourceFiles}.to_ary
+    s.source_files = ${sourceFiles}.to_ary
 
-    s.public_header_files = FileList["${sourceFolder}/**/*.h"]${headers}.exclude(/cpphelp/).exclude(/jni/).to_ary
+    s.public_header_files = ${headers}.exclude(/cpphelp/).exclude(/jni/).to_ary
 
     s.requires_arc = false
-    s.libraries = 'ObjC', 'z', 'sqlite3', 'iconv', 'javax_inject', 'jre_emul', 'jsr305'
+    s.libraries = 'ObjC', 'z', 'sqlite3', 'iconv', 'javax_inject', 'jre_emul', 'jsr305', 'mockito', 'junit'
     s.frameworks = 'UIKit'
 
-    s.xcconfig = {
+    s.pod_target_xcconfig = {
      'HEADER_SEARCH_PATHS' => '\$(J2OBJC_LOCAL_PATH)/include','LIBRARY_SEARCH_PATHS' => '\$(J2OBJC_LOCAL_PATH)/lib'
     }
+    
+    s.user_target_xcconfig = {
+     'HEADER_SEARCH_PATHS' => '\$(J2OBJC_LOCAL_PATH)/frameworks/JRE.framework/Headers \$(J2OBJC_LOCAL_PATH)/frameworks/JavaxInject.framework/Headers \$(J2OBJC_LOCAL_PATH)/frameworks/JSR305.framework/Headers \$(J2OBJC_LOCAL_PATH)/frameworks/JUnit.framework/Headers \$(J2OBJC_LOCAL_PATH)/frameworks/Mockito.framework/Headers \$(J2OBJC_LOCAL_PATH)/frameworks/Xalan.framework/Headers \$(J2OBJC_LOCAL_PATH)/frameworks/Guava.framework/Headers'
+    }
+    
 end"""}
 }
