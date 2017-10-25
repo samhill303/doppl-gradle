@@ -43,6 +43,10 @@ provide `testIdentifier`, is to use all classes ending in `Test.java` (e.g.,
 `FooTest.java`). More than likely, you will want to provide your own `include`
 or `exclude` rules in your own `testIdentifier` closure.
 
+**NOTE**: Test classes must be covered in *both* `translatePattern` (to translate
+the code) and in `testIdentifier` (to find the tests and add them to a list of
+tests to run in Xcode).
+
 ### `generatedSourceDirs` and `generatedTestSourceDirs`
 
 You may be using other Gradle plugins, or features of those plugins, that
