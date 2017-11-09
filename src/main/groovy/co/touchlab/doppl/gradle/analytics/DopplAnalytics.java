@@ -19,12 +19,15 @@ package co.touchlab.doppl.gradle.analytics;
 import co.touchlab.doppl.gradle.DopplConfig;
 import com.google.gson.Gson;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -100,7 +103,7 @@ public class DopplAnalytics {
         analyticsPackage.externalUser = false;
         analyticsPackage.anonMacAddress = analyticsPackage.distinct_id;
         analyticsPackage.j2objcVersion = this.j2objcVersion;
-        analyticsPackage.dopplVersion = "0.8.3";
+        analyticsPackage.dopplVersion = findMyVersion();
         analyticsPackage.hostOs = System.getProperty("os.name");
         analyticsPackage.hostOsVersion = System.getProperty("os.version");
         analyticsPackage.useArc = config.getUseArc();
@@ -119,5 +122,18 @@ public class DopplAnalytics {
         jsonWrapper.properties = analyticsPackage;
 
         return new Gson().toJson(jsonWrapper);
+    }
+
+    String findMyVersion()
+    {
+        try {
+            InputStream resourceAsStream = getClass().getResourceAsStream("/buildgen.properties");
+            Properties buildgen = new Properties();
+            buildgen.load(resourceAsStream);
+            resourceAsStream.close();
+            return buildgen.getProperty("buildversion");
+        } catch (IOException e) {
+            return "(failed load)";
+        }
     }
 }

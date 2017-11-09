@@ -67,6 +67,9 @@ class DopplPlugin implements Plugin<Project> {
         project.with {
             extensions.create('dopplConfig', DopplConfig, project)
 
+            extensions.dopplConfig.extensions.create('mainFramework', FrameworkConfig, false)
+            extensions.dopplConfig.extensions.create('testFramework', FrameworkConfig, true)
+
             BuildContext buildContext = new BuildContext(project)
 
             // This is an intermediate directory only.  Clients should use only directories

@@ -76,8 +76,11 @@ class AndroidBuildTypeProvider implements BuildTypeProvider{
 
         List<FileTree> paths = new ArrayList<>()
 
+        boolean variantFound = false
+
         project.android[variants].all { variant ->
             if(variant.getName() == dopplConfig.targetVariant) {
+                variantFound = true
                 List<FileTree> javaSources = test ? variant.unitTestVariant.variantData.javaSources : variant.variantData.javaSources
                 for (FileTree s : javaSources) {
                     String path = Utils.dirFromFileTree(s).getPath()
@@ -92,6 +95,11 @@ class AndroidBuildTypeProvider implements BuildTypeProvider{
                     }
                 }
             }
+        }
+
+        if(!variantFound)
+        {
+            throw new ProjectConfigurationException("Variant '${dopplConfig.targetVariant}' not found for project. Please set dopplConfig.targetVariant.")
         }
 
         ArrayList<String> generatedSourceDirs = test ? dopplConfig.generatedTestSourceDirs : dopplConfig.generatedSourceDirs

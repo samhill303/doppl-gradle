@@ -50,8 +50,6 @@ class DopplConfig {
         testDopplDependencyExploded = new File(project.buildDir, 'testDopplDependencyExploded').absolutePath
     }
 
-    public FrameworkConfig framework = new FrameworkConfig()
-
     /**
      * Local exploded dir for doppl files
      */

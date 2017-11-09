@@ -16,7 +16,7 @@
 
 package co.touchlab.doppl.gradle.tasks
 
-import co.touchlab.doppl.gradle.DopplConfig
+import co.touchlab.doppl.gradle.FrameworkConfig
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 
@@ -33,7 +33,9 @@ class FrameworkTask extends DefaultTask{
                                          ["j2objcSrcGenMain", "j2objcSrcGenTest", "dopplDependencyExploded", "dopplOnlyDependencyExploded", "testDopplDependencyExploded"] :
                                          ["j2objcSrcGenMain", "dopplDependencyExploded", "dopplOnlyDependencyExploded"]
 
-        def podspecTemplate = DopplConfig.from(project).framework.podspecTemplate(dependencyFolders, test ? "testdoppllib" : "doppllib")
+        FrameworkConfig config = test ? FrameworkConfig.findTest(project) : FrameworkConfig.findMain(project)
+
+        def podspecTemplate = config.podspecTemplate(project, dependencyFolders, test ? "testdoppllib" : "doppllib")
         BufferedWriter writer = null
         try {
             writer = new BufferedWriter(new FileWriter(podspecFile))
