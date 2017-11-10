@@ -49,12 +49,10 @@ class FrameworkConfig {
     boolean libIconv = true
     boolean libJavax_inject = true
     boolean libJre_emul = true
-    boolean libJre_ssl = true
     boolean libJsr305 = true
     boolean libMockito = test
     boolean libJunit = test
 
-    
     /*
 ### libSqlite3 - true
 ### libIconv - true
@@ -88,13 +86,11 @@ class FrameworkConfig {
     String writeLibs()
     {
         List<String> allLibs = new ArrayList<>(addLibraries)
-        if(flagObjc)allLibs.add("ObjC")
         if(libZ)allLibs.add("z")
         if(libSqlite3)allLibs.add("sqlite3")
         if(libIconv)allLibs.add("iconv")
         if(libJavax_inject)allLibs.add("javax_inject")
         if(libJre_emul)allLibs.add("jre_emul")
-        if(libJre_ssl)allLibs.add("jre_ssl")
         if(libJsr305)allLibs.add("jsr305")
         if(libMockito)allLibs.add("mockito")
         if(libJunit)allLibs.add("junit")
@@ -129,6 +125,8 @@ class FrameworkConfig {
         String sourceFiles = sourceFileIncludes.toString()
         String headers = headerIncludes.toString()
 
+        String objcFlagString = flagObjc ? ",\n     'OTHER_LDFLAGS' => '-ObjC'" : ""
+
         String j2objcPath = writeActualJ2objcPath ? Utils.j2objcHome(project) : "\$(J2OBJC_LOCAL_PATH)"
         return """require 'rake'
 FileList = Rake::FileList
@@ -159,7 +157,7 @@ Pod::Spec.new do |s|
     s.frameworks = ${writeFrameworks()}
 
     s.pod_target_xcconfig = {
-     'HEADER_SEARCH_PATHS' => '${j2objcPath}/include','LIBRARY_SEARCH_PATHS' => '${j2objcPath}/lib'
+     'HEADER_SEARCH_PATHS' => '${j2objcPath}/include','LIBRARY_SEARCH_PATHS' => '${j2objcPath}/lib'${objcFlagString}
     }
     
     s.user_target_xcconfig = {
