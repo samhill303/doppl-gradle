@@ -140,6 +140,14 @@ class DopplPlugin implements Plugin<Project> {
                 }
             }
 
+            tasks.create(name: TASK_DOPPL_ASSEMBLY, type: DopplAssemblyTask,
+                    dependsOn: TASK_J2OBJC_MAIN_TRANSLATE) {
+                group 'doppl'
+                description 'Pull together doppl pieces for library projects'
+
+                srcGenMainDir = j2objcSrcGenMainDir
+            }
+
             buildContext.getBuildTypeProvider().configureDependsOn(project, translateMain)
 
             Task translateTest = tasks.create(name: TASK_J2OBJC_TEST_TRANSLATE, type: TranslateTask,
@@ -173,7 +181,7 @@ class DopplPlugin implements Plugin<Project> {
             }
 
             tasks.create(name: TASK_J2OBJC_TRANSLATE, type: DefaultTask, dependsOn: [
-                    TASK_J2OBJC_MAIN_TRANSLATE,
+                    TASK_DOPPL_ASSEMBLY,
                     TASK_J2OBJC_TEST_TRANSLATE
             ]) {
                 group 'doppl'
@@ -181,7 +189,7 @@ class DopplPlugin implements Plugin<Project> {
             }
 
             tasks.create(name: TASK_DOPPL_FRAMEWORK_MAIN, type: FrameworkTask,
-                    dependsOn: TASK_J2OBJC_MAIN_TRANSLATE) {
+                    dependsOn: TASK_DOPPL_ASSEMBLY) {
                 group 'doppl'
                 description 'Create framework podspec'
 
@@ -189,7 +197,7 @@ class DopplPlugin implements Plugin<Project> {
             }
 
             tasks.create(name: TASK_DOPPL_FRAMEWORK_TEST, type: FrameworkTask,
-                    dependsOn: [TASK_J2OBJC_TEST_TRANSLATE, TASK_DOPPL_TEST_TRANSLATE]) {
+                    dependsOn: TASK_DOPPL_TEST_TRANSLATE) {
                 group 'doppl'
                 description 'Create framework podspec'
 
@@ -209,7 +217,7 @@ class DopplPlugin implements Plugin<Project> {
             }
 
             tasks.create(name: TASK_DOPPL_DEPLOY_MAIN, type: DeployTask,
-                    dependsOn: TASK_J2OBJC_MAIN_TRANSLATE) {
+                    dependsOn: TASK_DOPPL_ASSEMBLY) {
                 group 'doppl'
                 description 'Push main code to Xcode directory (or wherever you want)'
 
@@ -218,7 +226,7 @@ class DopplPlugin implements Plugin<Project> {
                 _buildContext = buildContext
             }
 
-            tasks.create(name: TASK_DOPPL_DEPLOY_TEST, type: DeployTask, dependsOn: TASK_J2OBJC_TEST_TRANSLATE) {
+            tasks.create(name: TASK_DOPPL_DEPLOY_TEST, type: DeployTask, dependsOn: TASK_DOPPL_TEST_TRANSLATE) {
                 group 'doppl'
                 description 'Push test code to Xcode directory (or wherever you want)'
 
@@ -233,17 +241,6 @@ class DopplPlugin implements Plugin<Project> {
                     ]) {
                 group 'doppl'
                 description "Wrapper task to build and deploy translated objc to xcode directories"
-            }
-
-            //************** LIBRARY TASKS **************
-            //The following tasks are geared towards library assembly and archiving
-
-            tasks.create(name: TASK_DOPPL_ASSEMBLY, type: DopplAssemblyTask,
-                    dependsOn: TASK_J2OBJC_MAIN_TRANSLATE) {
-                group 'doppl'
-                description 'Pull together doppl pieces for library projects'
-
-                srcGenMainDir = j2objcSrcGenMainDir
             }
 
             tasks.create(name: TASK_DOPPL_ARCHIVE, type: Jar, dependsOn: TASK_DOPPL_ASSEMBLY) {

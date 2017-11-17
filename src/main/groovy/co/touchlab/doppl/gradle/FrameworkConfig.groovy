@@ -50,19 +50,10 @@ class FrameworkConfig {
     boolean libJavax_inject = true
     boolean libJre_emul = true
     boolean libJsr305 = true
+    boolean libGuava = false
     boolean libMockito = test
     boolean libJunit = test
 
-    /*
-### libSqlite3 - true
-### libIconv - true
-### libJavax_inject - true
-### libJre_emul - true
-### libJsr305 - true
-### libMockito - test
-### libJunit - test
-    */
-    
     List<String> addLibraries = new ArrayList<>()
 
     void addLibraries(String... libs)
@@ -92,6 +83,7 @@ class FrameworkConfig {
         if(libJavax_inject)allLibs.add("javax_inject")
         if(libJre_emul)allLibs.add("jre_emul")
         if(libJsr305)allLibs.add("jsr305")
+        if(libGuava)allLibs.add("guava")
         if(libMockito)allLibs.add("mockito")
         if(libJunit)allLibs.add("junit")
 
