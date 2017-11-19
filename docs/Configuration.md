@@ -47,6 +47,64 @@ or `exclude` rules in your own `testIdentifier` closure.
 the code) and in `testIdentifier` (to find the tests and add them to a list of
 tests to run in Xcode).
 
+### `mainFramework` and `testFramework`
+
+By default, Doppl generates [CocoaPods](https://cocoapods.org/)-style pods that
+contain the Objective-C code converted from your Java code. What defines
+the contents of a pod is a "podspec" configuration file. Doppl will generate
+two of these, one for your main code and one for your test code.
+
+A podspec has some fields that need to be defined in order to be used succesfully
+by the CocoaPods `pod` utility. These fields make sense for public pods, but
+a Doppl-based project is using them privately as a build artifact. As such,
+the fields have less real-world relevance, but they stil need to exist. The
+fields have default values, but can be overridden if you feel like you should do so.
+
+To control the contents of those fields, you can have `mainFramework`
+and `testFramework` closures in your `dopplConfig` closure:
+
+```groovy
+dopplConfig {
+    mainFramework{
+        homepage = "http://example.com"
+    }
+    testFramework{
+        homepage = "http://example.com"
+    }
+}
+```
+
+Each framework configuration is independent; this is why we are setting `homepage`
+to the same value for both `mainFramework` and `testFramework` in the above
+sample.
+
+This table outlines the available fields that you can configure in the
+`mainFramework` and `testFramework` closures:
+
+|Field name             |Default Value                                                |Contents|
+|:---------------------:|:-----------------------------------------------------------:|-------|
+|`authors`              |`"{ 'Filler Person' => 'filler@example.com' }"`              |The authors of the pod, along with a contact email address for each
+|`flagObjc`             |`true`                                                       |If `true`, sets the -ObjC flag in the linker. For smaller build sizes, set to `false`, but bear in mind this can cause issues with reflection, and read Xcode logs carefully to see what went wrong.
+|`homepage`             |`"http://doppl.co/"`                                         |The Web URL serving as a home page for this pod
+|`iosDeploymentTarget`  |`8.0`                                                        |The iOS version target
+|`license`              |`"{ :type => 'Apache 2.0' }"`                                |The software license under which you can use the pod
+|`source`               |`"{ :git => 'https://github.com/doppllib/doppl-gradle.git'}"`|The repository type and location of the source code to the pod
+|`writeActualJ2objcPath`|`true`                                                       |Flag indicating if Doppl should write the local path to J2objc (as defined in `local.properties`). If you want to keep Xcode more portable for some reason, set to false and Doppl will write `'$(J2OBJC_LOCAL_PATH)'`, which needs to be defined in Xcode.
+
+For example, to set a different homepage, you can define a value for the
+`homepage` field:
+
+```groovy
+dopplConfig {
+    mainFramework{
+        homepage = "http://example.com/"
+    }
+    testFramework{
+        homepage = "http://example.com/"
+    }
+}
+```
+
 ### `generatedSourceDirs` and `generatedTestSourceDirs`
 
 You may be using other Gradle plugins, or features of those plugins, that
