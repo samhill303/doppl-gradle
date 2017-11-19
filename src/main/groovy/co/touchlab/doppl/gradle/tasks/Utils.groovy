@@ -1,6 +1,5 @@
 /*
- * Original work Copyright (c) 2015 the authors of j2objc-gradle (see AUTHORS file)
- * Modified work Copyright (c) 2017 Touchlab Inc
+ * Copyright (c) 2017 Touchlab Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -466,9 +465,18 @@ class Utils {
     }
 
     static List<String> dopplJarLibs(List<DopplDependency> libraries) {
-        return libraries.collect { DopplDependency library ->
+        List<String> jarPaths = libraries.collect { DopplDependency library ->
             return findDopplLibraryJar(library.dependencyFolderLocation())
         }
+
+        List<String> trimmedJarPaths = new ArrayList<>(jarPaths.size())
+        for (String path : jarPaths) {
+            if(path != null)
+            {
+                trimmedJarPaths.add(path)
+            }
+        }
+        return trimmedJarPaths
     }
 
     public static String findDopplLibraryJar(File libDirBase) {
@@ -478,7 +486,7 @@ class Utils {
         if(jarPath != null)
             return jarPath
         else
-            throw new IllegalArgumentException("No jar found in doppl directory ("+ libDirBase.getPath() +")")
+            return null
     }
 
     private static String findJarRecursive(File dir)
@@ -547,6 +555,15 @@ class Utils {
 
     // Convert FileCollection to joined path arg, e.g. "src/Some.java:src/Another.java"
     static String joinedPathArg(FileCollection files) {
+        String[] paths = []
+        files.each { File file ->
+            paths += file.path
+        }
+        // OS specific separator, i.e. ":" on OS X and ";" on Windows
+        return paths.join(pathSeparator())
+    }
+
+    static String joinedPathArg(Collection<File> files) {
         String[] paths = []
         files.each { File file ->
             paths += file.path

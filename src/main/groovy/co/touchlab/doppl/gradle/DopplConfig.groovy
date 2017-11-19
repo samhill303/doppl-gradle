@@ -44,11 +44,16 @@ class DopplConfig {
         destLibDir = new File(project.buildDir, 'j2objcOutputs/lib').absolutePath
         destJavaJarDir = new File(project.buildDir, 'libs').absolutePath
 
+        dopplJavaFolderMain = new File(project.buildDir, 'dopplJavaMain').absolutePath
+        dopplJavaFolderTest = new File(project.buildDir, 'dopplJavaTest').absolutePath
         destDopplFolder = new File(project.buildDir, 'doppl').absolutePath
         dopplDependencyExploded = new File(project.buildDir, 'dopplDependencyExploded').absolutePath
         dopplOnlyDependencyExploded = new File(project.buildDir, 'dopplOnlyDependencyExploded').absolutePath
         testDopplDependencyExploded = new File(project.buildDir, 'testDopplDependencyExploded').absolutePath
     }
+
+    String dopplJavaFolderMain = null
+    String dopplJavaFolderTest = null
 
     /**
      * Local exploded dir for doppl files
@@ -76,6 +81,11 @@ class DopplConfig {
     boolean copyDependencies = false;
 
     boolean emitLineDirectives = false;
+
+    void javaDebug(boolean b)
+    {
+        emitLineDirectives = b
+    }
 
     boolean ignoreWeakAnnotations = false;
 
@@ -175,6 +185,14 @@ class DopplConfig {
     // Should use instead of accessing client set 'dest' strings
     File getDestLibDirFile() {
         return project.file(destLibDir)
+    }
+
+    File getDopplJavaDirFileMain(){
+        return project.file(dopplJavaFolderMain)
+    }
+
+    File getDopplJavaDirFileTest(){
+        return project.file(dopplJavaFolderTest)
     }
 
     File getDestDopplDirFile(){

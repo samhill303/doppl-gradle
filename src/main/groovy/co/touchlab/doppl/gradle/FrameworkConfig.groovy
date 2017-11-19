@@ -16,6 +16,7 @@
 
 package co.touchlab.doppl.gradle
 
+import co.touchlab.doppl.gradle.tasks.TranslateTask
 import co.touchlab.doppl.gradle.tasks.Utils
 import org.gradle.api.Project
 
@@ -98,7 +99,7 @@ class FrameworkConfig {
         return "'"+ allFrameworks.join("', '") +"'"
     }
 
-    String podspecTemplate (Project project, List<String> dependencyFolders, String podname){
+    String podspecTemplate (Project project, List<String> dependencyFolders, String podname, BuildContext _buildContext){
         StringBuilder sourceFileIncludes = new StringBuilder()
         StringBuilder headerIncludes = new StringBuilder()
 
@@ -116,6 +117,21 @@ class FrameworkConfig {
 
         String sourceFiles = sourceFileIncludes.toString()
         String headers = headerIncludes.toString()
+
+        List<DopplDependency> dopplLibs = TranslateTask.getTranslateDopplLibs(_buildContext, test)
+
+        for (DopplDependency dep : dopplLibs) {
+            File folder = dep.dependencyJavaFolder()
+            if(folder.exists() && folder.listFiles(new FilenameFilter() {
+                @Override
+                boolean accept(File dir, String name) {
+                    return name.endsWith(".java")
+                }
+            }))
+            {
+                sourceFileIncludes.append(".include(\"${folder.getPath()}/**/*.{java}\")")
+            }
+        }
 
         String objcFlagString = flagObjc ? ",\n     'OTHER_LDFLAGS' => '-ObjC'" : ""
 

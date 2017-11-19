@@ -29,7 +29,7 @@ import org.gradle.api.tasks.Input
  */
 class BaseChangesTask extends DefaultTask{
 
-    BuildContext _buildContext;
+    BuildContext _buildContext
 
     @Input
     Map<String, String> getPrefixes() {

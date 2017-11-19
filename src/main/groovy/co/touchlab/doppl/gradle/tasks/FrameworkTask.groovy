@@ -16,6 +16,7 @@
 
 package co.touchlab.doppl.gradle.tasks
 
+import co.touchlab.doppl.gradle.BuildContext
 import co.touchlab.doppl.gradle.FrameworkConfig
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
@@ -23,6 +24,7 @@ import org.gradle.api.tasks.TaskAction
 class FrameworkTask extends DefaultTask{
 
     public boolean test
+    public BuildContext _buildContext
 
     @TaskAction
     public void writePodspec()
@@ -35,7 +37,7 @@ class FrameworkTask extends DefaultTask{
 
         FrameworkConfig config = test ? FrameworkConfig.findTest(project) : FrameworkConfig.findMain(project)
 
-        def podspecTemplate = config.podspecTemplate(project, dependencyFolders, test ? "testdoppllib" : "doppllib")
+        def podspecTemplate = config.podspecTemplate(project, dependencyFolders, test ? "testdoppllib" : "doppllib", _buildContext)
         BufferedWriter writer = null
         try {
             writer = new BufferedWriter(new FileWriter(podspecFile))

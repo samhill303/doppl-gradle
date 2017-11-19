@@ -49,6 +49,10 @@ class DopplDependency {
         return dir
     }
 
+    File dependencyJavaFolder(){
+        return new File(dependencyFolderLocation(), "java")
+    }
+
     boolean equals(o) {
         if (this.is(o)) return true
         if (getClass() != o.class) return false

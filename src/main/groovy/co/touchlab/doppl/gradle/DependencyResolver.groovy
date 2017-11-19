@@ -53,7 +53,10 @@ public class DependencyResolver {
         configForConfig(CONFIG_TEST_DOPPL, translateDopplTestLibs, this.dopplConfig.testDopplDependencyExploded, dependencyMap)
     }
 
-    void configForConfig(String configName, List<DopplDependency> dopplDependencyList, String explodedPath, Map<String, DopplDependency> dependencyMap){
+    void configForConfig(String configName,
+                         List<DopplDependency> dopplDependencyList,
+                         String explodedPath,
+                         Map<String, DopplDependency> dependencyMap){
         def dopplConfig = project.configurations.getByName(configName)
 
         //Add project dependencies
@@ -83,9 +86,11 @@ public class DependencyResolver {
                     String depFolder = explodedPath
                     def dependency = new DopplDependency(group, name, version, new File(depFolder))
 
-                    project.copy { CopySpec cp ->
-                        cp.from project.zipTree(ra.file)
-                        cp.into dependency.dependencyFolderLocation()
+                    if(!dependency.dependencyFolderLocation().exists()) {
+                        project.copy { CopySpec cp ->
+                            cp.from project.zipTree(ra.file)
+                            cp.into dependency.dependencyFolderLocation()
+                        }
                     }
 
                     dopplDependencyList.add(dependency)

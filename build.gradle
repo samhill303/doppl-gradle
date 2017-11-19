@@ -15,17 +15,21 @@
  */
 // Based on https://plugins.gradle.org/docs/publish-plugin
 buildscript {
+    ext.kotlin_version = '1.1.60'
+
     repositories {
         jcenter()
         maven { url 'https://plugins.gradle.org/m2/' }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.1.0'
+        classpath 'com.android.tools.build:gradle:2.3.0'
         classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 apply plugin: 'groovy'
+apply plugin: 'kotlin'
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'
 
@@ -36,8 +40,8 @@ allprojects {
     }
 }
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 dependencies {
     compile gradleApi()
@@ -45,18 +49,15 @@ dependencies {
     compile 'com.android.tools.build:gradle:2.2.1'
     compile 'org.codehaus.groovy:groovy-android-gradle-plugin:1.1.0'
     compile 'com.google.code.gson:gson:2.7'
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
     testCompile 'junit:junit:4.11'
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.14.1'
-    distributionUrl = 'https://services.gradle.org/distributions/gradle-2.14.1-all.zip'
-}
-
 group = 'co.doppl'
 //Changed this a whole number to differentiate it from the core stuff. Confusing.
-version = '0.9.4'
+version = '0.10.0'
 
 test {
     enabled = false
@@ -119,3 +120,8 @@ task buildgenPropertiesFile << {
 }
 
 processResources.dependsOn buildgenPropertiesFile
+
+compileGroovy.dependsOn = compileGroovy.taskDependencies.values - 'compileJava'
+compileKotlin.dependsOn compileGroovy
+compileKotlin.classpath += files(compileGroovy.destinationDir)
+classes.dependsOn compileKotlin

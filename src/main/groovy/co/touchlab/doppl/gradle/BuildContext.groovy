@@ -19,6 +19,8 @@ package co.touchlab.doppl.gradle
 import co.touchlab.doppl.gradle.tasks.Utils
 import org.gradle.api.Project
 
+import javax.annotation.Nonnull
+
 /**
  * This is a simple lazy wrapper around some classes that want to be shared but not during gradle init.
  * There's a better way to handle this, but to get things moving, we'll passively rely on lifecycle asking
@@ -40,6 +42,7 @@ class BuildContext {
      *
      * @return
      */
+    @Nonnull
     synchronized BuildTypeProvider getBuildTypeProvider() {
         if(buildTypeProvider == null) {
             boolean androidTypeProject = Utils.isAndroidTypeProject(project);

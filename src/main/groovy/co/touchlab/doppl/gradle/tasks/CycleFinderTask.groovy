@@ -1,6 +1,5 @@
 /*
- * Original work Copyright (c) 2015 the authors of j2objc-gradle (see AUTHORS file)
- * Modified work Copyright (c) 2017 Touchlab Inc
+ * Copyright (c) 2017 Touchlab Inc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,109 +16,60 @@
 
 package co.touchlab.doppl.gradle.tasks
 
+import co.touchlab.doppl.gradle.BuildContext
 import co.touchlab.doppl.gradle.DopplConfig
-import groovy.transform.CompileStatic
+import co.touchlab.doppl.gradle.DopplDependency
 import org.gradle.api.DefaultTask
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.file.FileCollection
-import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileCollection
-import org.gradle.api.internal.file.UnionFileTree
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 
 /**
  * CycleFinder task checks for memory cycles that can cause memory leaks
  * since iOS doesn't have garbage collection.
  */
-@CompileStatic
 class CycleFinderTask extends DefaultTask {
 
+    File dopplJavaDirFile
+    BuildContext _buildContext
 
-    // If the j2objc distribution changes, we want to rerun the task completely.
-    // As an InputFile, if the content changes, the task will re-run in non-incremental mode.
-    @InputFile
-    File getCycleFinderJar() {
-        return Utils.cycleFinderJar(project)
-    }
-
-    @InputFiles
     FileCollection getSrcInputFiles() {
-        // Note that translatePattern does not need to be an @Input because it is
-        // solely an input to this method, which is already an input (via @InputFiles).
-        FileTree allFiles = Utils.srcSet(project, 'main', 'java')
-//        allFiles = allFiles.plus(Utils.srcSet(project, 'test', 'java'))
-        FileTree ret = allFiles.plus(new UnionFileTree("all the codez", (Collection<? extends FileTree>)Utils.javaTrees(project, getGeneratedSourceDirs())))
-        if (DopplConfig.from(project).translatePattern != null) {
-            ret = allFiles.matching(DopplConfig.from(project).translatePattern)
-        }
-        return Utils.mapSourceFiles(project, ret, getTranslateSourceMapping())
+        return project.fileTree(dopplJavaDirFile, {
+            include '**/*.java'
+        })
     }
 
-    // All input files that could affect translation output, except those in j2objc itself.
-    @InputFiles
-    UnionFileCollection getAllInputFiles() {
-        return new UnionFileCollection([
-                getSrcInputFiles()/*,
-                project.files(getTranslateClasspaths()),
-                project.files(getTranslateSourcepaths())*/
-        ])
-    }
-
-    @Input
-    String getJ2objcHome() { return Utils.j2objcHome(project) }
-
-    @Input
     List<String> getCycleFinderArgs() { return DopplConfig.from(project).cycleFinderArgs }
 
-    @Input
-    List<String> getGeneratedSourceDirs() { return DopplConfig.from(project).generatedSourceDirs }
+    List<String> getTranslateClasspaths() { return DopplConfig.from(project).translateClasspaths }
 
-    @Input
     List<String> getTranslateJ2objcLibs() { return DopplConfig.from(project).translateJ2objcLibs }
 
-    @Input
-    Map<String, String> getTranslateSourceMapping() { return DopplConfig.from(project).translateSourceMapping }
-
-    // Output required for task up-to-date checks
-    @OutputFile
     File getReportFile() { project.file("${project.buildDir}/reports/${name}.out") }
 
     @TaskAction
     void cycleFinder() {
-        if(Utils.failGradleVersion(false))
-            return;
 
-        String cycleFinderExec = getJ2objcHome() + Utils.fileSeparator() + 'cycle_finder'
-        List<String> windowsOnlyArgs = new ArrayList<String>()
-        if (Utils.isWindows()) {
-            cycleFinderExec = 'java'
-            windowsOnlyArgs.add('-jar')
-            windowsOnlyArgs.add(getCycleFinderJar().absolutePath)
-        }
+        String cycleFinderExec = Utils.j2objcHome(project) + Utils.fileSeparator() + 'cycle_finder'
+        String jreWhitelist = Utils.j2objcHome(project) + Utils.fileSeparator() + 'cycle_whitelist.txt'
 
         FileCollection fullSrcFiles = getSrcInputFiles()
-        // TODO: extract common methods of Translate and Cycle Finder
-        // TODO: Need to understand why generated source dirs are treated differently by CycleFinder
-        // vs. translate task.  Here they are directly passed to the binary, but in translate
-        // they are only on the translate source path (meaning they will only be translated with --build-closure).
 
-        UnionFileCollection sourcepathDirs = new UnionFileCollection([
-                project.files(Utils.srcDirs(project, 'main', 'java')),
-//                project.files(Utils.srcSet(project, 'test', 'java').getSrcDirs()),
-                /*project.files(getTranslateSourcepaths()),*/
-                project.files(getGeneratedSourceDirs())
-        ])
-        String sourcepathArg = Utils.joinedPathArg(sourcepathDirs)
+        Set<File> allJavaDirs = TranslateTask.allJavaFolders(project, _buildContext, false)
 
+        String sourcepathArg = Utils.joinedPathArg(allJavaDirs)
+
+        List<DopplDependency> dopplLibs = TranslateTask.getTranslateDopplLibs(_buildContext, false)
+        def libs = Utils.dopplJarLibs(dopplLibs)
+
+        //Classpath arg for translation. Includes user specified jars, j2objc 'standard' jars, and doppl dependency libs
         UnionFileCollection classpathFiles = new UnionFileCollection([
-                /*project.files(getTranslateClasspaths()),*/
-                project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs()))/*,
-                project.files(Utils.dopplJarLibs(getTranslateDopplLibs()))*/
+                project.files(getTranslateClasspaths()),
+                project.files(Utils.j2objcLibs(Utils.j2objcHome(project), getTranslateJ2objcLibs())),
+                project.files(libs)
         ])
+
         // TODO: comment explaining ${project.buildDir}/classes
         String classpathArg = Utils.joinedPathArg(classpathFiles) +
                               Utils.pathSeparator() + "${project.buildDir}/classes"
@@ -134,13 +84,11 @@ class CycleFinderTask extends DefaultTask {
             logger.debug('CycleFinderTask - projectExec:')
             Utils.projectExec(project, stdout, stderr, cyclesFoundRegex, {
                 executable cycleFinderExec
-                windowsOnlyArgs.each { String windowsOnlyArg ->
-                    args windowsOnlyArg
-                }
 
                 // Arguments
                 args "-sourcepath", sourcepathArg
                 args "-classpath", classpathArg
+                args "-w", jreWhitelist
                 getCycleFinderArgs().each { String cycleFinderArg ->
                     args cycleFinderArg
                 }
@@ -181,8 +129,10 @@ class CycleFinderTask extends DefaultTask {
             println "Cycles Found: "+ cyclesFound
         } finally {
             // Write output always.
-            getReportFile().write(Utils.stdOutAndErrToLogString(stdout, stderr))
-            logger.debug("CycleFinder Output: ${getReportFile().path}")
+            File reportFile = getReportFile()
+            reportFile.getParentFile().mkdirs()
+            reportFile.write(Utils.stdOutAndErrToLogString(stdout, stderr))
+            logger.debug("CycleFinder Output: ${reportFile.path}")
         }
     }
 }
