@@ -30,7 +30,9 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.ProjectConfigurationException
 import org.gradle.api.Task
+import org.gradle.api.file.FileTree
 import org.gradle.api.logging.LogLevel
+import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.bundling.Jar
 
 /*
@@ -130,21 +132,35 @@ class DopplPlugin implements Plugin<Project> {
                 description "Marker task for all tasks that must be complete before j2objc building"
             }
 
+            Task mainStagingTask = tasks.create(name: TASK_DOPPL_JAVA_STAGING_MAIN, type: DefaultTask) {
+                group 'doppl'
+                description "Umbrella for main staging tasks"
+            }
+
+            Task testStagingTask = tasks.create(name: TASK_DOPPL_JAVA_STAGING_TEST, type: DefaultTask) {
+                group 'doppl'
+                description "Umbrella for main staging tasks"
+            }
+
             /*prebuildTask.doFirst {
                 DopplVersionManager.verifyJ2objcRequirements(project)
             }*/
 
-            JavaStagingTask stagingTaskMain = (JavaStagingTask)tasks.create(name: TASK_DOPPL_JAVA_STAGING_MAIN, type: JavaStagingTask,
-                    dependsOn: 'j2objcPreBuild'){
-                testBuild = false
-                _buildContext = buildContext
-            }
+            prepStagingTasks(
+                    tasks,
+                    buildContext.getBuildTypeProvider().sourceSets(project),
+                    TASK_DOPPL_JAVA_STAGING_MAIN,
+                    DopplConfig.from(project).getDopplJavaDirFileMain(),
+                    mainStagingTask
+            )
 
-            tasks.create(name: TASK_DOPPL_JAVA_STAGING_TEST, type: JavaStagingTask,
-                    dependsOn: 'j2objcPreBuild'){
-                testBuild = true
-                _buildContext = buildContext
-            }
+            prepStagingTasks(
+                    tasks,
+                    buildContext.getBuildTypeProvider().testSourceSets(project),
+                    TASK_DOPPL_JAVA_STAGING_TEST,
+                    DopplConfig.from(project).getDopplJavaDirFileTest(),
+                    testStagingTask
+            )
 
             Task translateMain = tasks.create(name: TASK_J2OBJC_MAIN_TRANSLATE, type: TranslateTask,
                     dependsOn: TASK_DOPPL_JAVA_STAGING_MAIN) {
@@ -170,7 +186,7 @@ class DopplPlugin implements Plugin<Project> {
                     //Ugh
                 }
 
-                dopplJavaDirFile = stagingTaskMain.getDopplJavaDirFile()
+                dopplJavaDirFile = DopplConfig.from(project).getDopplJavaDirFileMain()
                 srcGenMainDir = j2objcSrcGenMainDir
             }
 
@@ -290,11 +306,27 @@ class DopplPlugin implements Plugin<Project> {
                group 'doppl'
                description "Run the cycle_finder tool on all Java source files"
 
-               dopplJavaDirFile = stagingTaskMain.getDopplJavaDirFile()
+               dopplJavaDirFile = DopplConfig.from(project).getDopplJavaDirFileMain()
                _buildContext = buildContext
            }
         }
 
 
+    }
+
+    void prepStagingTasks(TaskContainer tasks, List<FileTree> sets, String wrapperTaskName, File dest, Task wrapperTask)
+    {
+        int count = 0
+        for (FileTree tree : sets) {
+            Task t = tasks.create(
+                    name: wrapperTaskName + "_" + (count++),
+                    type: JavaStagingTask,
+                    description: "JavaStagingTask ${tree.toString()}",
+                    dependsOn: 'j2objcPreBuild') {
+                sourceFileTree = tree
+                destDir = dest
+            }
+            wrapperTask.dependsOn t
+        }
     }
 }

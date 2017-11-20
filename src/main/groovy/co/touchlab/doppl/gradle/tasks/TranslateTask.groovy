@@ -85,7 +85,7 @@ class TranslateTask extends BaseChangesTask {
     }
 
     @InputFiles
-    FileCollection allJavaFiles() {
+    FileCollection getAllJavaFiles() {
         DopplConfig dopplConfig = DopplConfig.from(project)
 
         Set<File> folders = new HashSet<>()
@@ -133,7 +133,7 @@ class TranslateTask extends BaseChangesTask {
         List<String> translateArgs = getTranslateArgs()
 
         // Don't evaluate this expensive property multiple times.
-        FileCollection originalSrcFiles = allJavaFiles()
+        FileCollection originalSrcFiles = getAllJavaFiles()
 
         FileCollection srcFilesChanged
 

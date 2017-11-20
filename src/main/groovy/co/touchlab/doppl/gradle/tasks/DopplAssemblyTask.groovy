@@ -41,7 +41,7 @@ class DopplAssemblyTask extends DefaultTask {
     File srcGenMainDir
 
     @InputFiles
-    FileTree configFiles() {
+    FileTree getConfigFiles() {
         return project.fileTree(dir: srcGenMainDir, include: ['*.mappings', 'prefixes.properties'])
     }
 
@@ -71,7 +71,7 @@ class DopplAssemblyTask extends DefaultTask {
         }
 
         Utils.projectCopy(project, {
-            from configFiles()
+            from getConfigFiles()
             into getDestDopplDirFile().absolutePath
             include '*.mappings'
             include 'prefixes.properties'
