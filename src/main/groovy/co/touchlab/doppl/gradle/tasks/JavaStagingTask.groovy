@@ -18,6 +18,7 @@ package co.touchlab.doppl.gradle.tasks
 
 import co.touchlab.doppl.gradle.BuildContext
 import co.touchlab.doppl.gradle.DopplConfig
+import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
@@ -26,6 +27,7 @@ import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
+import org.gradle.api.tasks.incremental.InputFileDetails
 
 /**
  * Move java code to transpile directories
@@ -61,7 +63,6 @@ class JavaStagingTask extends DefaultTask {
 
     @TaskAction
     void stageJavaFiles(IncrementalTaskInputs inputs) {
-        //Copy code
         Utils.projectCopy(project, {
             from getSrcFiles()
             into getDopplJavaDirFile()

@@ -759,6 +759,12 @@ class Utils {
         if (!targetFile.exists()) {
             targetFile.getParentFile().mkdirs();
         }
+        else
+        {
+            if(inputFile.lastModified() <= targetFile.lastModified())
+                return
+        }
+
 
         InputStream inp = new FileInputStream(inputFile)
 

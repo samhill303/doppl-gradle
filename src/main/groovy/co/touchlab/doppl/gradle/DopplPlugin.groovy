@@ -57,6 +57,12 @@ class DopplPlugin implements Plugin<Project> {
 
     public static final String TASK_J2OBJC_CYCLE_FINDER = 'j2objcCycleFinder'
 
+    public static final String FOLDER_J2OBJC_OUT_MAIN = 'j2objcSrcGenMain'
+    public static final String FOLDER_J2OBJC_OUT_TEST = 'j2objcSrcGenTest'
+    public static final String FOLDER_DOPPL_DEP_EXPLODED = 'dopplDependencyExploded'
+    public static final String FOLDER_DOPPL_ONLY_DEP_EXPLODED = 'dopplOnlyDependencyExploded'
+    public static final String FOLDER_TEST_DOPPL_DEP_EXPLODED = 'testDopplDependencyExploded'
+
     @Override
     void apply(Project project) {
 
@@ -80,8 +86,8 @@ class DopplPlugin implements Plugin<Project> {
 
             // This is an intermediate directory only.  Clients should use only directories
             // specified in dopplConfig (or associated defaults in dopplConfig).
-            File j2objcSrcGenMainDir = file("${buildDir}/j2objcSrcGenMain")
-            File j2objcSrcGenTestDir = file("${buildDir}/j2objcSrcGenTest")
+            File j2objcSrcGenMainDir = file("${buildDir}/${FOLDER_J2OBJC_OUT_MAIN}")
+            File j2objcSrcGenTestDir = file("${buildDir}/${FOLDER_J2OBJC_OUT_TEST}")
 
             // These configurations are groups of artifacts and dependencies for the plugin build
             // https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.Configuration.html

@@ -47,9 +47,9 @@ class DopplConfig {
         dopplJavaFolderMain = new File(project.buildDir, 'dopplJavaMain').absolutePath
         dopplJavaFolderTest = new File(project.buildDir, 'dopplJavaTest').absolutePath
         destDopplFolder = new File(project.buildDir, 'doppl').absolutePath
-        dopplDependencyExploded = new File(project.buildDir, 'dopplDependencyExploded').absolutePath
-        dopplOnlyDependencyExploded = new File(project.buildDir, 'dopplOnlyDependencyExploded').absolutePath
-        testDopplDependencyExploded = new File(project.buildDir, 'testDopplDependencyExploded').absolutePath
+        dopplDependencyExploded = new File(project.buildDir, DopplPlugin.FOLDER_DOPPL_DEP_EXPLODED).absolutePath
+        dopplOnlyDependencyExploded = new File(project.buildDir, DopplPlugin.FOLDER_DOPPL_ONLY_DEP_EXPLODED).absolutePath
+        testDopplDependencyExploded = new File(project.buildDir, DopplPlugin.FOLDER_TEST_DOPPL_DEP_EXPLODED).absolutePath
     }
 
     String dopplJavaFolderMain = null

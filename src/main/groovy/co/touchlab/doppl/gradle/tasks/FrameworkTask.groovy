@@ -17,33 +17,44 @@
 package co.touchlab.doppl.gradle.tasks
 
 import co.touchlab.doppl.gradle.BuildContext
+import co.touchlab.doppl.gradle.DopplPlugin
 import co.touchlab.doppl.gradle.FrameworkConfig
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 
-class FrameworkTask extends DefaultTask{
+class FrameworkTask extends DefaultTask {
 
     public boolean test
     public BuildContext _buildContext
 
     @TaskAction
-    public void writePodspec()
-    {
-        File podspecFile = new File(project.buildDir, test ? "testdoppllib.podspec" : "doppllib.podspec")
+    public void writePodspec() {
+        String specName = test ? "testdoppllib" : "doppllib"
+        File podspecFile = new File(project.buildDir, "${specName}.podspec")
 
         List<String> dependencyFolders = test ?
-                                         ["j2objcSrcGenMain", "j2objcSrcGenTest", "dopplDependencyExploded", "dopplOnlyDependencyExploded", "testDopplDependencyExploded"] :
-                                         ["j2objcSrcGenMain", "dopplDependencyExploded", "dopplOnlyDependencyExploded"]
+                                         [
+                                                 DopplPlugin.FOLDER_J2OBJC_OUT_MAIN,
+                                                 DopplPlugin.FOLDER_J2OBJC_OUT_TEST,
+                                                 DopplPlugin.FOLDER_DOPPL_DEP_EXPLODED,
+                                                 DopplPlugin.FOLDER_DOPPL_ONLY_DEP_EXPLODED,
+                                                 DopplPlugin.FOLDER_TEST_DOPPL_DEP_EXPLODED
+                                         ] :
+                                         [
+                                                 DopplPlugin.FOLDER_J2OBJC_OUT_MAIN,
+                                                 DopplPlugin.FOLDER_DOPPL_DEP_EXPLODED,
+                                                 DopplPlugin.FOLDER_DOPPL_ONLY_DEP_EXPLODED
+                                         ]
 
         FrameworkConfig config = test ? FrameworkConfig.findTest(project) : FrameworkConfig.findMain(project)
 
-        def podspecTemplate = config.podspecTemplate(project, dependencyFolders, test ? "testdoppllib" : "doppllib", _buildContext)
+        def podspecTemplate = config.podspecTemplate(project, dependencyFolders, specName, _buildContext)
         BufferedWriter writer = null
         try {
             writer = new BufferedWriter(new FileWriter(podspecFile))
             writer.write(podspecTemplate.toString())
         } finally {
-            if(writer != null)
+            if (writer != null)
                 writer.close()
         }
     }
