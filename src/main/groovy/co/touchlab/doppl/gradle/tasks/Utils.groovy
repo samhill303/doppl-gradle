@@ -598,6 +598,21 @@ class Utils {
         return a.substring(0, minLength);
     }
 
+    static String relativePath(File parent, File target)
+    {
+        String parentPath = parent.getPath()
+        if(target.getPath().startsWith(parentPath))
+        {
+            if(!parentPath.endsWith(File.separator))
+                parentPath += File.separator
+
+            return target.getPath().substring(parentPath.length())
+        }
+        else {
+            return target.getPath()
+        }
+    }
+
     // Matches regex, return first match as string, must have >1 capturing group
     // Return first capture group, comparing stderr first then stdout
     // Returns null for no match

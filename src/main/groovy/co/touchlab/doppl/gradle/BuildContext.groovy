@@ -30,25 +30,26 @@ import javax.annotation.Nonnull
  */
 class BuildContext {
     private BuildTypeProvider buildTypeProvider;
-    private DependencyResolver dependencyResolver;
+    private final DependencyResolver dependencyResolver;
     private final Project project;
 
-    BuildContext(Project project) {
+    BuildContext(Project project, DependencyResolver dependencyResolver) {
+        this.dependencyResolver = dependencyResolver
         this.project = project
     }
 
-/**
+    /**
      * Made synchronized in case we have tasks in parallel.
      *
      * @return
      */
     @Nonnull
     synchronized BuildTypeProvider getBuildTypeProvider() {
-        if(buildTypeProvider == null) {
+        if(buildTypeProvider == null)
+        {
             boolean androidTypeProject = Utils.isAndroidTypeProject(project);
-            buildTypeProvider = androidTypeProject ? new AndroidBuildTypeProvider(project) : new JavaBuildTypeProvider(project)
+            this.buildTypeProvider = androidTypeProject ? new AndroidBuildTypeProvider(project) : new JavaBuildTypeProvider(project)
         }
-
         return buildTypeProvider
     }
 
@@ -58,11 +59,6 @@ class BuildContext {
      * @return
      */
     synchronized DependencyResolver getDependencyResolver() {
-        if(dependencyResolver == null)
-        {
-            dependencyResolver = new DependencyResolver(project, DopplConfig.from(project))
-            dependencyResolver.configureAll()
-        }
         return dependencyResolver
     }
 }

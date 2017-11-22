@@ -18,39 +18,36 @@
 package co.touchlab.doppl.gradle
 
 import groovy.transform.CompileStatic
+import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.file.CopySpec
+import org.gradle.api.tasks.TaskAction
 
 /**
  * Resolves doppl dependencies. Can handle external artifacts as well as project dependencies
  */
 @CompileStatic
-public class DependencyResolver {
+class DependencyResolver extends DefaultTask{
 
     public static final String CONFIG_DOPPL = 'doppl'
     public static final String CONFIG_DOPPL_ONLY = 'dopplOnly'
     public static final String CONFIG_TEST_DOPPL = 'testDoppl'
-    final Project project
-    final DopplConfig dopplConfig
+
     List<DopplDependency> translateDopplLibs = new ArrayList<>()
     List<DopplDependency> translateDopplTestLibs = new ArrayList<>()
 
-    public DependencyResolver(Project project, DopplConfig dopplConfig) {
-        this.project = project
-        this.dopplConfig = dopplConfig
-    }
-
-    public void configureAll() {
-
+    @TaskAction
+    void configureAll() {
+        DopplConfig dopplConfig = DopplConfig.from(project)
         Map<String, DopplDependency> dependencyMap = new HashMap<>()
 
         //Current "lazy" plan. Just copy all dependencies. If something is changed, will need to clean.
         //TODO: Fix the lazy
-        configForConfig(CONFIG_DOPPL, translateDopplLibs, this.dopplConfig.dopplDependencyExploded, dependencyMap)
-        configForConfig(CONFIG_DOPPL_ONLY, translateDopplLibs, this.dopplConfig.dopplOnlyDependencyExploded, dependencyMap)
-        configForConfig(CONFIG_TEST_DOPPL, translateDopplTestLibs, this.dopplConfig.testDopplDependencyExploded, dependencyMap)
+        configForConfig(CONFIG_DOPPL, translateDopplLibs, dopplConfig.dopplDependencyExploded, dependencyMap)
+        configForConfig(CONFIG_DOPPL_ONLY, translateDopplLibs, dopplConfig.dopplOnlyDependencyExploded, dependencyMap)
+        configForConfig(CONFIG_TEST_DOPPL, translateDopplTestLibs, dopplConfig.testDopplDependencyExploded, dependencyMap)
     }
 
     void configForConfig(String configName,
@@ -64,7 +61,12 @@ public class DependencyResolver {
             if (it instanceof ProjectDependency) {
 
                 Project beforeProject = it.dependencyProject
-                dopplDependencyList.add(new DopplDependency(beforeProject.name, new File(DopplConfig.from(beforeProject).getDestDopplFolder())))
+                dopplDependencyList.add(
+                        new DopplDependency(
+                                beforeProject.name,
+                                new File(DopplConfig.from(beforeProject).getDestDopplFolder())
+                        )
+                )
             }
         }
 

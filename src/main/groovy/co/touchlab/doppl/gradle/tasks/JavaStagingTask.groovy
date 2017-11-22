@@ -52,6 +52,8 @@ class JavaStagingTask extends DefaultTask {
 
     @TaskAction
     void stageJavaFiles(IncrementalTaskInputs inputs) {
+
+        logger.info("DopplGradle: staging-inputs.incremental: " + inputs.incremental)
         if(inputs.incremental)
         {
             File baseDir = (File)sourceFileTree.dir
@@ -59,7 +61,7 @@ class JavaStagingTask extends DefaultTask {
             inputs.outOfDate(new Action<InputFileDetails>() {
                 @Override
                 void execute(InputFileDetails details) {
-                    String subPath = details.file.getPath().substring(baseDir.getPath().length())
+                    String subPath = Utils.relativePath(baseDir, details.file)// details.file.getPath().substring(baseDir.getPath().length())
                     File newFile = new File(getDopplJavaDirFile(), subPath)
 
                     project.copy {

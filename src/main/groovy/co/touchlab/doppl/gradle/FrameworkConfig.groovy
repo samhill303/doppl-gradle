@@ -20,7 +20,11 @@ import co.touchlab.doppl.gradle.tasks.TranslateTask
 import co.touchlab.doppl.gradle.tasks.Utils
 import org.gradle.api.Project
 
+import javax.rmi.CORBA.Util
+
 class FrameworkConfig {
+    private static final String SOURCE_EXTENSIONS = "h,m,cpp,properites,txt"
+
     static FrameworkConfig findMain(Project project) {
         return project.dopplConfig.mainFramework
     }
@@ -99,39 +103,38 @@ class FrameworkConfig {
         return "'"+ allFrameworks.join("', '") +"'"
     }
 
-    String podspecTemplate (Project project, List<String> dependencyFolders, String podname, BuildContext _buildContext){
+    String makePodFileList(List<String> parts)
+    {
         StringBuilder sourceFileIncludes = new StringBuilder()
-        StringBuilder headerIncludes = new StringBuilder()
-
-        for (String folderName : dependencyFolders) {
+        for (String folderName : parts) {
             if(sourceFileIncludes.length() == 0)
             {
-                sourceFileIncludes.append("FileList[\"${folderName}/**/*.{h,m,cpp,properites,txt}\"]")
-                headerIncludes.append("FileList[\"${folderName}/**/*.h\"]")
+                sourceFileIncludes.append("FileList[\"${folderName}\"]")
             }
             else {
-                sourceFileIncludes.append(".include(\"${folderName}/**/*.{h,m,cpp,properites}\")")
-                headerIncludes.append(".include(\"${folderName}/**/*.h\")")
+                sourceFileIncludes.append(".include(\"${folderName}\")")
             }
         }
 
-        String sourceFiles = sourceFileIncludes.toString()
-        String headers = headerIncludes.toString()
+        return sourceFileIncludes.toString()
+    }
 
-        List<DopplDependency> dopplLibs = TranslateTask.getTranslateDopplLibs(_buildContext, test)
+    String podspecTemplate (Project project, List<String> sourceFolders, List<String> dependencyFolders, String podname, BuildContext _buildContext){
 
-        for (DopplDependency dep : dopplLibs) {
-            File folder = dep.dependencyJavaFolder()
-            if(folder.exists() && folder.listFiles(new FilenameFilter() {
-                @Override
-                boolean accept(File dir, String name) {
-                    return name.endsWith(".java")
-                }
-            }))
-            {
-                sourceFileIncludes.append(".include(\"${folder.getPath()}/**/*.{java}\")")
-            }
+        List<String> sourceLines = new ArrayList<>()
+        List<String> headerLines = new ArrayList<>()
+
+        for (String folderName : dependencyFolders) {
+            sourceLines.add("${folderName}/**/*.{${SOURCE_EXTENSIONS}}")
+            headerLines.add("${folderName}/**/*.h")
         }
+
+        for (String folderName : sourceFolders) {
+            sourceLines.add("${folderName}/**/*.java")
+        }
+
+        String sourceFiles = makePodFileList(sourceLines)
+        String headers = makePodFileList(headerLines)
 
         String objcFlagString = flagObjc ? ",\n     'OTHER_LDFLAGS' => '-ObjC'" : ""
 

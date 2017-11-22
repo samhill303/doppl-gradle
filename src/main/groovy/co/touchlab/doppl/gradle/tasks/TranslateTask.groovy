@@ -163,7 +163,7 @@ class TranslateTask extends BaseChangesTask {
             }
         })
 
-        println("forceFullBuild: "+ forceFullBuild + "/inputs.incremental: "+ inputs.incremental)
+        println("DopplGradle: forceFullBuild: "+ forceFullBuild + "/inputs.incremental: "+ inputs.incremental)
 
         if (forceFullBuild) {
             // A change outside of the source set directories has occurred, so an incremental build isn't possible.
@@ -305,6 +305,8 @@ class TranslateTask extends BaseChangesTask {
                 }
             }
         }
+
+        logger.info("DopplGradle: translating "+ srcFilesToTranslate.size())
 
         try {
             Utils.projectExec(project, stdout, stderr, null, {

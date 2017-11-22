@@ -17,6 +17,8 @@
 package co.touchlab.doppl.gradle.tasks
 
 import co.touchlab.doppl.gradle.BuildContext
+import co.touchlab.doppl.gradle.DopplConfig
+import co.touchlab.doppl.gradle.DopplDependency
 import co.touchlab.doppl.gradle.DopplPlugin
 import co.touchlab.doppl.gradle.FrameworkConfig
 import org.gradle.api.DefaultTask
@@ -46,9 +48,29 @@ class FrameworkTask extends DefaultTask {
                                                  DopplPlugin.FOLDER_DOPPL_ONLY_DEP_EXPLODED
                                          ]
 
+        List<String> sourceFolders = new ArrayList<>()
+        DopplConfig dopplConfig = DopplConfig.from(project)
+        if(dopplConfig.emitLineDirectives) {
+            sourceFolders.add(DopplPlugin.DOPPL_JAVA_MAIN)
+            if(test)
+            {
+                sourceFolders.add(DopplPlugin.DOPPL_JAVA_TEST)
+            }
+
+            List<DopplDependency> dopplLibs = TranslateTask.getTranslateDopplLibs(_buildContext, test)
+
+            for (DopplDependency dep : dopplLibs) {
+                File folder = dep.dependencyJavaFolder()
+                if (folder.exists() && folder.isDirectory()) {
+                    String relativePath = Utils.relativePath(project.buildDir, folder)
+                    sourceFolders.add(relativePath)
+                }
+            }
+        }
+
         FrameworkConfig config = test ? FrameworkConfig.findTest(project) : FrameworkConfig.findMain(project)
 
-        def podspecTemplate = config.podspecTemplate(project, dependencyFolders, specName, _buildContext)
+        def podspecTemplate = config.podspecTemplate(project, sourceFolders, dependencyFolders, specName, _buildContext)
         BufferedWriter writer = null
         try {
             writer = new BufferedWriter(new FileWriter(podspecFile))

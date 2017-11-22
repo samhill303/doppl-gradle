@@ -44,8 +44,8 @@ class DopplConfig {
         destLibDir = new File(project.buildDir, 'j2objcOutputs/lib').absolutePath
         destJavaJarDir = new File(project.buildDir, 'libs').absolutePath
 
-        dopplJavaFolderMain = new File(project.buildDir, 'dopplJavaMain').absolutePath
-        dopplJavaFolderTest = new File(project.buildDir, 'dopplJavaTest').absolutePath
+        dopplJavaFolderMain = new File(project.buildDir, DopplPlugin.DOPPL_JAVA_MAIN).absolutePath
+        dopplJavaFolderTest = new File(project.buildDir, DopplPlugin.DOPPL_JAVA_TEST).absolutePath
         destDopplFolder = new File(project.buildDir, 'doppl').absolutePath
         dopplDependencyExploded = new File(project.buildDir, DopplPlugin.FOLDER_DOPPL_DEP_EXPLODED).absolutePath
         dopplOnlyDependencyExploded = new File(project.buildDir, DopplPlugin.FOLDER_DOPPL_ONLY_DEP_EXPLODED).absolutePath
