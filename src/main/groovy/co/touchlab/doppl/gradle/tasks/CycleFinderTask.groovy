@@ -51,8 +51,8 @@ class CycleFinderTask extends DefaultTask {
     @TaskAction
     void cycleFinder() {
 
-        String cycleFinderExec = Utils.j2objcHome(project) + Utils.fileSeparator() + 'cycle_finder'
-        String jreWhitelist = Utils.j2objcHome(project) + Utils.fileSeparator() + 'cycle_whitelist.txt'
+        String cycleFinderExec = Utils.j2objcHome(project) + File.separator + 'cycle_finder'
+        String jreWhitelist = Utils.j2objcHome(project) + File.separator + 'cycle_whitelist.txt'
 
         FileCollection fullSrcFiles = getSrcInputFiles()
 
@@ -61,18 +61,16 @@ class CycleFinderTask extends DefaultTask {
         String sourcepathArg = Utils.joinedPathArg(allJavaDirs)
 
         List<DopplDependency> dopplLibs = TranslateTask.getTranslateDopplLibs(_buildContext, false)
-        def libs = Utils.dopplJarLibs(dopplLibs)
 
         //Classpath arg for translation. Includes user specified jars, j2objc 'standard' jars, and doppl dependency libs
         UnionFileCollection classpathFiles = new UnionFileCollection([
                 project.files(getTranslateClasspaths()),
-                project.files(Utils.j2objcLibs(Utils.j2objcHome(project), getTranslateJ2objcLibs())),
-                project.files(libs)
+                project.files(Utils.j2objcLibs(Utils.j2objcHome(project), getTranslateJ2objcLibs()))
         ])
 
         // TODO: comment explaining ${project.buildDir}/classes
         String classpathArg = Utils.joinedPathArg(classpathFiles) +
-                              Utils.pathSeparator() + "${project.buildDir}/classes"
+                              File.pathSeparator + "${project.buildDir}/classes"
 
         ByteArrayOutputStream stdout = new ByteArrayOutputStream()
         ByteArrayOutputStream stderr = new ByteArrayOutputStream()

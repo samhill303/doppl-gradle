@@ -59,10 +59,6 @@ group = 'co.doppl'
 //Changed this a whole number to differentiate it from the core stuff. Confusing.
 version = '0.10.0'
 
-test {
-    enabled = false
-}
-
 project.tasks.all {
     if (it.name == 'publishPluginGroovyDocsJar' || it.name == 'publishPluginJavaDocsJar') {
         it.from(project.file('src/main/resources/'))

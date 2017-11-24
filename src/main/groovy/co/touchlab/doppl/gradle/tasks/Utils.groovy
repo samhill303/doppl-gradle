@@ -105,126 +105,25 @@ class Utils {
         return versionComponents.size() >= minVersionComponents.size()
     }
 
-
-    private static String fakeOSName = ''
-
-    /* This allows faking of is(Linux|Windows|MacOSX) methods but misses java.io.File separators.
-     *
-     * The setFakeOsNone() should be called in the test unit @After method to isolate test state.
-     */
-
-    @VisibleForTesting
-    static void setFakeOSLinux() {
-        fakeOSName = 'Linux'
-    }
-
-    @VisibleForTesting
-    static void setFakeOSMacOSX() {
-        fakeOSName = 'Mac OS X'
-    }
-
-    @VisibleForTesting
-    static void setFakeOSWindows() {
-        fakeOSName = 'Windows'
-    }
-
-    // Unset fake os, should be used in @After method
-    @VisibleForTesting
-    static void setFakeOSNone() {
-        fakeOSName = ''
-    }
-
-    @VisibleForTesting
-    static String getLowerCaseOSName(boolean ignoreFakeOSName) {
-
-        String osName = System.getProperty('os.name')
-        if (!ignoreFakeOSName) {
-            if (!fakeOSName.isEmpty()) {
-                osName = fakeOSName
-            }
-        }
-        osName = osName.toLowerCase()
-        return osName
+    static String getLowerCaseOSName() {
+        return System.getProperty('os.name').toLowerCase()
     }
 
     static boolean isLinux() {
-        String osName = getLowerCaseOSName(false)
+        String osName = getLowerCaseOSName()
         // http://stackoverflow.com/a/18417382/1509221
         return osName.contains('nux')
     }
 
     static boolean isMacOSX() {
-        String osName = getLowerCaseOSName(false)
+        String osName = getLowerCaseOSName()
         // http://stackoverflow.com/a/18417382/1509221
         return osName.contains('mac') || osName.contains('darwin')
     }
 
     static boolean isWindows() {
-        String osName = getLowerCaseOSName(false)
+        String osName = getLowerCaseOSName()
         return osName.contains('windows')
-    }
-
-    static boolean isWindowsNoFake() {
-        String osName = getLowerCaseOSName(true)
-        return osName.contains('windows')
-    }
-
-    static void requireMacOSX(String taskName) {
-        if (!isMacOSX()) {
-            throw new InvalidUserDataException(
-                    "Mac OS X is required for $taskName. Use `translateOnlyMode` on Windows or Linux:\n" +
-                    'https://github.com/j2objc-contrib/j2objc-gradle/blob/master/FAQ.md#how-do-i-develop-on-windows-or-linux')
-        }
-    }
-
-    // Same as File.separator but can be faked using setFakeOSXXXX()
-    static String fileSeparator() {
-        if (isWindows()) {
-            return '\\'
-        } else {
-            return '/'
-        }
-    }
-
-    // Same as File.pathSeparator but can be faked using setFakeOSXXXX()
-    static String pathSeparator() {
-        if (isWindows()) {
-            return ';'
-        } else {
-            return ':'
-        }
-    }
-
-    // Same as URI.relativize(...) method but works for non-parent directories
-    // by adding '../../' when necessary to find a common parent
-    static String relativizeNonParent(File src, File dst) {
-        URI dstUri = dst.toURI()
-        URI relativized
-        String upDirPrefix = ''
-
-        while (true) {
-            relativized = src.toURI().relativize(dstUri)
-            if (relativized != dstUri) {
-                // Relative path found
-                break
-            }
-
-            upDirPrefix += '../'
-            src = src.getParentFile()
-            assert (src != null)
-        }
-
-        trimTrailingForwardSlash(upDirPrefix + relativized.toString())
-    }
-
-    static void throwIfNoJavaPlugin(Project proj) {
-        if (!proj.plugins.hasPlugin('java')) {
-            String message =
-                    "J2ObjC Gradle Plugin: missing 'java' plugin for '${proj.name}' project.\n" +
-                    "This is a requirement for using J2ObjC. Please see:\n" +
-                    "https://github.com/j2objc-contrib/j2objc-gradle/#quick-start-guide"
-            throw new InvalidUserDataException(message)
-        }
     }
 
     // Add valid keys here
@@ -287,21 +186,6 @@ class Utils {
         return result == null ? defaultValue : result
     }
 
-    static void writeLocalProperty(Project proj, String key, String value)
-    {
-        Properties localProperties = new Properties()
-        File localPropertiesFile = new File(proj.rootDir, 'local.properties')
-        if(localPropertiesFile.exists()) {
-            localPropertiesFile.withInputStream {
-                localProperties.load it
-            }
-        }
-        localProperties.put(key, value)
-        FileWriter fileWriter = new FileWriter(localPropertiesFile)
-        localProperties.store(fileWriter)
-        fileWriter.close()
-    }
-
     static String j2objcHome(Project proj) {
         return new File(j2objcHomeOrNull(proj)).absolutePath
     }
@@ -319,34 +203,12 @@ class Utils {
         return proj.file("${j2objcHome(proj)}/lib/j2objc.jar")
     }
 
-    static File cycleFinderJar(Project proj) {
-        return proj.file("${j2objcHome(proj)}/lib/cycle_finder.jar")
-    }
-
     static void throwJ2objcConfigFailure(String preamble) {
         String message = ">>>>>>>>>>>>>>>> Doppl Tool Configuration Error <<<<<<<<<<<<<<<<\n" +
                          "$preamble\n" +
                          "\n" +
                          "See 'Getting Started' at http://doppl.co\n"
         throw new InvalidUserDataException(message)
-    }
-
-    static boolean j2objcHasOsxDistribution(Project proj) {
-        return proj.file("${j2objcHome(proj)}/lib/macosx").exists()
-    }
-
-    static Set<File> srcDirs(Project proj, String sourceSetName, String fileType){
-        assert fileType == 'java' || fileType == 'resources'
-//        assert sourceSetName == 'main' || sourceSetName == 'test'
-
-        boolean javaTypeProject = proj.plugins.hasPlugin('java')
-
-        if(javaTypeProject){
-            return javaGetSet(proj, sourceSetName, fileType).srcDirs
-        }else{
-            def asdf = proj['android']['sourceSets'][sourceSetName][fileType]
-            return (Set<File>)asdf['srcDirs']
-        }
     }
 
     public static String findVersionString(Project project, String j2objcHome) {
@@ -412,40 +274,11 @@ class Utils {
         }
     }
 
-    // Retrieves the configured source directories from the Java plugin SourceSets.
-    // This includes the files for all Java source within these directories.
-    static FileTree srcSet(Project proj, String sourceSetName, String fileType) {
-        assert fileType == 'java' || fileType == 'resources'
-
-        boolean javaTypeProject = proj.plugins.hasPlugin('java')
-
-        if(javaTypeProject){
-            return javaGetSet(proj, sourceSetName, fileType)
-        }else{
-            def asdf = proj['android']['sourceSets'][sourceSetName][fileType]
-            return (FileTree)asdf['sourceFiles']
-        }
-    }
-
-    static SourceDirectorySet javaGetSet(Project proj, String sourceSetName, String fileType)
-    {
-        throwIfNoJavaPlugin(proj)
-        JavaPluginConvention javaConvention = proj.getConvention().getPlugin(JavaPluginConvention)
-        SourceSet sourceSet = javaConvention.sourceSets.findByName(sourceSetName)
-        if(sourceSet == null)
-            return null;
-
-        // For standard fileTypes 'java' and 'resources,' per contract this cannot be null.
-        SourceDirectorySet srcDirSet = fileType == 'java' ? sourceSet.java : sourceSet.resources
-        return srcDirSet
-    }
-
     // Add list of java path to a FileCollection as a FileTree
     static List<ConfigurableFileTree> javaTrees(Project proj, List<String> treePaths) {
         List<ConfigurableFileTree> trees =
             treePaths.collect({ String treePath -> proj.fileTree(dir: treePath, includes: ["**/*.java"]) })
-        return trees;
-//        return new UnionFileTree("javaTrees_j2objc", (Collection<? extends FileTree>) trees)
+        return trees
     }
 
     static File dirFromFileTree(FileTree fileTree)
@@ -454,7 +287,7 @@ class Utils {
         {
             return ((DefaultConfigurableFileTree)fileTree).getDir()
         }
-        return null;
+        return null
     }
 
     static List<String> j2objcLibs(String j2objcHome,
@@ -462,49 +295,6 @@ class Utils {
         return libraries.collect { String library ->
             return "$j2objcHome/lib/$library"
         }
-    }
-
-    static List<String> dopplJarLibs(List<DopplDependency> libraries) {
-        List<String> jarPaths = libraries.collect { DopplDependency library ->
-            return findDopplLibraryJar(library.dependencyFolderLocation())
-        }
-
-        List<String> trimmedJarPaths = new ArrayList<>(jarPaths.size())
-        for (String path : jarPaths) {
-            if(path != null)
-            {
-                trimmedJarPaths.add(path)
-            }
-        }
-        return trimmedJarPaths
-    }
-
-    public static String findDopplLibraryJar(File libDirBase) {
-
-        def libDir = new File(libDirBase, "lib")
-        String jarPath = findJarRecursive(libDir)
-        if(jarPath != null)
-            return jarPath
-        else
-            return null
-    }
-
-    private static String findJarRecursive(File dir)
-    {
-        File[] files = dir.listFiles()
-        for (File file : files) {
-            if(file.isDirectory())
-            {
-                String jarPath = findJarRecursive(file)
-                if(jarPath != null)
-                    return jarPath;
-            }
-            else if (file.getName().endsWith(".jar")) {
-                return file.getAbsolutePath()
-            }
-        }
-
-        return null;
     }
 
     public static boolean isJavaTypeProject(Project project){
@@ -519,10 +309,10 @@ class Utils {
     {
         for (String pluginId : pluginIds) {
             if(project.plugins.hasPlugin(pluginId))
-                return true;
+                return true
         }
 
-        return false;
+        return false
     }
 
     public static String findDopplLibraryMappings(File dopplDir) {
@@ -536,7 +326,7 @@ class Utils {
         return null
     }
 
-    public static Properties  findDopplLibraryPrefixes(File dopplDir) {
+    public static Properties findDopplLibraryPrefixes(File dopplDir) {
 
         def files = dopplDir.listFiles()
         for (File file : files) {
@@ -560,7 +350,7 @@ class Utils {
             paths += file.path
         }
         // OS specific separator, i.e. ":" on OS X and ";" on Windows
-        return paths.join(pathSeparator())
+        return paths.join(File.pathSeparator)
     }
 
     static String joinedPathArg(Collection<File> files) {
@@ -569,16 +359,7 @@ class Utils {
             paths += file.path
         }
         // OS specific separator, i.e. ":" on OS X and ";" on Windows
-        return paths.join(pathSeparator())
-    }
-
-    static String trimTrailingForwardSlash(String path) {
-        assert path != null
-        if (path.endsWith('/')) {
-            // Remove last character
-            return path[0..-2]
-        }
-        return path
+        return paths.join(File.pathSeparator)
     }
 
     // Convert regex to string for display, wrapping it with /.../
@@ -586,16 +367,6 @@ class Utils {
     // http://docs.groovy-lang.org/latest/html/documentation/#_slashy_string
     static String escapeSlashyString(String regex) {
         return '/' + regex.replace('/', '\\/') + '/'
-    }
-
-    static String greatestCommonPrefix(String a, String b) {
-        int minLength = Math.min(a.length(), b.length());
-        for (int i = 0; i < minLength; i++) {
-            if (a.charAt(i) != b.charAt(i)) {
-                return a.substring(0, i);
-            }
-        }
-        return a.substring(0, minLength);
     }
 
     static String relativePath(File parent, File target)
@@ -642,14 +413,6 @@ class Utils {
         }
 
         return null
-    }
-
-    static String toQuotedList(List<String> listString) {
-        if (listString.isEmpty()) {
-            return ''
-        } else {
-            return "'${listString.join("','")}'"
-        }
     }
 
     static Properties propsFromStringMap(Map<String, String> map)
@@ -709,22 +472,6 @@ class Utils {
                (exception?.getCause() instanceof ExecException)
     }
 
-    // Sync main and or test resources, deleting destination directory and then recreating it
-    // TODO: make the sync more efficient, e.g. Gradle Sync task or rsync
-    static WorkResult syncResourcesTo(Project proj, List<String> sourceSetNames, File destDir) {
-        projectDelete(proj, destDir)
-        projectMkDir(proj, destDir)
-        return projectCopy(proj, {
-            sourceSetNames.each { String sourceSetName ->
-                assert sourceSetName in ['main', 'test']
-                srcDirs(proj, sourceSetName, 'resources').each {
-                    from it
-                }
-            }
-            into destDir
-        })
-    }
-
     /**
      * Copy content to directory by calling project.copy(closure)
      *
@@ -747,7 +494,7 @@ class Utils {
     public static void copyFileRecursive(File from, File to, FileFilter filter)
     {
         if(!from.exists())
-            return;
+            return
 
         File[] fromFiles = from.listFiles(filter)
         for (File ff : fromFiles) {
@@ -801,22 +548,8 @@ class Utils {
     private static ThreadLocal<byte []> copyBufferLocation = new ThreadLocal<byte []>(){
         @Override
         protected byte [] initialValue() {
-            return new byte[2048];
+            return new byte[2048]
         }
-    }
-
-    /**
-     * Delete a directory by calling project.delete(...)
-     *
-     * Must be called instead of project.delete(...) to allow mocking of project calls in testing.
-     *
-     * @param proj Calls proj.delete(...) method
-     * @param paths Variable length list of paths to be deleted, can be String or File
-     */
-    // See projectExec for explanation of the code
-    @CompileStatic(TypeCheckingMode.SKIP)
-    static boolean projectDelete(Project proj, Object... paths) {
-        return proj.delete(paths)
     }
 
     /**
@@ -903,20 +636,6 @@ class Utils {
         return execResult
     }
 
-    /**
-     * Delete a directory by calling project.mkdir(...)
-     *
-     * Must be called instead of project.mkdir(...) to allow mocking of project calls in testing.
-     *
-     * @param proj Calls proj.mkdir(...) method
-     * @param paths Variable length list of paths to be deleted, can be String or File
-     */
-    // See projectExec for explanation of the code
-    @CompileStatic(TypeCheckingMode.SKIP)
-    static boolean projectMkDir(Project proj, Object path) {
-        return proj.mkdir(path)
-    }
-
     static FileCollection mapSourceFiles(Project proj, FileCollection files,
                                          Map<String, String> sourceMapping) {
         for (String before : sourceMapping.keySet()) {
@@ -928,7 +647,6 @@ class Utils {
         }
         return files
     }
-
 
     // Max number of characters for OS command line
     static int maxArgs() {

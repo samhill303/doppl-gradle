@@ -240,18 +240,16 @@ class TranslateTask extends BaseChangesTask {
         String sourcepathArg = Utils.joinedPathArg(sourcepathDirs)
 
         List<DopplDependency> dopplLibs = getTranslateDopplLibs(_buildContext, testBuild)
-        def libs = Utils.dopplJarLibs(dopplLibs)
 
         //Classpath arg for translation. Includes user specified jars, j2objc 'standard' jars, and doppl dependency libs
         UnionFileCollection classpathFiles = new UnionFileCollection([
                 project.files(getTranslateClasspaths()),
-                project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs())),
-                project.files(libs)
+                project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs()))
         ])
 
         // TODO: comment explaining ${project.buildDir}/classes
         String classpathArg = Utils.joinedPathArg(classpathFiles) +
-                              Utils.pathSeparator() + "${project.buildDir}/classes"
+                              File.pathSeparator + "${project.buildDir}/classes"
 
         // Source files arguments
         List<String> srcFilesArgs = []
