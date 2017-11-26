@@ -80,10 +80,7 @@ class DependencyResolver extends DefaultTask{
                 def version = ra.moduleVersion.id.version
 
                 String mapKey = group + "_" + name +"_"+ version
-                if(dependencyMap.containsKey(mapKey)) {
-                    dopplDependencyList.add(dependencyMap.get(mapKey))
-                }
-                else{
+                if(!dependencyMap.containsKey(mapKey)) {
 
                     String depFolder = explodedPath
                     def dependency = new DopplDependency(group, name, version, new File(depFolder))

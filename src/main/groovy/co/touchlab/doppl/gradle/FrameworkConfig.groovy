@@ -55,7 +55,7 @@ class FrameworkConfig {
     boolean libJavax_inject = true
     boolean libJre_emul = true
     boolean libJsr305 = true
-    boolean libGuava = false
+    boolean libGuava = test
     boolean libMockito = test
     boolean libJunit = test
 

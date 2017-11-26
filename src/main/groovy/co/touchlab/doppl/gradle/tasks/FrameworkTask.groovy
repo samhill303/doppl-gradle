@@ -31,6 +31,9 @@ class FrameworkTask extends DefaultTask {
 
     @TaskAction
     public void writePodspec() {
+        if(test && DopplConfig.from(project).skipTests)
+            return
+
         String specName = test ? "testdoppllib" : "doppllib"
         File podspecFile = new File(project.buildDir, "${specName}.podspec")
 

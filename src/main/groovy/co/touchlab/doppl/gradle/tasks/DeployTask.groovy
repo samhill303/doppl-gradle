@@ -72,6 +72,9 @@ class DeployTask extends BaseChangesTask {
             return;
         }
 
+        if(testCode && DopplConfig.from(project).skipTests)
+            return
+
         FileFilter extensionFilter = new FileFilter() {
             @Override
             boolean accept(File pathname) {

@@ -62,6 +62,10 @@ class TestTranslateTask extends BaseChangesTask {
 
     @TaskAction
     void writeTestList() {
+
+        if(DopplConfig.from(project).skipTests)
+            return
+
         // Don't evaluate this expensive property multiple times.
         FileCollection originalSrcFiles = getSrcFiles()
 

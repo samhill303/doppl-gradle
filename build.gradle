@@ -29,6 +29,10 @@ buildscript {
 }
 
 apply plugin: 'groovy'
+//apply plugin: 'kotlin'
+//apply plugin: 'java-gradle-plugin'
+//apply from: "$rootDir/gradle/functional-test.gradle"
+
 apply plugin: 'kotlin'
 apply plugin: 'maven-publish'
 apply plugin: 'com.jfrog.bintray'

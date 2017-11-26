@@ -21,6 +21,7 @@ import co.touchlab.doppl.gradle.tasks.CycleFinderTask
 import co.touchlab.doppl.gradle.tasks.DeployTask
 import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
 import co.touchlab.doppl.gradle.tasks.FrameworkTask
+import co.touchlab.doppl.gradle.tasks.HeaderMappingsTask
 import co.touchlab.doppl.gradle.tasks.JavaStagingTask
 import co.touchlab.doppl.gradle.tasks.TestTranslateTask
 import co.touchlab.doppl.gradle.tasks.TranslateTask
@@ -68,6 +69,8 @@ class DopplPlugin implements Plugin<Project> {
 
     public static final String DOPPL_JAVA_MAIN = 'dopplJavaMain'
     public static final String DOPPL_JAVA_TEST = 'dopplJavaTest'
+    public static final String TASK_J2OBJC_PRE_BUILD = 'j2objcPreBuild'
+    public static final String TASK_DOPPL_HEADER_MAPPINGS = "dopplHeaderMappings"
 
     @Override
     void apply(Project project) {
@@ -133,7 +136,7 @@ class DopplPlugin implements Plugin<Project> {
 
             BuildContext buildContext = new BuildContext(project, dependencyResolver)
 
-            tasks.create(name: 'j2objcPreBuild', type: DefaultTask, dependsOn: DOPPL_DEPENDENCY_RESOLVER) {
+            Task j2objcPreBuildTask = tasks.create(name: TASK_J2OBJC_PRE_BUILD, type: DefaultTask, dependsOn: DOPPL_DEPENDENCY_RESOLVER) {
                 group 'doppl'
                 description "Marker task for all tasks that must be complete before j2objc building"
             }
@@ -147,6 +150,8 @@ class DopplPlugin implements Plugin<Project> {
                 group 'doppl'
                 description "Umbrella for main staging tasks"
             }
+
+            tasks.create(name: TASK_DOPPL_HEADER_MAPPINGS, type: HeaderMappingsTask, dependsOn: TASK_DOPPL_JAVA_STAGING_MAIN)
 
             Task translateMain = tasks.create(name: TASK_J2OBJC_MAIN_TRANSLATE, type: TranslateTask,
                     dependsOn: TASK_DOPPL_JAVA_STAGING_MAIN) {
@@ -168,15 +173,17 @@ class DopplPlugin implements Plugin<Project> {
                         mainStagingTask
                 )
 
-                prepStagingTasks(
-                        tasks,
-                        buildContext.getBuildTypeProvider().testSourceSets(project),
-                        TASK_DOPPL_JAVA_STAGING_TEST,
-                        DopplConfig.from(project).getDopplJavaDirFileTest(),
-                        testStagingTask
-                )
-                buildContext.getBuildTypeProvider().configureDependsOn(project, translateMain)
-
+                if(!DopplConfig.from(project).skipTests) {
+                    prepStagingTasks(
+                            tasks,
+                            buildContext.getBuildTypeProvider().testSourceSets(project),
+                            TASK_DOPPL_JAVA_STAGING_TEST,
+                            DopplConfig.from(project).getDopplJavaDirFileTest(),
+                            testStagingTask
+                    )
+                }
+                buildContext.getBuildTypeProvider().configureDependsOn(project, j2objcPreBuildTask)
+                buildContext.getBuildTypeProvider().configureTestDependsOn(project, j2objcPreBuildTask)
             }
 
             tasks.create(name: TASK_DOPPL_ASSEMBLY, type: DopplAssemblyTask,
@@ -215,8 +222,6 @@ class DopplPlugin implements Plugin<Project> {
                     //Ugh
                 }
             }
-
-            buildContext.getBuildTypeProvider().configureTestDependsOn(project, translateTest)
 
             tasks.create(name: TASK_DOPPL_TEST_TRANSLATE, type: TestTranslateTask,
                     dependsOn: TASK_J2OBJC_TEST_TRANSLATE) {
@@ -327,7 +332,7 @@ class DopplPlugin implements Plugin<Project> {
                     name: wrapperTaskName + "_" + (count++),
                     type: JavaStagingTask,
                     description: "JavaStagingTask ${tree.toString()}",
-                    dependsOn: 'j2objcPreBuild') {
+                    dependsOn: TASK_J2OBJC_PRE_BUILD) {
                 sourceFileTree = tree
                 destDir = dest
             }

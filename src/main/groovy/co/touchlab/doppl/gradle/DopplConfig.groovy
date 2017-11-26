@@ -74,6 +74,7 @@ class DopplConfig {
     String destJavaJarDir = null;
 
     boolean useArc = false;
+    boolean skipTests = false
 
     String mappingsInput = null;
     List<String> copyMainOutput = new ArrayList<>();

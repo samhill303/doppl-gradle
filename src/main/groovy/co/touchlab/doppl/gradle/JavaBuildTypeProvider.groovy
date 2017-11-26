@@ -16,8 +16,10 @@
 
 package co.touchlab.doppl.gradle
 
+import co.touchlab.doppl.gradle.tasks.Utils
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileTree
 
 /**
@@ -28,9 +30,11 @@ import org.gradle.api.file.FileTree
  */
 class JavaBuildTypeProvider implements BuildTypeProvider{
 
-    private final DopplConfig dopplConfig;
+    private final DopplConfig dopplConfig
+    private final Project project
 
     JavaBuildTypeProvider(Project project) {
+        this.project = project
         dopplConfig = DopplConfig.from(project)
     }
 
@@ -54,6 +58,9 @@ class JavaBuildTypeProvider implements BuildTypeProvider{
         sources.add(project.fileTree('src/test/java'))
         sources.add(project.fileTree('build/classes/test'))
         sources.add(project.fileTree('build/generated/source/apt/test'))
+
+        addConfigDirs(dopplConfig.generatedTestSourceDirs, sources)
+
         return sources
     }
 
@@ -63,6 +70,23 @@ class JavaBuildTypeProvider implements BuildTypeProvider{
         sources.add(project.fileTree('src/main/java'))
         sources.add(project.fileTree('build/classes/main'))
         sources.add(project.fileTree('build/generated/source/apt/main'))
+
+        addConfigDirs(dopplConfig.generatedSourceDirs, sources)
+
         return sources
     }
+
+    void addConfigDirs(
+            List<String> generatedSourceDirs,
+            List<FileTree> paths
+    ){
+        if(generatedSourceDirs.size() > 0)
+        {
+            List<ConfigurableFileTree> trees = Utils.javaTrees(project, generatedSourceDirs)
+            for (ConfigurableFileTree tree : trees) {
+                paths.add(tree)
+            }
+        }
+    }
+
 }

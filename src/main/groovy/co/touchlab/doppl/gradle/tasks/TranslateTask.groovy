@@ -125,6 +125,8 @@ class TranslateTask extends BaseChangesTask {
     void translate(IncrementalTaskInputs inputs) {
 
         DopplConfig dopplConfig = DopplConfig.from(project)
+        if(testBuild && dopplConfig.skipTests)
+            return
 
         if(!dopplConfig.disableAnalytics) {
             new DopplAnalytics(dopplConfig, Utils.findVersionString(project, Utils.j2objcHome(project))).execute()
@@ -227,14 +229,6 @@ class TranslateTask extends BaseChangesTask {
             boolean testTranslate,
             boolean emitLineDirectives) {
 
-        Set<File> files = srcFilesToTranslate.getFiles()
-        int num = files.size()
-        logger.info("Translating $num files with j2objc...")
-        if (files.size() == 0) {
-            logger.info("No files to translate; skipping j2objc execution")
-            return
-        }
-
         String j2objcExecutable = "${getJ2objcHome()}/j2objc"
 
         String sourcepathArg = Utils.joinedPathArg(sourcepathDirs)
@@ -255,7 +249,7 @@ class TranslateTask extends BaseChangesTask {
         List<String> srcFilesArgs = []
         int srcFilesArgsCharCount = 0
         for (File file in srcFilesToTranslate) {
-            String filePath = file.getPath()
+            String filePath = Utils.relativePath(project.projectDir, file)
             srcFilesArgs.add(filePath)
             srcFilesArgsCharCount += filePath.length() + 1
         }
