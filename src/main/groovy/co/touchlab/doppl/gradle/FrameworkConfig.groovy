@@ -56,8 +56,8 @@ class FrameworkConfig {
     boolean libJre_emul = true
     boolean libJsr305 = true
     boolean libGuava = test
-    boolean libMockito = test
-    boolean libJunit = test
+    boolean libMockito = false
+    boolean libJunit = false
 
     List<String> addLibraries = new ArrayList<>()
 

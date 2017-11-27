@@ -19,6 +19,7 @@ package co.touchlab.doppl.gradle.tasks
 import co.touchlab.doppl.gradle.DopplConfig
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.InputFiles
@@ -33,6 +34,7 @@ import org.gradle.api.tasks.incremental.InputFileDetails
 
 class JavaStagingTask extends DefaultTask {
 
+    public static final String DOPPL_MAPPINGS_FILENAME = "doppl.mappings"
     FileTree sourceFileTree
     File destDir
 
@@ -90,6 +92,37 @@ class JavaStagingTask extends DefaultTask {
                 includeEmptyDirs = false
                 include '**/*.java'
             })
+        }
+
+        writeHeaderMappings()
+    }
+
+    void writeHeaderMappings()
+    {
+        File javaFolder = getDopplJavaDirFile()
+        ConfigurableFileTree tree = project.fileTree(dir: javaFolder, includes: ["**/*.java"])
+        Iterator<File> fileIter = tree.iterator()
+        File mappingsFile = new File(javaFolder, DOPPL_MAPPINGS_FILENAME)
+        FileWriter mappingsWriter = new FileWriter(mappingsFile)
+
+        try {
+            while (fileIter.hasNext()) {
+                File file = fileIter.next()
+                String javaPackageAndFile = Utils.relativePath(javaFolder, file)
+                if(javaPackageAndFile.endsWith(".java"))
+                {
+                    javaPackageAndFile = javaPackageAndFile.substring(0, javaPackageAndFile.length() - ".java".length())
+                    String[] parts = javaPackageAndFile.split(File.separator)
+                    StringBuilder sb = new StringBuilder()
+                    for (String part : parts) {
+                        sb.append(part.capitalize())
+                    }
+
+                    mappingsWriter.append(javaPackageAndFile.replace(File.separator, '.') + "=" + sb.toString() +".h\n")
+                }
+            }
+        } finally {
+            mappingsWriter.close()
         }
     }
 }

@@ -110,6 +110,7 @@ class TranslateTask extends BaseChangesTask {
         return new UnionFileTree("asdf", (Collection<? extends FileTree>)fileTrees)//.matching(dopplConfig.translatePattern)
     }
 
+
     @Input
     Map<String, String> getTranslateSourceMapping() { return DopplConfig.from(project).translateSourceMapping }
 
@@ -229,6 +230,9 @@ class TranslateTask extends BaseChangesTask {
             boolean testTranslate,
             boolean emitLineDirectives) {
 
+        if(srcFilesToTranslate.size() == 0)
+            return //Nothing to do
+
         String j2objcExecutable = "${getJ2objcHome()}/j2objc"
 
         String sourcepathArg = Utils.joinedPathArg(sourcepathDirs)
@@ -271,15 +275,12 @@ class TranslateTask extends BaseChangesTask {
 
         List<String> mappingFiles = new ArrayList<>()
 
-        String path = mappingsInputPath()
-        if (path != null) {
-            if(!project.file(path).exists())
-            {
-                throw new FileNotFoundException("mappingsInput '"+ path +"' does not exist")
-            }
+        DopplConfig dopplConfig = DopplConfig.from(project)
 
-            mappingFiles.add(path);
-        }
+        addMappingsFrom(dopplConfig.getDopplJavaDirFileMain(), mappingFiles)
+
+        if(testBuild)
+            addMappingsFrom(dopplConfig.getDopplJavaDirFileTest(), mappingFiles)
 
         Map<String, String> allPrefixes = new HashMap<>(prefixMap)
 
@@ -314,12 +315,14 @@ class TranslateTask extends BaseChangesTask {
                 args "--swift-friendly", ''
 //                args "-Xtranslate-classfiles", ''
                 args "--package-prefixed-filenames", ''
+//                args "--no-package-directories", ''
                 if (!testTranslate) {
                     args "--output-header-mapping", new File(srcDir, project.name + ".mappings").absolutePath
                 }
                 if (getIgnoreWeakAnnotations()) {
                     args "--ignore-weak-annotation", ''
                 }
+
                 if (mappingFiles.size() > 0) {
                     args "--header-mapping", mappingFiles.join(",")
                 }
@@ -347,5 +350,13 @@ class TranslateTask extends BaseChangesTask {
             // TODO: match on common failures and provide useful help
             throw exception
         }
+    }
+
+    private void addMappingsFrom(File destDir, ArrayList<String> mappingFiles) {
+        File mainMappings = new File(destDir, JavaStagingTask.DOPPL_MAPPINGS_FILENAME)
+        if (!mainMappings.exists())
+            throw new FileNotFoundException("No mappings file")
+
+        mappingFiles.add(Utils.relativePath(project.projectDir, mainMappings))
     }
 }

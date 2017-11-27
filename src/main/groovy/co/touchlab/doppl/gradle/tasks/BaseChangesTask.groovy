@@ -53,10 +53,6 @@ class BaseChangesTask extends DefaultTask{
     @Input
     boolean getIgnoreWeakAnnotations() { return DopplConfig.from(project).ignoreWeakAnnotations }
 
-    @Input String mappingsInputPath() {
-        DopplConfig.from(project).mappingsInput
-    }
-
     @Input boolean isCopyDependencies() {
         DopplConfig.from(project).copyDependencies
     }

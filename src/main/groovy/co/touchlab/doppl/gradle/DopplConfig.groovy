@@ -76,7 +76,6 @@ class DopplConfig {
     boolean useArc = false;
     boolean skipTests = false
 
-    String mappingsInput = null;
     List<String> copyMainOutput = new ArrayList<>();
     List<String> copyTestOutput = new ArrayList<>();
     boolean copyDependencies = false;

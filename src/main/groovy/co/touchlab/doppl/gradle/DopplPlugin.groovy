@@ -52,10 +52,10 @@ class DopplPlugin implements Plugin<Project> {
     public static final String TASK_DOPPL_JAVA_STAGING_TEST = 'dopplJavaStagingTest'
     public static final String TASK_J2OBJC_MAIN_TRANSLATE = 'j2objcMainTranslate'
     public static final String TASK_J2OBJC_TEST_TRANSLATE = 'j2objcTestTranslate'
-    public static final String TASK_J2OBJC_TRANSLATE = 'j2objcTranslate'
+    public static final String TASK_DOPPL_MAPPINGS_MAIN = 'dopplMappingsMain'
+    public static final String TASK_DOPPL_MAPPINGS_TEST = 'dopplMappingsTest'
     public static final String TASK_DOPPL_FRAMEWORK_MAIN = 'dopplFrameworkMain'
     public static final String TASK_DOPPL_FRAMEWORK_TEST = 'dopplFrameworkTest'
-    public static final String TASK_DOPPL_FRAMEWORK = 'dopplFramework'
     public static final String TASK_DOPPL_BUILD = 'dopplBuild'
 
     public static final String TASK_J2OBJC_CYCLE_FINDER = 'j2objcCycleFinder'
@@ -153,7 +153,7 @@ class DopplPlugin implements Plugin<Project> {
 
             tasks.create(name: TASK_DOPPL_HEADER_MAPPINGS, type: HeaderMappingsTask, dependsOn: TASK_DOPPL_JAVA_STAGING_MAIN)
 
-            Task translateMain = tasks.create(name: TASK_J2OBJC_MAIN_TRANSLATE, type: TranslateTask,
+            tasks.create(name: TASK_J2OBJC_MAIN_TRANSLATE, type: TranslateTask,
                     dependsOn: TASK_DOPPL_JAVA_STAGING_MAIN) {
                 group 'doppl'
                 description "Translates main java source files to Objective-C"
@@ -161,6 +161,17 @@ class DopplPlugin implements Plugin<Project> {
 
                 // Output directories of 'j2objcTranslate', input for all other tasks
                 srcGenDir = j2objcSrcGenMainDir
+            }
+
+            tasks.create(name: TASK_J2OBJC_TEST_TRANSLATE, type: TranslateTask,
+                    dependsOn: TASK_DOPPL_JAVA_STAGING_TEST) {
+                group 'doppl'
+                description "Translates test java source files to Objective-C"
+                _buildContext = buildContext
+
+                // Output directories of 'j2objcTranslate', input for all other tasks
+                srcGenDir = j2objcSrcGenTestDir
+                testBuild = true
             }
 
             afterEvaluate {
@@ -204,24 +215,7 @@ class DopplPlugin implements Plugin<Project> {
                 srcGenMainDir = j2objcSrcGenMainDir
             }
 
-            Task translateTest = tasks.create(name: TASK_J2OBJC_TEST_TRANSLATE, type: TranslateTask,
-                    dependsOn: TASK_DOPPL_JAVA_STAGING_TEST) {
-                group 'doppl'
-                description "Translates test java source files to Objective-C"
-                _buildContext = buildContext
 
-                // Output directories of 'j2objcTranslate', input for all other tasks
-                srcGenDir = j2objcSrcGenTestDir
-                testBuild = true
-                try {
-                    //TODO: This should probably be more configurable
-                    def file = file('src/test/objc')
-                    if (file.exists())
-                        srcObjcDir = file
-                } catch (Exception e) {
-                    //Ugh
-                }
-            }
 
             tasks.create(name: TASK_DOPPL_TEST_TRANSLATE, type: TestTranslateTask,
                     dependsOn: TASK_J2OBJC_TEST_TRANSLATE) {
@@ -230,14 +224,6 @@ class DopplPlugin implements Plugin<Project> {
                 _buildContext = buildContext
 
                 output = file("$j2objcSrcGenTestDir/dopplTests.txt")
-            }
-
-            tasks.create(name: TASK_J2OBJC_TRANSLATE, type: DefaultTask, dependsOn: [
-                    TASK_DOPPL_ASSEMBLY,
-                    TASK_J2OBJC_TEST_TRANSLATE
-            ]) {
-                group 'doppl'
-                description "Marker task for all tasks that must be complete before j2objc building"
             }
 
             tasks.create(name: TASK_DOPPL_FRAMEWORK_MAIN, type: FrameworkTask,
@@ -256,14 +242,8 @@ class DopplPlugin implements Plugin<Project> {
                 test = true
             }
 
-            tasks.create(name: TASK_DOPPL_FRAMEWORK, type: DefaultTask,
-                    dependsOn: [TASK_DOPPL_FRAMEWORK_MAIN, TASK_DOPPL_FRAMEWORK_TEST]) {
-                group 'doppl'
-                description 'Create framework podspec'
-            }
-
             tasks.create(name: TASK_DOPPL_BUILD, type: DefaultTask,
-                    dependsOn: TASK_DOPPL_FRAMEWORK) {
+                    dependsOn: [TASK_DOPPL_FRAMEWORK_MAIN, TASK_DOPPL_FRAMEWORK_TEST]) {
                 group 'doppl'
                 description 'Build doppl'
             }

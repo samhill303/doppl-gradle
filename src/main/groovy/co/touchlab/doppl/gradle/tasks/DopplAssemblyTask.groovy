@@ -42,7 +42,7 @@ class DopplAssemblyTask extends DefaultTask {
 
     @InputFiles
     FileTree getConfigFiles() {
-        return project.fileTree(dir: srcGenMainDir, include: ['*.mappings', 'prefixes.properties'])
+        return project.fileTree(dir: srcGenMainDir, include: ['prefixes.properties'])
     }
 
     @OutputDirectory
@@ -71,9 +71,14 @@ class DopplAssemblyTask extends DefaultTask {
         }
 
         Utils.projectCopy(project, {
+            from dopplJavaDirFile
+            into getDestDopplDirFile().absolutePath
+            include "$JavaStagingTask.DOPPL_MAPPINGS_FILENAME"
+        })
+
+        Utils.projectCopy(project, {
             from getConfigFiles()
             into getDestDopplDirFile().absolutePath
-            include '*.mappings'
             include 'prefixes.properties'
         })
 //        }
