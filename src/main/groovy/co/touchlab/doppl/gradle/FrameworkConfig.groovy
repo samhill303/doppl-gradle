@@ -16,6 +16,7 @@
 
 package co.touchlab.doppl.gradle
 
+import co.touchlab.doppl.gradle.tasks.TranslateDependenciesTask
 import co.touchlab.doppl.gradle.tasks.TranslateTask
 import co.touchlab.doppl.gradle.tasks.Utils
 import org.gradle.api.Project
@@ -124,10 +125,24 @@ class FrameworkConfig {
         List<String> sourceLines = new ArrayList<>()
         List<String> headerLines = new ArrayList<>()
 
+        //Get loose Objc and c/c++ source into project
         for (String folderName : dependencyFolders) {
             sourceLines.add("${folderName}/**/*.{${SOURCE_EXTENSIONS}}")
             headerLines.add("${folderName}/**/*.h")
         }
+
+//        File mainDir = TranslateDependenciesTask.dependencyObjcFolder(project, false)
+//        String mainPath = Utils.relativePath(project.buildDir, mainDir)
+//        sourceLines.add("${mainPath}/**/*.{${SOURCE_EXTENSIONS}}")
+//        headerLines.add("${mainPath}/**/*.h")
+//
+//        if(test)
+//        {
+//            File testDir = TranslateDependenciesTask.dependencyObjcFolder(project, false)
+//            String testPath = Utils.relativePath(project.buildDir, testDir)
+//            sourceLines.add("${testPath}/**/*.{${SOURCE_EXTENSIONS}}")
+//            headerLines.add("${testPath}/**/*.h")
+//        }
 
         for (String folderName : sourceFolders) {
             sourceLines.add("${folderName}/**/*.java")
@@ -168,12 +183,14 @@ Pod::Spec.new do |s|
     s.frameworks = ${writeFrameworks()}
 
     s.pod_target_xcconfig = {
-     'HEADER_SEARCH_PATHS' => '${j2objcPath}/include','LIBRARY_SEARCH_PATHS' => '${j2objcPath}/lib'${objcFlagString}
+     'HEADER_SEARCH_PATHS' => '${j2objcPath}/include ${project.projectDir.absolutePath}','LIBRARY_SEARCH_PATHS' => '${j2objcPath}/lib'${objcFlagString}
     }
     
     s.user_target_xcconfig = {
-     'HEADER_SEARCH_PATHS' => '${j2objcPath}/frameworks/JRE.framework/Headers ${j2objcPath}/frameworks/JavaxInject.framework/Headers ${j2objcPath}/frameworks/JSR305.framework/Headers ${j2objcPath}/frameworks/JUnit.framework/Headers ${j2objcPath}/frameworks/Mockito.framework/Headers ${j2objcPath}/frameworks/Xalan.framework/Headers ${j2objcPath}/frameworks/Guava.framework/Headers'
+     'HEADER_SEARCH_PATHS' => '${project.projectDir.absolutePath} ${j2objcPath}/frameworks/JRE.framework/Headers ${j2objcPath}/frameworks/JavaxInject.framework/Headers ${j2objcPath}/frameworks/JSR305.framework/Headers ${j2objcPath}/frameworks/JUnit.framework/Headers ${j2objcPath}/frameworks/Mockito.framework/Headers ${j2objcPath}/frameworks/Xalan.framework/Headers ${j2objcPath}/frameworks/Guava.framework/Headers'
     }
+    
+    
     
 end"""}
 }

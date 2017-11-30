@@ -41,14 +41,14 @@ class FrameworkTask extends DefaultTask {
                                          [
                                                  DopplPlugin.FOLDER_J2OBJC_OUT_MAIN,
                                                  DopplPlugin.FOLDER_J2OBJC_OUT_TEST,
-                                                 DopplPlugin.FOLDER_DOPPL_DEP_EXPLODED,
-                                                 DopplPlugin.FOLDER_DOPPL_ONLY_DEP_EXPLODED,
-                                                 DopplPlugin.FOLDER_TEST_DOPPL_DEP_EXPLODED
+                                                 DopplPlugin.FOLDER_DOPPL_DEP + File.separator +DopplPlugin.FOLDER_DOPPL_DEP_EXPLODED,
+                                                 DopplPlugin.FOLDER_DOPPL_DEP + File.separator +DopplPlugin.FOLDER_DOPPL_ONLY_DEP_EXPLODED,
+                                                 DopplPlugin.FOLDER_DOPPL_DEP + File.separator +DopplPlugin.FOLDER_TEST_DOPPL_DEP_EXPLODED
                                          ] :
                                          [
                                                  DopplPlugin.FOLDER_J2OBJC_OUT_MAIN,
-                                                 DopplPlugin.FOLDER_DOPPL_DEP_EXPLODED,
-                                                 DopplPlugin.FOLDER_DOPPL_ONLY_DEP_EXPLODED
+                                                 DopplPlugin.FOLDER_DOPPL_DEP + File.separator +DopplPlugin.FOLDER_DOPPL_DEP_EXPLODED,
+                                                 DopplPlugin.FOLDER_DOPPL_DEP + File.separator +DopplPlugin.FOLDER_DOPPL_ONLY_DEP_EXPLODED
                                          ]
 
         List<String> sourceFolders = new ArrayList<>()
@@ -60,7 +60,8 @@ class FrameworkTask extends DefaultTask {
                 sourceFolders.add(DopplPlugin.DOPPL_JAVA_TEST)
             }
 
-            List<DopplDependency> dopplLibs = TranslateTask.getTranslateDopplLibs(_buildContext, test)
+            //Dependency objc is just a big file now
+            /*List<DopplDependency> dopplLibs = TranslateTask.getTranslateDopplLibs(_buildContext, test)
 
             for (DopplDependency dep : dopplLibs) {
                 File folder = dep.dependencyJavaFolder()
@@ -68,7 +69,7 @@ class FrameworkTask extends DefaultTask {
                     String relativePath = Utils.relativePath(project.buildDir, folder)
                     sourceFolders.add(relativePath)
                 }
-            }
+            }*/
         }
 
         FrameworkConfig config = test ? FrameworkConfig.findTest(project) : FrameworkConfig.findMain(project)

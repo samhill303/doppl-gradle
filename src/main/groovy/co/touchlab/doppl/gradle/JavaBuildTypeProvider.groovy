@@ -39,16 +39,20 @@ class JavaBuildTypeProvider implements BuildTypeProvider{
     }
 
     @Override
-    void configureDependsOn(Project project, Task prebuildTask) {
+    void configureDependsOn(Project project, Task upstreamTask, Task downstreamTask) {
         if(!dopplConfig.skipDependsTasks) {
-            prebuildTask.dependsOn('jar')
+            Task javaCompile = project.tasks.getByName("jar")
+            javaCompile.dependsOn upstreamTask
+            downstreamTask.dependsOn javaCompile
         }
     }
 
     @Override
-    void configureTestDependsOn(Project project, Task prebuildTask) {
+    void configureTestDependsOn(Project project, Task upstreamTask, Task downstreamTask) {
         if(!dopplConfig.skipDependsTasks) {
-            prebuildTask.dependsOn('test')
+            Task javaCompile = project.tasks.getByName("test")
+            javaCompile.dependsOn upstreamTask
+            downstreamTask.dependsOn javaCompile
         }
     }
 

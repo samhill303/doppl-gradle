@@ -93,36 +93,5 @@ class JavaStagingTask extends DefaultTask {
                 include '**/*.java'
             })
         }
-
-        writeHeaderMappings()
-    }
-
-    void writeHeaderMappings()
-    {
-        File javaFolder = getDopplJavaDirFile()
-        ConfigurableFileTree tree = project.fileTree(dir: javaFolder, includes: ["**/*.java"])
-        Iterator<File> fileIter = tree.iterator()
-        File mappingsFile = new File(javaFolder, DOPPL_MAPPINGS_FILENAME)
-        FileWriter mappingsWriter = new FileWriter(mappingsFile)
-
-        try {
-            while (fileIter.hasNext()) {
-                File file = fileIter.next()
-                String javaPackageAndFile = Utils.relativePath(javaFolder, file)
-                if(javaPackageAndFile.endsWith(".java"))
-                {
-                    javaPackageAndFile = javaPackageAndFile.substring(0, javaPackageAndFile.length() - ".java".length())
-                    String[] parts = javaPackageAndFile.split(File.separator)
-                    StringBuilder sb = new StringBuilder()
-                    for (String part : parts) {
-                        sb.append(part.capitalize())
-                    }
-
-                    mappingsWriter.append(javaPackageAndFile.replace(File.separator, '.') + "=" + sb.toString() +".h\n")
-                }
-            }
-        } finally {
-            mappingsWriter.close()
-        }
     }
 }

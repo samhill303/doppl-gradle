@@ -39,6 +39,16 @@ class DependencyResolver extends DefaultTask{
     List<DopplDependency> translateDopplTestLibs = new ArrayList<>()
 
     @TaskAction
+    void inflateAll()
+    {
+        for (DopplDependency dep : translateDopplLibs) {
+            dep.expandDop(project)
+        }
+        for (DopplDependency dep : translateDopplTestLibs) {
+            dep.expandDop(project)
+        }
+    }
+
     void configureAll() {
         DopplConfig dopplConfig = DopplConfig.from(project)
         Map<String, DopplDependency> dependencyMap = new HashMap<>()
@@ -83,14 +93,13 @@ class DependencyResolver extends DefaultTask{
                 if(!dependencyMap.containsKey(mapKey)) {
 
                     String depFolder = explodedPath
-                    def dependency = new DopplDependency(group, name, version, new File(depFolder))
-
-                    if(!dependency.dependencyFolderLocation().exists()) {
-                        project.copy { CopySpec cp ->
-                            cp.from project.zipTree(ra.file)
-                            cp.into dependency.dependencyFolderLocation()
-                        }
-                    }
+                    def dependency = new DopplDependency(
+                            group,
+                            name,
+                            version,
+                            new File(depFolder),
+                            ra.file
+                    )
 
                     dopplDependencyList.add(dependency)
                     dependencyMap.put(mapKey, dependency)

@@ -46,19 +46,23 @@ class AndroidBuildTypeProvider implements BuildTypeProvider{
     }
 
     @Override
-    void configureDependsOn(Project project, Task prebuildTask) {
+    void configureDependsOn(Project project, Task upstreamTask, Task downstreamTask) {
         if(!dopplConfig.skipDependsTasks) {
             project.android[variants].all { variant ->
                 def javaCompile = variant.hasProperty('javaCompiler') ? variant.javaCompiler : variant.javaCompile
-                prebuildTask.dependsOn javaCompile
+                //TODO: Figure out how to do this, but it's not a HUGE deal
+//                javaCompile.dependsOn upstreamTask
+                downstreamTask.dependsOn javaCompile
             }
         }
     }
 
     @Override
-    void configureTestDependsOn(Project project, Task prebuildTask) {
+    void configureTestDependsOn(Project project, Task upstreamTask, Task downstreamTask) {
         if(!dopplConfig.skipDependsTasks) {
-            prebuildTask.dependsOn('test')
+            Task testTask = project.tasks.getByName("test")
+            testTask.dependsOn upstreamTask
+            downstreamTask.dependsOn testTask
         }
     }
 

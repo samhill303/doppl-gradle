@@ -16,6 +16,9 @@
 
 package co.touchlab.doppl.gradle
 
+import org.gradle.api.Project
+import org.gradle.api.file.CopySpec
+
 /**
  * Created by kgalligan on 6/24/16.
  */
@@ -24,13 +27,20 @@ class DopplDependency {
     String versionMame
     File dir
 
+    File dopFile = null
+
     DopplDependency(String name, File dir) {
         this.name = name
         this.versionMame = name
         this.dir = dir
     }
 
-    DopplDependency(String group, String name, String version, File explodedDir)
+    DopplDependency(
+            String group,
+            String name,
+            String version,
+            File explodedDir,
+            File dopFile)
     {
         this.name = name
 
@@ -43,6 +53,8 @@ class DopplDependency {
         foldername = foldername.replace(' ', '_')
 
         dir = new File(explodedDir, foldername)
+
+        this.dopFile = dopFile
     }
 
     File dependencyFolderLocation(){
@@ -70,5 +82,16 @@ class DopplDependency {
         result = (name != null ? name.hashCode() : 0)
         result = 31 * result + (dir != null ? dir.hashCode() : 0)
         return result
+    }
+
+    void expandDop(Project project)
+    {
+        if(dopFile != null && !dependencyFolderLocation().exists())
+        {
+            project.copy { CopySpec cp ->
+                cp.from project.zipTree(dopFile)
+                cp.into dependencyFolderLocation()
+            }
+        }
     }
 }

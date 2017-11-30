@@ -92,12 +92,10 @@ class TranslateTask extends BaseChangesTask {
 
         if(testBuild)
         {
-            folders.addAll(depLibsToJavaFolders(_buildContext.getDependencyResolver().translateDopplTestLibs))
             folders.add(dopplConfig.getDopplJavaDirFileTest())
         }
         else
         {
-            folders.addAll(depLibsToJavaFolders(_buildContext.getDependencyResolver().translateDopplLibs))
             folders.add(dopplConfig.getDopplJavaDirFileMain())
         }
 
@@ -275,22 +273,16 @@ class TranslateTask extends BaseChangesTask {
 
         List<String> mappingFiles = new ArrayList<>()
 
-        DopplConfig dopplConfig = DopplConfig.from(project)
-
-        addMappingsFrom(dopplConfig.getDopplJavaDirFileMain(), mappingFiles)
+        addMappings(TranslateDependenciesTask.dependencyMappingsFile(project, false), mappingFiles)
 
         if(testBuild)
-            addMappingsFrom(dopplConfig.getDopplJavaDirFileTest(), mappingFiles)
+        {
+            addMappings(TranslateDependenciesTask.dependencyMappingsFile(project, true), mappingFiles)
+        }
 
         Map<String, String> allPrefixes = new HashMap<>(prefixMap)
 
         for (DopplDependency lib : dopplLibs) {
-
-            String mappingPath = Utils.findDopplLibraryMappings(lib.dependencyFolderLocation())
-            if (mappingPath != null && !mappingPath.isEmpty()) {
-                mappingFiles.add(mappingPath)
-            }
-
             Properties prefixPropertiesFromFile = Utils.findDopplLibraryPrefixes(lib.dependencyFolderLocation())
             if (prefixPropertiesFromFile != null) {
                 for (String name : prefixPropertiesFromFile.propertyNames()) {
@@ -352,11 +344,8 @@ class TranslateTask extends BaseChangesTask {
         }
     }
 
-    private void addMappingsFrom(File destDir, ArrayList<String> mappingFiles) {
-        File mainMappings = new File(destDir, JavaStagingTask.DOPPL_MAPPINGS_FILENAME)
-        if (!mainMappings.exists())
-            throw new FileNotFoundException("No mappings file")
-
-        mappingFiles.add(Utils.relativePath(project.projectDir, mainMappings))
+    private void addMappings(File mappingsFile, ArrayList<String> mappingFiles) {
+        if(mappingsFile.exists())
+            mappingFiles.add(Utils.relativePath(project.projectDir, mappingsFile))
     }
 }

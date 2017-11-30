@@ -24,8 +24,8 @@ import org.gradle.api.file.FileTree
  * Created by kgalligan on 3/11/17.
  */
 interface BuildTypeProvider {
-    void configureDependsOn(Project project, Task prebuildTask)
-    void configureTestDependsOn(Project project, Task prebuildTask)
+    void configureDependsOn(Project project, Task upstreamTask, Task downstreamTask)
+    void configureTestDependsOn(Project project, Task upstreamTask, Task downstreamTask)
 
     List<FileTree> testSourceSets(Project project)
 

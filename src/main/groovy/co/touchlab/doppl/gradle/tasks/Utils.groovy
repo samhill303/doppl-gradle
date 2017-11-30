@@ -315,17 +315,6 @@ class Utils {
         return false
     }
 
-    public static String findDopplLibraryMappings(File dopplDir) {
-
-        def files = dopplDir.listFiles()
-        for (File file : files) {
-            if (!file.isDirectory() && file.getName().endsWith(".mappings")) {
-                return file.getAbsolutePath()
-            }
-        }
-        return null
-    }
-
     public static Properties findDopplLibraryPrefixes(File dopplDir) {
 
         def files = dopplDir.listFiles()
