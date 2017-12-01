@@ -19,14 +19,6 @@ package co.touchlab.doppl.gradle
 import org.gradle.api.Project
 
 class DopplInfo {
-    /**
-     * Path where we write jar files for dependencies that will be
-     * transformed into Objective-C.
-     *
-     * @param project
-     * @return
-     */
-
     public static final String MAIN = "main"
     public static final String TEST = "test"
     public static final String DOPPL_BUILD = "dopplBuild"
@@ -49,16 +41,31 @@ class DopplInfo {
         return new File(project.buildDir, DopplPlugin.FOLDER_DOPPL_DEP)
     }
 
+    /**
+     * Exploded dir for 'doppl' dependencies
+     * @param project
+     * @return
+     */
     static File dependencyExplodedDopplFile(Project project)
     {
         return new File(dependencyExplodedFile(project), DopplPlugin.FOLDER_DOPPL_DEP_EXPLODED)
     }
 
+    /**
+     * Exploded dir for 'dopplOnly' dependencies
+     * @param project
+     * @return
+     */
     static File dependencyExplodedDopplOnlyFile(Project project)
     {
         return new File(dependencyExplodedFile(project), DopplPlugin.FOLDER_DOPPL_ONLY_DEP_EXPLODED)
     }
 
+    /**
+     * Exploded dir for 'testDoppl' dependencies
+     * @param project
+     * @return
+     */
     static File dependencyExplodedTestDopplFile(Project project)
     {
         return new File(dependencyExplodedFile(project), DopplPlugin.FOLDER_TEST_DOPPL_DEP_EXPLODED)
@@ -123,17 +130,4 @@ class DopplInfo {
     {
         return sourceBuildJarFileForPhase(project, TEST)
     }
-
-    /*static File dependencyBuildJarPathMain(Project project)
-    {
-        File build = new File(dependencyBuildJarPath(project), MAIN)
-        return build
-    }
-    static File dependencyBuildJarPathTest(Project project)
-    {
-        File build = new File(dependencyBuildJarPath(project), TEST)
-        return build
-    }*/
-
-
 }

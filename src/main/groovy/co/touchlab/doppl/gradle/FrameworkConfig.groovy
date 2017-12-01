@@ -16,9 +16,11 @@
 
 package co.touchlab.doppl.gradle
 
+import co.touchlab.doppl.gradle.tasks.FrameworkTask
 import co.touchlab.doppl.gradle.tasks.TranslateDependenciesTask
 import co.touchlab.doppl.gradle.tasks.TranslateTask
 import co.touchlab.doppl.gradle.tasks.Utils
+import org.bouncycastle.asn1.cmp.PKIFreeText
 import org.gradle.api.Project
 
 
@@ -130,10 +132,15 @@ class FrameworkConfig {
         return sourceFileIncludes.toString()
     }
 
-    String podspecTemplate (Project project, List<File> sourceFolders, List<File> dependencyFolders, String podname, BuildContext _buildContext){
+    String podspecTemplate (Project project, List<File> sourceFolders, List<File> dependencyFolders, String podname, boolean test){
 
         List<String> sourceLines = new ArrayList<>()
         List<String> headerLines = new ArrayList<>()
+
+        String allHeadersInclude = Utils.relativePath(project.buildDir, FrameworkTask.headerFile(project, test))
+
+        sourceLines.add("${allHeadersInclude}")
+        headerLines.add("${allHeadersInclude}")
 
         //Get loose Objc and c/c++ source into project
         for (File folder : dependencyFolders) {
@@ -151,6 +158,8 @@ class FrameworkConfig {
         }
 
         String sourceFiles = makePodFileList(sourceLines)
+
+
         String headers = makePodFileList(headerLines)
 
         String objcFlagString = flagObjc ? ",\n     'OTHER_LDFLAGS' => '-ObjC'" : ""

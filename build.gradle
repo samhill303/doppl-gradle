@@ -61,7 +61,7 @@ dependencies {
 
 group = 'co.doppl'
 //Changed this a whole number to differentiate it from the core stuff. Confusing.
-version = '0.10.3'
+version = '0.10.4'
 
 project.tasks.all {
     if (it.name == 'publishPluginGroovyDocsJar' || it.name == 'publishPluginJavaDocsJar') {

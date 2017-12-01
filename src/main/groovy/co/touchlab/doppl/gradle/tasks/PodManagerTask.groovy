@@ -109,6 +109,7 @@ class PodManagerTask extends DefaultTask{
                 setWorkingDir podfilePath
             })
 
+            /*
             File podsDir = new File(project.projectDir, podfilePath)// + "Pods")
             String podspecName = FrameworkTask.podspecName(testBuild)
             File umbrellaFile = new File(podsDir, "Pods/Target Support Files/${podspecName}/${podspecName}-umbrella.h")
@@ -139,7 +140,7 @@ class PodManagerTask extends DefaultTask{
             }
             else {
                 logger.warn("Umbrella header file not found. Check config.")
-            }
+            }*/
         } catch (Exception exception) {  // NOSONAR
             // TODO: match on common failures and provide useful help
             throw exception
