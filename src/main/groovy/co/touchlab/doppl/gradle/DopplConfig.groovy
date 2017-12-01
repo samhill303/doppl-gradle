@@ -44,17 +44,11 @@ class DopplConfig {
         destLibDir = new File(project.buildDir, 'j2objcOutputs/lib').absolutePath
         destJavaJarDir = new File(project.buildDir, 'libs').absolutePath
 
-        dopplJavaFolderMain = new File(project.buildDir, DopplPlugin.DOPPL_JAVA_MAIN).absolutePath
-        dopplJavaFolderTest = new File(project.buildDir, DopplPlugin.DOPPL_JAVA_TEST).absolutePath
         destDopplFolder = new File(project.buildDir, 'doppl').absolutePath
-        File dopplDependency = new File(project.buildDir, DopplPlugin.FOLDER_DOPPL_DEP)
-        dopplDependencyExploded = new File(dopplDependency, DopplPlugin.FOLDER_DOPPL_DEP_EXPLODED).absolutePath
-        dopplOnlyDependencyExploded = new File(dopplDependency, DopplPlugin.FOLDER_DOPPL_ONLY_DEP_EXPLODED).absolutePath
-        testDopplDependencyExploded = new File(dopplDependency, DopplPlugin.FOLDER_TEST_DOPPL_DEP_EXPLODED).absolutePath
+        dopplDependencyExploded = DopplInfo.dependencyExplodedDopplFile(project).absolutePath
+        dopplOnlyDependencyExploded = DopplInfo.dependencyExplodedDopplOnlyFile(project).absolutePath
+        testDopplDependencyExploded = DopplInfo.dependencyExplodedTestDopplFile(project).absolutePath
     }
-
-    String dopplJavaFolderMain = null
-    String dopplJavaFolderTest = null
 
     /**
      * Local exploded dir for doppl files
@@ -188,13 +182,6 @@ class DopplConfig {
         return project.file(destLibDir)
     }
 
-    File getDopplJavaDirFileMain(){
-        return project.file(dopplJavaFolderMain)
-    }
-
-    File getDopplJavaDirFileTest(){
-        return project.file(dopplJavaFolderTest)
-    }
 
     File getDestDopplDirFile(){
         return project.file(destDopplFolder)

@@ -17,6 +17,7 @@
 package co.touchlab.doppl.gradle.tasks
 
 import co.touchlab.doppl.gradle.DopplConfig
+import co.touchlab.doppl.gradle.DopplInfo
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.tasks.TaskAction
@@ -24,8 +25,7 @@ import org.gradle.api.tasks.TaskAction
 class HeaderMappingsTask extends DefaultTask{
     @TaskAction
     void writeHeaderMappings(){
-        DopplConfig dopplConfig = DopplConfig.from(project)
-        File javaFolder = dopplConfig.getDopplJavaDirFileMain()
+        File javaFolder = DopplInfo.sourceBuildJavaFileMain(project)
         ConfigurableFileTree tree = project.fileTree(dir: javaFolder, includes: ["**/*.java"])
         Iterator<File> fileIter = tree.iterator()
         while (fileIter.hasNext()) {

@@ -21,7 +21,6 @@ import co.touchlab.doppl.gradle.tasks.TranslateTask
 import co.touchlab.doppl.gradle.tasks.Utils
 import org.gradle.api.Project
 
-import javax.rmi.CORBA.Util
 
 class FrameworkConfig {
     private static final String SOURCE_EXTENSIONS = "h,m,cpp,properites,txt"
@@ -60,6 +59,15 @@ class FrameworkConfig {
     boolean libMockito = false
     boolean libJunit = false
 
+    List<String> managedPodsList = new ArrayList<>()
+
+    void managePod(String... paths)
+    {
+        for (String p : paths) {
+            managedPodsList.add(p)
+        }
+    }
+
     List<String> addLibraries = new ArrayList<>()
 
     void addLibraries(String... libs)
@@ -68,6 +76,8 @@ class FrameworkConfig {
             this.addLibraries.add(l)
         }
     }
+
+
 
     boolean frameworkUIKit = true
 
@@ -120,32 +130,24 @@ class FrameworkConfig {
         return sourceFileIncludes.toString()
     }
 
-    String podspecTemplate (Project project, List<String> sourceFolders, List<String> dependencyFolders, String podname, BuildContext _buildContext){
+    String podspecTemplate (Project project, List<File> sourceFolders, List<File> dependencyFolders, String podname, BuildContext _buildContext){
 
         List<String> sourceLines = new ArrayList<>()
         List<String> headerLines = new ArrayList<>()
 
         //Get loose Objc and c/c++ source into project
-        for (String folderName : dependencyFolders) {
-            sourceLines.add("${folderName}/**/*.{${SOURCE_EXTENSIONS}}")
-            headerLines.add("${folderName}/**/*.h")
+        for (File folder : dependencyFolders) {
+            sourceLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.{${SOURCE_EXTENSIONS}}")
+            headerLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.h")
         }
 
-//        File mainDir = TranslateDependenciesTask.dependencyObjcFolder(project, false)
-//        String mainPath = Utils.relativePath(project.buildDir, mainDir)
-//        sourceLines.add("${mainPath}/**/*.{${SOURCE_EXTENSIONS}}")
-//        headerLines.add("${mainPath}/**/*.h")
-//
-//        if(test)
-//        {
-//            File testDir = TranslateDependenciesTask.dependencyObjcFolder(project, false)
-//            String testPath = Utils.relativePath(project.buildDir, testDir)
-//            sourceLines.add("${testPath}/**/*.{${SOURCE_EXTENSIONS}}")
-//            headerLines.add("${testPath}/**/*.h")
-//        }
+        for (File folder : sourceFolders) {
+            sourceLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.{${SOURCE_EXTENSIONS}}")
+            headerLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.h")
+        }
 
-        for (String folderName : sourceFolders) {
-            sourceLines.add("${folderName}/**/*.java")
+        for (File folder : sourceFolders) {
+            sourceLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.java")
         }
 
         String sourceFiles = makePodFileList(sourceLines)
@@ -183,11 +185,11 @@ Pod::Spec.new do |s|
     s.frameworks = ${writeFrameworks()}
 
     s.pod_target_xcconfig = {
-     'HEADER_SEARCH_PATHS' => '${j2objcPath}/include ${project.projectDir.absolutePath}','LIBRARY_SEARCH_PATHS' => '${j2objcPath}/lib'${objcFlagString}
+     'HEADER_SEARCH_PATHS' => '${j2objcPath}/include','LIBRARY_SEARCH_PATHS' => '${j2objcPath}/lib'${objcFlagString}
     }
     
     s.user_target_xcconfig = {
-     'HEADER_SEARCH_PATHS' => '${project.projectDir.absolutePath} ${j2objcPath}/frameworks/JRE.framework/Headers ${j2objcPath}/frameworks/JavaxInject.framework/Headers ${j2objcPath}/frameworks/JSR305.framework/Headers ${j2objcPath}/frameworks/JUnit.framework/Headers ${j2objcPath}/frameworks/Mockito.framework/Headers ${j2objcPath}/frameworks/Xalan.framework/Headers ${j2objcPath}/frameworks/Guava.framework/Headers'
+     'HEADER_SEARCH_PATHS' => '${j2objcPath}/frameworks/JRE.framework/Headers ${j2objcPath}/frameworks/JavaxInject.framework/Headers ${j2objcPath}/frameworks/JSR305.framework/Headers ${j2objcPath}/frameworks/JUnit.framework/Headers ${j2objcPath}/frameworks/Mockito.framework/Headers ${j2objcPath}/frameworks/Xalan.framework/Headers ${j2objcPath}/frameworks/Guava.framework/Headers'
     }
     
     

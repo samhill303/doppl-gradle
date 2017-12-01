@@ -20,6 +20,7 @@ import co.touchlab.doppl.gradle.DependencyResolver
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
 import org.gradle.api.Action
+import org.gradle.api.Project
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.OutputDirectories
@@ -63,6 +64,13 @@ class DeployTask extends BaseChangesTask {
             outFiles.add(project.file(path))
         }
         return outFiles
+    }
+
+    static void doClean(Project project)
+    {
+        DopplConfig dopplConfig = DopplConfig.from(project)
+        project.delete(dopplConfig.copyMainOutput)
+        project.delete(dopplConfig.copyTestOutput)
     }
 
     @TaskAction

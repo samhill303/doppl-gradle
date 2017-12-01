@@ -20,6 +20,7 @@ import co.touchlab.doppl.gradle.BuildContext
 import co.touchlab.doppl.gradle.DependencyResolver
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
+import co.touchlab.doppl.gradle.DopplInfo
 import co.touchlab.doppl.gradle.DopplPlugin
 import groovy.transform.CompileStatic
 import org.gradle.api.DefaultTask
@@ -79,7 +80,7 @@ class TranslateDependenciesTask extends DefaultTask{
 
             Task t = tasks.create(name: taskName, type: Jar){
                 from dep.dependencyJavaFolder()
-                destinationDir = dep.dependencyFolderLocation()
+                destinationDir = DopplInfo.dependencyBuildJarFileForPhase(project, phase)
                 archiveName = jarName
             }
 
@@ -120,7 +121,6 @@ class TranslateDependenciesTask extends DefaultTask{
     void translateDependencies(IncrementalTaskInputs inputs) {
 
         String j2objcExecutable = "${getJ2objcHome()}/j2objc"
-//        String j2objcExecutable = "/Users/kgalligan/devel/j2objc-master/dist/j2objc"
 
         ByteArrayOutputStream stdout = new ByteArrayOutputStream()
         ByteArrayOutputStream stderr = new ByteArrayOutputStream()
@@ -170,67 +170,18 @@ class TranslateDependenciesTask extends DefaultTask{
                 }
 
                 allJars.each { File f ->
-                    args Utils.relativePath(project.projectDir, f)
+                    args f.getName()
                 }
 
                 setStandardOutput stdout
                 setErrorOutput stderr
+
+                setWorkingDir DopplInfo.dependencyBuildJarFileForPhase(project, testBuild ? "test" : "main")
             })
 
         } catch (Exception exception) {  // NOSONAR
             // TODO: match on common failures and provide useful help
             throw exception
         }
-
-        for (File jarFile : allJars) {
-            File thatDir = jarFile.parentFile
-
-            File[] files = thatDir.listFiles()
-            for (File f : files) {
-                if (f.name.endsWith(".h") || f.name.endsWith(".m")) {
-                    FileReader fileReader = new FileReader(f)
-                    BufferedReader reader = new BufferedReader(fileReader)
-                    File newFile = new File(f.parentFile, f.name + ".new")
-                    FileWriter fileWriter = new FileWriter(newFile)
-                    BufferedWriter writer = new BufferedWriter(fileWriter)
-                    String line = null;
-                    while ((line = reader.readLine()) != null) {
-                        if (line.startsWith("#include \"build/dopplDependency/")) {
-                            writer.append("#include \"" + line.substring(line.lastIndexOf('/') + 1))
-                        } else {
-                            writer.append(line)
-                        }
-                        writer.append("\n")
-                    }
-
-                    reader.close()
-                    writer.close()
-                    f.delete()
-                    newFile.renameTo(f)
-                }
-            }
-
-        }
-
-        File mappingsFile = dependencyMappingsFile(project, testBuild)
-        FileReader fileReader = new FileReader(mappingsFile)
-        BufferedReader reader = new BufferedReader(fileReader)
-        File newFile = new File(mappingsFile.parentFile, mappingsFile.name + ".new")
-        FileWriter fileWriter = new FileWriter(newFile)
-        BufferedWriter writer = new BufferedWriter(fileWriter)
-        String line = null
-        while ((line = reader.readLine()) != null) {
-            int equalsIndex = line.indexOf('=')
-            if(equalsIndex > -1) {
-                String outLine = line.substring(0, equalsIndex + 1) + line.substring(line.lastIndexOf('/') + 1)
-                writer.append(outLine).append("\n")
-            }
-        }
-
-        reader.close()
-        writer.close()
-        mappingsFile.delete()
-        newFile.renameTo(mappingsFile)
-
     }
 }

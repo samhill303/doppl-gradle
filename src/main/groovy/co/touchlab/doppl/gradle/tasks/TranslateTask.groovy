@@ -19,6 +19,7 @@ package co.touchlab.doppl.gradle.tasks
 import co.touchlab.doppl.gradle.BuildContext
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
+import co.touchlab.doppl.gradle.DopplInfo
 import co.touchlab.doppl.gradle.analytics.DopplAnalytics
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -72,9 +73,9 @@ class TranslateTask extends BaseChangesTask {
         allFiles.addAll(depJavaFolders(_buildContext, testBuild))
 
         DopplConfig dopplConfig = DopplConfig.from(project)
-        allFiles.add(dopplConfig.getDopplJavaDirFileMain())
+        allFiles.add(DopplInfo.sourceBuildJavaFileMain(project))
         if(testBuild){
-            allFiles.add(dopplConfig.getDopplJavaDirFileTest())
+            allFiles.add(DopplInfo.sourceBuildJavaFileTest(project))
         }
         return allFiles
     }
@@ -92,11 +93,11 @@ class TranslateTask extends BaseChangesTask {
 
         if(testBuild)
         {
-            folders.add(dopplConfig.getDopplJavaDirFileTest())
+            folders.add(DopplInfo.sourceBuildJavaFileTest(project))
         }
         else
         {
-            folders.add(dopplConfig.getDopplJavaDirFileMain())
+            folders.add(DopplInfo.sourceBuildJavaFileMain(project))
         }
 
         List<FileTree> fileTrees = new ArrayList<>(folders.size())
@@ -303,14 +304,10 @@ class TranslateTask extends BaseChangesTask {
                 {
                     args "-g", ''
                 }
-//                args "--strip-reflection", ''
+
                 args "--swift-friendly", ''
-//                args "-Xtranslate-classfiles", ''
                 args "--package-prefixed-filenames", ''
-//                args "--no-package-directories", ''
-                if (!testTranslate) {
-                    args "--output-header-mapping", new File(srcDir, project.name + ".mappings").absolutePath
-                }
+
                 if (getIgnoreWeakAnnotations()) {
                     args "--ignore-weak-annotation", ''
                 }
@@ -336,6 +333,8 @@ class TranslateTask extends BaseChangesTask {
 
                 setStandardOutput stdout
                 setErrorOutput stderr
+
+//                setWorkingDir project.buildDir
             })
 
         } catch (Exception exception) {  // NOSONAR
