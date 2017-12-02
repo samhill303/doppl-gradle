@@ -160,6 +160,10 @@ class TranslateDependenciesTask extends DefaultTask{
                     args "-sourcepath", Utils.joinedPathArg(sourcepathList)
                 }
 
+                if(testBuild){
+                    args "--header-mapping", dependencyMappingsFile(project, false).path
+                }
+
                 args "-classpath", classpathArg
                 getTranslateArgs().each { String translateArg ->
                     args translateArg
