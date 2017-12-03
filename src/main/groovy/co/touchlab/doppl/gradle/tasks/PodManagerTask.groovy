@@ -32,11 +32,10 @@ class PodManagerTask extends DefaultTask{
     BuildContext _buildContext
     boolean testBuild
     String podfilePath
-    static int taskCount = 0
 
-    static void addPodManagerTask(TaskContainer tasks, String path, BuildContext buildContext, boolean testBuild, Task downstream, Task upstream)
+    static void addPodManagerTask(TaskContainer tasks, String path, BuildContext buildContext, boolean testBuild, Task downstream, Task upstream, int count)
     {
-        Task task = tasks.create(name: "podManagerTask_${taskCount++}", type: PodManagerTask){
+        Task task = tasks.create(name: "podManagerTask_${testBuild}_${count}", type: PodManagerTask){
             _buildContext = buildContext
             testBuild = true
             podfilePath = path
@@ -45,8 +44,7 @@ class PodManagerTask extends DefaultTask{
         task.dependsOn(upstream)
     }
 
-    @Input
-    String getDependencyList()
+    static String getDependencyList(BuildContext _buildContext, boolean testBuild)
     {
         StringBuilder sb = new StringBuilder()
 
@@ -58,13 +56,19 @@ class PodManagerTask extends DefaultTask{
     }
 
     @Input
+    String getDependencyList()
+    {
+        return getDependencyList(_buildContext, testBuild)
+    }
+
+    @Input
     String getJavaFileList()
     {
         File javaDir
         if(testBuild)
-            javaDir = DopplInfo.sourceBuildJavaFileTest(project)
+            javaDir = DopplInfo.getInstance(project).sourceBuildJavaFileTest()
         else
-            javaDir = DopplInfo.sourceBuildJavaFileMain(project)
+            javaDir = DopplInfo.getInstance(project).sourceBuildJavaFileMain()
 
         return pathFileCollection(javaDir)
     }
@@ -147,7 +151,7 @@ class PodManagerTask extends DefaultTask{
         }
     }
 
-    private void appendDependencyNames(ArrayList<DopplDependency> libs, StringBuilder sb) {
+    private static void appendDependencyNames(ArrayList<DopplDependency> libs, StringBuilder sb) {
         for (DopplDependency dependency : libs) {
             sb.append(dependency.dependencyFolderLocation().getName()).append("|")
         }

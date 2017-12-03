@@ -16,19 +16,67 @@
 
 package co.touchlab.doppl.gradle
 
+import com.google.common.annotations.VisibleForTesting
 import org.gradle.api.Project
 
 class DopplInfo {
     public static final String MAIN = "main"
     public static final String TEST = "test"
+
+    //Stable jar java dirs
+    public static final String JAVA_SOURCE = "javasource"
+
     public static final String DOPPL_BUILD = "dopplBuild"
+    public static final String DOPPL_ASSEMBLY = "dopplAssembly"
     public static final String DEPENDENCIES = "dependencies"
     public static final String JAR = "jar"
     public static final String SOURCE = "source"
     public static final String JAVA = "java"
+    public static final String OBJC = "objc"
+    public static final String FOLDER_EXPLODED = 'exploded'
+    public static final String FOLDER_DOPPL_DEP_EXPLODED = 'doppl'
+    public static final String FOLDER_DOPPL_ONLY_DEP_EXPLODED = 'dopplOnly'
+    public static final String FOLDER_TEST_DOPPL_DEP_EXPLODED = 'testDoppl'
 
-    private static File rootBuildFile(Project project) {
-        new File(project.buildDir, DOPPL_BUILD)
+    public static final String OUT_JAR_MAIN = "dopplMain.jar"
+    public static final String OUT_JAR_TEST = "dopplTest.jar"
+
+    public static final String SOURCEPATH_OBJC_MAIN = "src/main/objc"
+    public static final String SOURCEPATH_OBJC_TEST = "src/test/objc"
+
+    private static DopplInfo instance;
+    private final File buildDir;
+
+    DopplInfo(File buildDir) {
+        this.buildDir = buildDir
+    }
+
+    @VisibleForTesting
+    static DopplInfo getInstance(File buildDir)
+    {
+        if(instance == null)
+            instance = new DopplInfo(buildDir)
+        return instance
+    }
+    
+    static DopplInfo getInstance(Project project)
+    {
+        return getInstance(project.buildDir)
+    }
+    
+    @VisibleForTesting
+    File rootBuildFile() {
+        new File(buildDir, DOPPL_BUILD)
+    }
+
+    File rootAssemblyFile()
+    {
+        new File(buildDir, DOPPL_ASSEMBLY)
+    }
+
+    File dependencyBuildFile()
+    {
+        return new File(rootBuildFile(), DEPENDENCIES)
     }
 
     /**
@@ -36,9 +84,9 @@ class DopplInfo {
      * @param project
      * @return
      */
-    static File dependencyExplodedFile(Project project)
+     File dependencyExplodedFile()
     {
-        return new File(project.buildDir, DopplPlugin.FOLDER_DOPPL_DEP)
+        return new File(dependencyBuildFile(), FOLDER_EXPLODED)
     }
 
     /**
@@ -46,9 +94,9 @@ class DopplInfo {
      * @param project
      * @return
      */
-    static File dependencyExplodedDopplFile(Project project)
+     File dependencyExplodedDopplFile()
     {
-        return new File(dependencyExplodedFile(project), DopplPlugin.FOLDER_DOPPL_DEP_EXPLODED)
+        return new File(dependencyExplodedFile(), FOLDER_DOPPL_DEP_EXPLODED)
     }
 
     /**
@@ -56,9 +104,9 @@ class DopplInfo {
      * @param project
      * @return
      */
-    static File dependencyExplodedDopplOnlyFile(Project project)
+     File dependencyExplodedDopplOnlyFile()
     {
-        return new File(dependencyExplodedFile(project), DopplPlugin.FOLDER_DOPPL_ONLY_DEP_EXPLODED)
+        return new File(dependencyExplodedFile(), FOLDER_DOPPL_ONLY_DEP_EXPLODED)
     }
 
     /**
@@ -66,68 +114,101 @@ class DopplInfo {
      * @param project
      * @return
      */
-    static File dependencyExplodedTestDopplFile(Project project)
+     File dependencyExplodedTestDopplFile()
     {
-        return new File(dependencyExplodedFile(project), DopplPlugin.FOLDER_TEST_DOPPL_DEP_EXPLODED)
+        return new File(dependencyExplodedFile(), FOLDER_TEST_DOPPL_DEP_EXPLODED)
     }
 
-    static File dependencyBuildFile(Project project)
+    File dependencyBuildJarFile()
     {
-        return new File(rootBuildFile(project), DEPENDENCIES)
+        return new File(dependencyBuildFile(), JAR)
     }
 
-    static File dependencyBuildJarFile(Project project)
+    /**
+     * Source jars for main and test. Also output for dependency translation.
+     *
+     * dopplBuild/dependencies/jar/main
+     * dopplBuild/dependencies/jar/test
+     *
+     * @param phase
+     * @return
+     */
+    File dependencyBuildJarFileForPhase( String phase)
     {
-        return new File(dependencyBuildFile(project), JAR)
+        checkPhase(phase)
+        return new File(dependencyBuildJarFile(), phase)
     }
 
-    static File dependencyBuildJarFileForPhase(Project project, String phase)
-    {
-        return new File(dependencyBuildJarFile(project), phase)
+    private void checkPhase(String phase) {
+        if (!phase.equals(MAIN) && !phase.equals(TEST))
+            throw new IllegalArgumentException("Phase must be main or test")
     }
 
-    static File sourceBuildFile(Project project)
+    File sourceBuildFile()
     {
-        return new File(rootBuildFile(project), SOURCE)
+        return new File(rootBuildFile(), SOURCE)
     }
 
-    static File sourceBuildJavaFile(Project project)
+     File sourceBuildJavaFile()
     {
-        return new File(sourceBuildFile(project), JAVA)
+        return new File(sourceBuildFile(), JAVA)
     }
 
-    static File sourceBuildJavaFileForPhase(Project project, String phase)
+     File sourceBuildJavaFileForPhase( String phase)
     {
-        return new File(sourceBuildJavaFile(project), phase)
+        checkPhase(phase)
+        return new File(sourceBuildJavaFile(), phase)
     }
 
-    static File sourceBuildJavaFileMain(Project project)
+     File sourceBuildJavaFileMain()
     {
-        return sourceBuildJavaFileForPhase(project, MAIN)
+        return sourceBuildJavaFileForPhase(MAIN)
     }
 
-    static File sourceBuildJavaFileTest(Project project)
+     File sourceBuildJavaFileTest()
     {
-        return sourceBuildJavaFileForPhase(project, TEST)
+        return sourceBuildJavaFileForPhase(TEST)
     }
 
-    static File sourceBuildJarFile(Project project)
+    File sourceBuildObjcFile()
     {
-        return new File(sourceBuildFile(project), JAR)
+        return new File(sourceBuildFile(), OBJC)
     }
 
-    static File sourceBuildJarFileForPhase(Project project, String phase)
+    File sourceBuildObjcFileForPhase( String phase)
     {
-        return new File(sourceBuildJarFile(project), phase)
+        checkPhase(phase)
+        return new File(sourceBuildObjcFile(), phase)
     }
 
-    static File sourceBuildJarFileMain(Project project)
+    File sourceBuildObjcFileMain()
     {
-        return sourceBuildJarFileForPhase(project, MAIN)
+        return sourceBuildObjcFileForPhase(MAIN)
     }
 
-    static File sourceBuildJarFileTest(Project project)
+    File sourceBuildObjcFileTest()
     {
-        return sourceBuildJarFileForPhase(project, TEST)
+        return sourceBuildObjcFileForPhase(TEST)
+    }
+
+    File sourceBuildJarFile()
+    {
+        return new File(sourceBuildFile(), JAR)
+    }
+
+     File sourceBuildJarFileForPhase( String phase)
+    {
+        checkPhase(phase)
+        return new File(sourceBuildJarFile(), phase)
+    }
+
+     File sourceBuildJarFileMain()
+    {
+        return sourceBuildJarFileForPhase(MAIN)
+    }
+
+     File sourceBuildJarFileTest()
+    {
+        return sourceBuildJarFileForPhase(TEST)
     }
 }

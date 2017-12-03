@@ -2,6 +2,7 @@
 *~
 .gradle
 .DS_Store
+out
 
 # Don't save away IntelliJ config, except code-style which all commits must follow.
 .idea/*

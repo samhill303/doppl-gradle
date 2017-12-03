@@ -50,19 +50,18 @@ class DependencyResolver extends DefaultTask{
     }
 
     void configureAll() {
-        DopplConfig dopplConfig = DopplConfig.from(project)
+        DopplInfo dopplInfo = DopplInfo.getInstance(project)
+
         Map<String, DopplDependency> dependencyMap = new HashMap<>()
 
-        //Current "lazy" plan. Just copy all dependencies. If something is changed, will need to clean.
-        //TODO: Fix the lazy
-        configForConfig(CONFIG_DOPPL, translateDopplLibs, dopplConfig.dopplDependencyExploded, dependencyMap)
-        configForConfig(CONFIG_DOPPL_ONLY, translateDopplLibs, dopplConfig.dopplOnlyDependencyExploded, dependencyMap)
-        configForConfig(CONFIG_TEST_DOPPL, translateDopplTestLibs, dopplConfig.testDopplDependencyExploded, dependencyMap)
+        configForConfig(CONFIG_DOPPL, translateDopplLibs, dopplInfo.dependencyExplodedDopplFile(), dependencyMap)
+        configForConfig(CONFIG_DOPPL_ONLY, translateDopplLibs, dopplInfo.dependencyExplodedDopplOnlyFile(), dependencyMap)
+        configForConfig(CONFIG_TEST_DOPPL, translateDopplTestLibs, dopplInfo.dependencyExplodedTestDopplFile(), dependencyMap)
     }
 
     void configForConfig(String configName,
                          List<DopplDependency> dopplDependencyList,
-                         String explodedPath,
+                         File explodedPath,
                          Map<String, DopplDependency> dependencyMap){
         def dopplConfig = project.configurations.getByName(configName)
 
@@ -74,7 +73,7 @@ class DependencyResolver extends DefaultTask{
                 dopplDependencyList.add(
                         new DopplDependency(
                                 beforeProject.name,
-                                new File(DopplConfig.from(beforeProject).getDestDopplFolder())
+                                DopplInfo.getInstance(beforeProject).rootAssemblyFile()
                         )
                 )
             }
@@ -92,12 +91,11 @@ class DependencyResolver extends DefaultTask{
                 String mapKey = group + "_" + name +"_"+ version
                 if(!dependencyMap.containsKey(mapKey)) {
 
-                    String depFolder = explodedPath
                     def dependency = new DopplDependency(
                             group,
                             name,
                             version,
-                            new File(depFolder),
+                            explodedPath,
                             ra.file
                     )
 

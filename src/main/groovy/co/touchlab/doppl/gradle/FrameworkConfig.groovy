@@ -79,8 +79,6 @@ class FrameworkConfig {
         }
     }
 
-
-
     boolean frameworkUIKit = true
 
     List<String> addFrameworks = new ArrayList<>()
@@ -132,33 +130,36 @@ class FrameworkConfig {
         return sourceFileIncludes.toString()
     }
 
-    String podspecTemplate (Project project, List<File> sourceFolders, List<File> dependencyFolders, String podname, boolean test){
+    String podspecTemplate (
+            Project project,
+            File globalHeaderFile,
+            List<File> objcFolders,
+            List<File> headerFolders,
+            List<File> javaFolders,
+            String podname){
 
         List<String> sourceLines = new ArrayList<>()
         List<String> headerLines = new ArrayList<>()
 
-        String allHeadersInclude = Utils.relativePath(project.buildDir, FrameworkTask.headerFile(project, test))
+        String allHeadersInclude = Utils.relativePath(project.buildDir, globalHeaderFile)
 
         sourceLines.add("${allHeadersInclude}")
         headerLines.add("${allHeadersInclude}")
 
         //Get loose Objc and c/c++ source into project
-        for (File folder : dependencyFolders) {
+        for (File folder : objcFolders) {
             sourceLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.{${SOURCE_EXTENSIONS}}")
+        }
+
+        for (File folder : headerFolders) {
             headerLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.h")
         }
 
-        for (File folder : sourceFolders) {
-            sourceLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.{${SOURCE_EXTENSIONS}}")
-            headerLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.h")
-        }
-
-        for (File folder : sourceFolders) {
+        for (File folder : javaFolders) {
             sourceLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.java")
         }
 
         String sourceFiles = makePodFileList(sourceLines)
-
 
         String headers = makePodFileList(headerLines)
 

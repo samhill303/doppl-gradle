@@ -21,8 +21,6 @@ import co.touchlab.doppl.gradle.DependencyResolver
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
 import co.touchlab.doppl.gradle.DopplInfo
-import co.touchlab.doppl.gradle.DopplPlugin
-import groovy.transform.CompileStatic
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -51,13 +49,18 @@ class TranslateDependenciesTask extends DefaultTask{
     }
 
     @OutputDirectory
-    File getObjcOutDir() {
-        return new File(project.buildDir, DopplPlugin.FOLDER_DOPPL_DEP)
+    File getBuildJarOut() {
+        return getBuildJarOut(project, testBuild)
+    }
+
+    static File getBuildJarOut(Project project, boolean testBuild)
+    {
+        return DopplInfo.getInstance(project).dependencyBuildJarFileForPhase(testBuild ? "test" : "main")
     }
 
     static File getObjcOutDir(Project project)
     {
-        return new File(project.buildDir, DopplPlugin.FOLDER_DOPPL_DEP)
+        return DopplInfo.getInstance(project).dependencyExplodedFile()
     }
 
     Map<String, String> getPrefixes() {
@@ -73,6 +76,7 @@ class TranslateDependenciesTask extends DefaultTask{
         List<DopplDependency> dependencies = dependencyList(_buildContext.getDependencyResolver())
         int count = 0
         String phase = testBuild ? "test" : "main"
+        File dependencySourceJarFolder = DopplInfo.getInstance(project).dependencyBuildJarFileForPhase(phase)
 
         for (DopplDependency dep : dependencies) {
             String taskName = "depJar_" + phase + "_" + (count++)
@@ -80,11 +84,11 @@ class TranslateDependenciesTask extends DefaultTask{
 
             Task t = tasks.create(name: taskName, type: Jar){
                 from dep.dependencyJavaFolder()
-                destinationDir = DopplInfo.dependencyBuildJarFileForPhase(project, phase)
+                destinationDir = dependencySourceJarFolder
                 archiveName = jarName
             }
 
-            allJars.add(new File(dep.dependencyFolderLocation(), jarName))
+            allJars.add(new File(dependencySourceJarFolder, jarName))
 
             this.dependsOn(t)
 
@@ -105,7 +109,6 @@ class TranslateDependenciesTask extends DefaultTask{
 
     String getJ2objcHome() { return Utils.j2objcHome(project) }
 
-    List<String> getTranslateClasspaths() { return DopplConfig.from(project).translateClasspaths }
     List<String> getTranslateJ2objcLibs() { return DopplConfig.from(project).translateJ2objcLibs }
 
     List<String> getTranslateArgs() {
@@ -129,7 +132,6 @@ class TranslateDependenciesTask extends DefaultTask{
             return
 
         UnionFileCollection classpathFiles = new UnionFileCollection([
-                project.files(getTranslateClasspaths()),
                 project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs()))
         ])
 
@@ -153,8 +155,11 @@ class TranslateDependenciesTask extends DefaultTask{
 
                 // Arguments
                 args "-XcombineJars", ''
+                args "-XupzipJarDir", DopplInfo.JAVA_SOURCE
                 args "--swift-friendly", ''
                 args "--output-header-mapping", dependencyMappingsFile(project, testBuild).absolutePath
+
+                args "-g", ''
 
                 if (sourcepathList.size() > 0) {
                     args "-sourcepath", Utils.joinedPathArg(sourcepathList)
@@ -180,7 +185,7 @@ class TranslateDependenciesTask extends DefaultTask{
                 setStandardOutput stdout
                 setErrorOutput stderr
 
-                setWorkingDir DopplInfo.dependencyBuildJarFileForPhase(project, testBuild ? "test" : "main")
+                setWorkingDir getBuildJarOut()
             })
 
         } catch (Exception exception) {  // NOSONAR

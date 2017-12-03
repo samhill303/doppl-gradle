@@ -38,16 +38,11 @@ public class AnalyticsPackage {
     String hostOsVersion;
 
     boolean useArc = false;
-    boolean anyMainOutputs;
-    boolean anyTestOutputs;
-    boolean copyDependencies = false;
     boolean emitLineDirectives = false;
     String targetVariant;
     boolean anyGeneratedSourceDirs;
     boolean anyGeneratedTestSourceDirs;
-    boolean anyOverlaySourceDirs;
     boolean anyTranslateArgs;
-    boolean anyTranslateClasspaths;
 //    boolean javaType;
 //    boolean androidType;
 }

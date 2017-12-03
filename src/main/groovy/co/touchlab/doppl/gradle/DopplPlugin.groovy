@@ -18,11 +18,11 @@
 package co.touchlab.doppl.gradle
 
 import co.touchlab.doppl.gradle.tasks.CycleFinderTask
-import co.touchlab.doppl.gradle.tasks.DeployTask
 import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
 import co.touchlab.doppl.gradle.tasks.FrameworkTask
 import co.touchlab.doppl.gradle.tasks.HeaderMappingsTask
 import co.touchlab.doppl.gradle.tasks.JavaStagingTask
+import co.touchlab.doppl.gradle.tasks.ObjcStagingTask
 import co.touchlab.doppl.gradle.tasks.PodManagerTask
 import co.touchlab.doppl.gradle.tasks.TestTranslateTask
 import co.touchlab.doppl.gradle.tasks.TranslateDependenciesTask
@@ -52,6 +52,8 @@ class DopplPlugin implements Plugin<Project> {
     public static final String TASK_DOPPL_ARCHIVE = 'dopplArchive'
     public static final String TASK_DOPPL_JAVA_STAGING_MAIN = 'dopplJavaStagingMain'
     public static final String TASK_DOPPL_JAVA_STAGING_TEST = 'dopplJavaStagingTest'
+    public static final String TASK_DOPPL_OBJC_STAGING_MAIN = 'dopplObjcStagingMain'
+    public static final String TASK_DOPPL_OBJC_STAGING_TEST = 'dopplObjcStagingTest'
     public static final String TASK_DOPPL_DEPENDENCY_TRANSLATE_MAIN = 'dopplDependencyTranslateMain'
     public static final String TASK_DOPPL_DEPENDENCY_TRANSLATE_TEST = 'dopplDependencyTranslateTest'
     public static final String TASK_J2OBJC_MAIN_TRANSLATE = 'j2objcMainTranslate'
@@ -61,14 +63,6 @@ class DopplPlugin implements Plugin<Project> {
     public static final String TASK_DOPPL_BUILD = 'dopplBuild'
 
     public static final String TASK_J2OBJC_CYCLE_FINDER = 'j2objcCycleFinder'
-
-    public static final String FOLDER_J2OBJC_OUT_MAIN = 'j2objcSrcGenMain'
-    public static final String FOLDER_J2OBJC_OUT_TEST = 'j2objcSrcGenTest'
-
-    public static final String FOLDER_DOPPL_DEP = 'dopplDependency'
-    public static final String FOLDER_DOPPL_DEP_EXPLODED = 'dopplDependencyExploded'
-    public static final String FOLDER_DOPPL_ONLY_DEP_EXPLODED = 'dopplOnlyDependencyExploded'
-    public static final String FOLDER_TEST_DOPPL_DEP_EXPLODED = 'testDopplDependencyExploded'
 
     public static final String DOPPL_DEPENDENCY_RESOLVER = 'dopplDependencyResolver'
 
@@ -90,15 +84,12 @@ class DopplPlugin implements Plugin<Project> {
         }
 
         project.with {
+
+            DopplInfo dopplInfo = DopplInfo.getInstance(project)
             extensions.create('dopplConfig', DopplConfig, project)
 
             extensions.dopplConfig.extensions.create('mainFramework', FrameworkConfig, false)
             extensions.dopplConfig.extensions.create('testFramework', FrameworkConfig, true)
-
-            // This is an intermediate directory only.  Clients should use only directories
-            // specified in dopplConfig (or associated defaults in dopplConfig).
-            File j2objcSrcGenMainDir = file("${buildDir}/${FOLDER_J2OBJC_OUT_MAIN}")
-            File j2objcSrcGenTestDir = file("${buildDir}/${FOLDER_J2OBJC_OUT_TEST}")
 
             // These configurations are groups of artifacts and dependencies for the plugin build
             // https://docs.gradle.org/current/dsl/org.gradle.api.artifacts.Configuration.html
@@ -152,39 +143,18 @@ class DopplPlugin implements Plugin<Project> {
 
             Task mainStagingTask = tasks.create(name: TASK_DOPPL_JAVA_STAGING_MAIN, type: Jar) {
                 group 'doppl'
-                description "Umbrella for main staging tasks"
-                from DopplInfo.sourceBuildJavaFileMain(project)
-                destinationDir = DopplInfo.sourceBuildJarFileMain(project)
-                archiveName = "dopplMain.jar"
+                description "Produces source jar for main java"
+                from dopplInfo.sourceBuildJavaFileMain()
+                destinationDir = dopplInfo.sourceBuildJarFileMain()
+                archiveName = DopplInfo.OUT_JAR_MAIN
             }
 
             Task testStagingTask = tasks.create(name: TASK_DOPPL_JAVA_STAGING_TEST, type: Jar) {
                 group 'doppl'
-                description "Umbrella for test staging tasks"
-                from DopplInfo.sourceBuildJavaFileTest(project)
-                destinationDir = DopplInfo.sourceBuildJarFileMain(project)
-                archiveName = "dopplTest.jar"
-            }
-
-            tasks.create(name: TASK_J2OBJC_MAIN_TRANSLATE, type: TranslateTask,
-                    dependsOn: [TASK_DOPPL_DEPENDENCY_TRANSLATE_MAIN, TASK_DOPPL_JAVA_STAGING_MAIN]) {
-                group 'doppl'
-                description "Translates main java source files to Objective-C"
-                _buildContext = buildContext
-
-                // Output directories of 'j2objcTranslate', input for all other tasks
-                srcGenDir = j2objcSrcGenMainDir
-            }
-
-            tasks.create(name: TASK_J2OBJC_TEST_TRANSLATE, type: TranslateTask,
-                    dependsOn: [TASK_DOPPL_DEPENDENCY_TRANSLATE_TEST, TASK_DOPPL_JAVA_STAGING_TEST]) {
-                group 'doppl'
-                description "Translates test java source files to Objective-C"
-                _buildContext = buildContext
-
-                // Output directories of 'j2objcTranslate', input for all other tasks
-                srcGenDir = j2objcSrcGenTestDir
-                testBuild = true
+                description "Produces source jar for test java"
+                from dopplInfo.sourceBuildJavaFileTest()
+                destinationDir = dopplInfo.sourceBuildJarFileTest()
+                archiveName = DopplInfo.OUT_JAR_TEST
             }
 
             TranslateDependenciesTask mainDepJar = (TranslateDependenciesTask)tasks.create(name: TASK_DOPPL_DEPENDENCY_TRANSLATE_MAIN, type: TranslateDependenciesTask, dependsOn: TASK_J2OBJC_PRE_BUILD){
@@ -194,6 +164,23 @@ class DopplPlugin implements Plugin<Project> {
 
             TranslateDependenciesTask testDepJar = (TranslateDependenciesTask)tasks.create(name: TASK_DOPPL_DEPENDENCY_TRANSLATE_TEST, type: TranslateDependenciesTask, dependsOn: TASK_J2OBJC_PRE_BUILD){
                 _buildContext = buildContext
+                testBuild = true
+            }
+
+            tasks.create(name: TASK_J2OBJC_MAIN_TRANSLATE, type: TranslateTask,
+                    dependsOn: [TASK_DOPPL_DEPENDENCY_TRANSLATE_MAIN, TASK_DOPPL_JAVA_STAGING_MAIN]) {
+                group 'doppl'
+                description "Translates main java source files to Objective-C"
+                _buildContext = buildContext
+            }
+
+            tasks.create(name: TASK_J2OBJC_TEST_TRANSLATE, type: TranslateTask,
+                    dependsOn: [TASK_DOPPL_DEPENDENCY_TRANSLATE_TEST, TASK_DOPPL_JAVA_STAGING_TEST]) {
+                group 'doppl'
+                description "Translates test java source files to Objective-C"
+                _buildContext = buildContext
+
+                // Output directories of 'j2objcTranslate', input for all other tasks
                 testBuild = true
             }
 
@@ -208,10 +195,17 @@ class DopplPlugin implements Plugin<Project> {
                         tasks,
                         buildContext.getBuildTypeProvider().sourceSets(project),
                         TASK_DOPPL_JAVA_STAGING_MAIN,
-                        DopplInfo.sourceBuildJavaFileMain(project),
+                        dopplInfo.sourceBuildJavaFileMain(),
                         mainStagingTask,
                         dopplContextBuildTask
                 )
+
+                prepObjcStagingTask(
+                        tasks,
+                        project,
+                        false,
+                        mainStagingTask,
+                        dopplContextBuildTask)
 
                 addManagedPods(
                         tasks,
@@ -227,10 +221,17 @@ class DopplPlugin implements Plugin<Project> {
                             tasks,
                             buildContext.getBuildTypeProvider().testSourceSets(project),
                             TASK_DOPPL_JAVA_STAGING_TEST,
-                            DopplInfo.sourceBuildJavaFileTest(project),
+                            dopplInfo.sourceBuildJavaFileTest(),
                             testStagingTask,
                             dopplContextBuildTask
                     )
+
+                    prepObjcStagingTask(
+                            tasks,
+                            project,
+                            true,
+                            mainStagingTask,
+                            dopplContextBuildTask)
 
                     addManagedPods(
                             tasks,
@@ -251,20 +252,25 @@ class DopplPlugin implements Plugin<Project> {
                 group 'doppl'
                 description 'Pull together doppl pieces for library projects'
 
+                dopplJavaDirFile = dopplInfo.sourceBuildJavaFileMain()
+
                 try {
                     //TODO: This should probably be more configurable
-                    def file = file('src/main/objc')
+                    File file = dopplInfo.sourceBuildObjcFileMain()
                     if (file.exists())
-                        srcObjcDir = file
+                        dopplObjcDirFile = file
                 } catch (Exception e) {
                     //Ugh
                 }
-
-                dopplJavaDirFile = DopplInfo.sourceBuildJavaFileMain(project)
-                srcGenMainDir = j2objcSrcGenMainDir
             }
 
+            tasks.create(name: TASK_DOPPL_ARCHIVE, type: Jar, dependsOn: TASK_DOPPL_ASSEMBLY) {
+                group 'doppl'
+                description 'Depends on j2objc build, move all doppl stuff to deploy dir'
 
+                from dopplInfo.rootAssemblyFile()
+                extension 'dop'
+            }
 
             tasks.create(name: TASK_DOPPL_TEST_TRANSLATE, type: TestTranslateTask,
                     dependsOn: TASK_J2OBJC_TEST_TRANSLATE) {
@@ -272,75 +278,27 @@ class DopplPlugin implements Plugin<Project> {
                 description "Compiles a list of the test classes in your project"
                 _buildContext = buildContext
 
-                output = file("$j2objcSrcGenTestDir/dopplTests.txt")
+                output = file("${project.buildDir}/dopplTests.txt")
             }
 
-            FrameworkTask mainFrameworkTask = (FrameworkTask)tasks.create(name: TASK_DOPPL_FRAMEWORK_MAIN, type: FrameworkTask,
+            tasks.create(name: TASK_DOPPL_FRAMEWORK_MAIN, type: FrameworkTask,
                     dependsOn: [TASK_DOPPL_ASSEMBLY, TASK_DOPPL_DEPENDENCY_TRANSLATE_MAIN]) {
                 group 'doppl'
                 description 'Create framework podspec'
-                _buildContext = buildContext
                 test = false
             }
 
-            mainFrameworkTask.addSrdDir(j2objcSrcGenMainDir)
-
-            FrameworkTask testFrameworkTask = (FrameworkTask)tasks.create(name: TASK_DOPPL_FRAMEWORK_TEST, type: FrameworkTask,
+            tasks.create(name: TASK_DOPPL_FRAMEWORK_TEST, type: FrameworkTask,
                     dependsOn: [TASK_DOPPL_TEST_TRANSLATE, TASK_DOPPL_DEPENDENCY_TRANSLATE_TEST]) {
                 group 'doppl'
                 description 'Create framework podspec'
-                _buildContext = buildContext
                 test = true
             }
-
-            testFrameworkTask.addSrdDir(j2objcSrcGenMainDir)
-            testFrameworkTask.addSrdDir(j2objcSrcGenTestDir)
 
             tasks.create(name: TASK_DOPPL_BUILD, type: DefaultTask,
                     dependsOn: [TASK_DOPPL_FRAMEWORK_MAIN, TASK_DOPPL_FRAMEWORK_TEST]) {
                 group 'doppl'
                 description 'Build doppl'
-            }
-
-            tasks.create(name: TASK_DOPPL_DEPLOY_MAIN, type: DeployTask,
-                    dependsOn: TASK_DOPPL_ASSEMBLY) {
-                group 'doppl'
-                description 'Push main code to Xcode directory (or wherever you want)'
-
-                srcGenDir = j2objcSrcGenMainDir
-                testCode = false
-                _buildContext = buildContext
-            }
-
-            tasks.create(name: TASK_DOPPL_DEPLOY_TEST, type: DeployTask, dependsOn: TASK_DOPPL_TEST_TRANSLATE) {
-                group 'doppl'
-                description 'Push test code to Xcode directory (or wherever you want)'
-
-                srcGenDir = j2objcSrcGenTestDir
-                testCode = true
-                _buildContext = buildContext
-            }
-
-            tasks.create(name: TASK_DOPPL_DEPLOY, type: DefaultTask, dependsOn: [
-                    TASK_DOPPL_DEPLOY_MAIN,
-                    TASK_DOPPL_DEPLOY_TEST
-                    ]) {
-                group 'doppl'
-                description "Wrapper task to build and deploy translated objc to xcode directories"
-            }
-
-            tasks.create(name: TASK_DOPPL_ARCHIVE, type: Jar, dependsOn: TASK_DOPPL_ASSEMBLY) {
-                group 'doppl'
-                description 'Depends on j2objc build, move all doppl stuff to deploy dir'
-
-                from project.dopplConfig.destDopplFolder
-                extension 'dop'
-            }
-
-            //Clean all the things
-            //TODO: Remove all this stuff
-            tasks.findByName("clean").doFirst {
-                DeployTask.doClean(project)
             }
 
             // j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder
@@ -349,25 +307,25 @@ class DopplPlugin implements Plugin<Project> {
                group 'doppl'
                description "Run the cycle_finder tool on all Java source files"
 
-               dopplJavaDirFile = DopplInfo.sourceBuildJavaFileMain(project)
+               dopplJavaDirFile = dopplInfo.sourceBuildJavaFileMain()
                _buildContext = buildContext
            }
 
             //Convenience task. Will probably go away.
             tasks.create(name: TASK_DOPPL_HEADER_MAPPINGS, type: HeaderMappingsTask, dependsOn: TASK_DOPPL_JAVA_STAGING_MAIN)
         }
-
-
     }
 
     void addManagedPods(TaskContainer tasks, FrameworkConfig frameworkConfig, BuildContext buildContext, boolean test, String upstreamTaskName){
+        int count = 0
         for (String managedPod : frameworkConfig.managedPodsList) {
             PodManagerTask.addPodManagerTask(tasks,
                     managedPod,
                     buildContext,
                     test,
                     tasks.getByName(TASK_DOPPL_BUILD),
-                    tasks.getByName(upstreamTaskName)
+                    tasks.getByName(upstreamTaskName),
+                    count++
             )
         }
     }
@@ -386,5 +344,23 @@ class DopplPlugin implements Plugin<Project> {
             wrapperTask.dependsOn t
             t.dependsOn(upstreamTask)
         }
+    }
+
+    void prepObjcStagingTask(TaskContainer tasks, Project project, boolean test, Task wrapperTask, Task upstreamTask)
+    {
+        DopplInfo dopplInfo = DopplInfo.getInstance(project)
+        String taskName = test ? TASK_DOPPL_OBJC_STAGING_TEST : TASK_DOPPL_OBJC_STAGING_MAIN
+        String sourcePath = test ? DopplInfo.SOURCEPATH_OBJC_TEST : DopplInfo.SOURCEPATH_OBJC_MAIN
+        File destFile = test ? dopplInfo.sourceBuildObjcFileTest() : dopplInfo.sourceBuildObjcFileMain()
+        Task t = tasks.create(
+                name: taskName,
+                type: ObjcStagingTask,
+                description: "ObjcStagingTask ${test ? "test" : "main"}") {
+            sourceFileTree = project.fileTree(sourcePath)
+            destDir = destFile
+        }
+
+        wrapperTask.dependsOn t
+        t.dependsOn(upstreamTask)
     }
 }

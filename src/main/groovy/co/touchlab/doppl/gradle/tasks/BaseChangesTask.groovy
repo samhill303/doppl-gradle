@@ -45,17 +45,7 @@ class BaseChangesTask extends DefaultTask{
     }
 
     @Input
-    List<String> getTranslateClasspaths() { return DopplConfig.from(project).translateClasspaths }
-
-    @Input
     List<String> getTranslateJ2objcLibs() { return DopplConfig.from(project).translateJ2objcLibs }
-
-    @Input
-    boolean getIgnoreWeakAnnotations() { return DopplConfig.from(project).ignoreWeakAnnotations }
-
-    @Input boolean isCopyDependencies() {
-        DopplConfig.from(project).copyDependencies
-    }
 
     @Input boolean isEmitLineDirectives() {
         DopplConfig.from(project).emitLineDirectives

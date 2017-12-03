@@ -107,16 +107,11 @@ public class DopplAnalytics {
         analyticsPackage.hostOs = System.getProperty("os.name");
         analyticsPackage.hostOsVersion = System.getProperty("os.version");
         analyticsPackage.useArc = config.getUseArc();
-        analyticsPackage.anyMainOutputs = config.getCopyMainOutput().size() > 0;
-        analyticsPackage.anyTestOutputs = config.getCopyTestOutput().size() > 0;
-        analyticsPackage.copyDependencies = config.getCopyDependencies();
         analyticsPackage.emitLineDirectives = config.getEmitLineDirectives();
         analyticsPackage.targetVariant = config.getTargetVariant();
         analyticsPackage.anyGeneratedSourceDirs = !config.getGeneratedSourceDirs().isEmpty();
         analyticsPackage.anyGeneratedTestSourceDirs = !config.getGeneratedTestSourceDirs().isEmpty();
-        analyticsPackage.anyOverlaySourceDirs = !config.getOverlaySourceDirs().isEmpty();
         analyticsPackage.anyTranslateArgs = !config.getTranslateArgs().isEmpty();
-        analyticsPackage.anyTranslateClasspaths = !config.getTranslateClasspaths().isEmpty();
 
         JsonWrapper jsonWrapper = new JsonWrapper();
         jsonWrapper.properties = analyticsPackage;

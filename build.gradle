@@ -30,7 +30,7 @@ buildscript {
 
 apply plugin: 'groovy'
 //apply plugin: 'kotlin'
-//apply plugin: 'java-gradle-plugin'
+apply plugin: 'java-gradle-plugin'
 //apply from: "$rootDir/gradle/functional-test.gradle"
 
 apply plugin: 'kotlin'
@@ -50,18 +50,24 @@ targetCompatibility = 1.8
 dependencies {
     compile gradleApi()
     compile localGroovy()
+    testCompile gradleTestKit()
     compile 'com.android.tools.build:gradle:2.2.1'
     compile 'org.codehaus.groovy:groovy-android-gradle-plugin:1.1.0'
     compile 'com.google.code.gson:gson:2.7'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    testCompile "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
+    testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+
+    testCompile "org.mockito:mockito-core:1.9.5"
     testCompile 'junit:junit:4.11'
 }
 
 group = 'co.doppl'
 //Changed this a whole number to differentiate it from the core stuff. Confusing.
-version = '0.10.5'
+version = '0.10.6'
 
 project.tasks.all {
     if (it.name == 'publishPluginGroovyDocsJar' || it.name == 'publishPluginJavaDocsJar') {
@@ -102,21 +108,35 @@ ext.artifactId = 'gradle'
 
 apply from: "$dopplSharedScriptHome/bintray.gradle"
 
-task buildgenPropertiesFile << {
-    //
-    description 'Dynamically creates a properties file.'
+File _pdir = project.file('testprojects')
+File[] _dirs = _pdir.listFiles()
 
-    // needed for the first pass
-    def folder = project.file('src/main/resources');
-    if(!folder.exists()){
-        folder.mkdirs()
+int count = _dirs.length
+for(int i=0; i<count; i++)
+{
+    File d = _dirs[i]
+    if(d.exists() && d.isDirectory())
+    {
+        File lprops = new File(d, "local.properties")
+        lprops.delete()
+        lprops << "j2objc.home=${testj2objchome}"
     }
+}
 
-    //write it to a propertiess file
-    def props = project.file('src/main/resources/buildgen.properties')
-    props.delete()
-    props << "buildversion=${version}"
+task buildgenPropertiesFile {
+    doLast {
 
+        // needed for the first pass
+        def folder = project.file('src/main/resources');
+        if (!folder.exists()) {
+            folder.mkdirs()
+        }
+
+        //write it to a propertiess file
+        def props = project.file('src/main/resources/buildgen.properties')
+        props.delete()
+        props << "buildversion=${version}"
+    }
 }
 
 processResources.dependsOn buildgenPropertiesFile

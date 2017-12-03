@@ -16,49 +16,38 @@
 
 package co.touchlab.doppl.gradle.tasks
 
-import co.touchlab.doppl.gradle.DopplConfig
-import co.touchlab.doppl.gradle.DopplInfo
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
-import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 
-/**
- * Copies artifacts into doppl directory structure
- */
+class ObjcStagingTask extends DefaultTask{
+    FileTree sourceFileTree
+    File destDir
 
-class DopplAssemblyTask extends DefaultTask {
-
-    @InputDirectory
-    File dopplJavaDirFile
-
-    @InputDirectory @Optional
-    File dopplObjcDirFile
+    @InputFiles
+    FileCollection getSrcFiles(){
+        return sourceFileTree
+    }
 
     @OutputDirectory
-    File getDestDopplDirFile() {
-        return DopplInfo.getInstance(project).rootAssemblyFile()
+    File getDopplObjcDirFile() {
+        return destDir
     }
 
     @TaskAction
-    void dopplDeploy(IncrementalTaskInputs inputs) {
+    void stageFiles(IncrementalTaskInputs inputs)
+    {
+        destDir.deleteDir()
+        destDir.mkdirs()
 
         Utils.projectCopy(project, {
-            from dopplJavaDirFile
-            into getDestDopplDirFile().absolutePath + "/java"
-            include '**/*.java'
+            from getSrcFiles()
+            into getDopplObjcDirFile()
+            includeEmptyDirs = false
         })
-
-        if (dopplObjcDirFile != null) {
-            Utils.projectCopy(project, {
-                from dopplObjcDirFile
-                into getDestDopplDirFile().absolutePath + "/src"
-            })
-        }
-
     }
 }

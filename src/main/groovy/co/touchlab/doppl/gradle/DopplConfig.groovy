@@ -39,41 +39,10 @@ class DopplConfig {
     DopplConfig(Project project) {
         assert project != null
         this.project = project
-
-        // Provide defaults for assembly output locations.
-        destLibDir = new File(project.buildDir, 'j2objcOutputs/lib').absolutePath
-        destJavaJarDir = new File(project.buildDir, 'libs').absolutePath
-
-        destDopplFolder = new File(project.buildDir, 'doppl').absolutePath
-        dopplDependencyExploded = DopplInfo.dependencyExplodedDopplFile(project).absolutePath
-        dopplOnlyDependencyExploded = DopplInfo.dependencyExplodedDopplOnlyFile(project).absolutePath
-        testDopplDependencyExploded = DopplInfo.dependencyExplodedTestDopplFile(project).absolutePath
     }
 
-    /**
-     * Local exploded dir for doppl files
-     */
-    String destDopplFolder = null
-
-    String dopplDependencyExploded = null
-    String dopplOnlyDependencyExploded = null
-    String testDopplDependencyExploded = null
-
-    /**
-     * Where to assemble generated main libraries.
-     * <p/>
-     * Defaults to $buildDir/j2objcOutputs/lib
-     */
-    String destLibDir = null
-
-    String destJavaJarDir = null;
-
-    boolean useArc = false;
+    boolean useArc = false
     boolean skipTests = false
-
-    List<String> copyMainOutput = new ArrayList<>();
-    List<String> copyTestOutput = new ArrayList<>();
-    boolean copyDependencies = false;
 
     boolean emitLineDirectives = false;
 
@@ -81,8 +50,6 @@ class DopplConfig {
     {
         emitLineDirectives = b
     }
-
-    boolean ignoreWeakAnnotations = false;
 
     boolean skipDependsTasks = false
 
@@ -95,11 +62,6 @@ class DopplConfig {
      */
     List<String> generatedSourceDirs = new ArrayList<>()
     List<String> generatedTestSourceDirs = new ArrayList<>()
-
-    /**
-     * Some transforms will need to replace existing classes. These dirs are handled special.
-     */
-    List<String> overlaySourceDirs = new ArrayList<>();
 
     /**
      * Command line arguments for j2objc cycle_finder.
@@ -120,16 +82,6 @@ class DopplConfig {
     Map<String, String> translatedPathPrefix = new HashMap<>()
 
     /**
-     *  Local jars for translation e.g.: "lib/json-20140107.jar", "lib/somelib.jar".
-     *  This will be added to j2objc as a '-classpath' argument.
-     *
-     *  TODO: We should review some of these more open ended arguments. I doubt we'd ever need
-     *  to add an external jar. The only reasonable scenario would be outside objc that was already
-     *  translated and added manually.
-     */
-    List<String> translateClasspaths = new ArrayList<>()
-
-    /**
      * Additional Java libraries that are part of the j2objc distribution.
      * <p/>
      * For example:
@@ -146,8 +98,7 @@ class DopplConfig {
             // Libraries that have CycleFinder fixes, e.g. @Weak and code removal
             "guava-19.0.jar", "j2objc_junit.jar", "jre_emul.jar",
             // Libraries that don't need CycleFinder fixes
-            "javax.inject-1.jar", "jsr305-3.0.0.jar",
-            "mockito-core-1.9.5.jar", "hamcrest-core-1.3.jar"/*, "protobuf_runtime.jar"*/]
+            "javax.inject-1.jar", "jsr305-3.0.0.jar",/*, "protobuf_runtime.jar"*/]
 
     /**
      * Sets the filter on files to translate.
@@ -162,49 +113,6 @@ class DopplConfig {
 
     PatternSet testIdentifier = null
 
-    //KPG: Review if this is still useful
-    /**
-     * A mapping from source file names (in the project Java sourcesets) to alternate
-     * source files.
-     * Both before and after names (keys and values) are evaluated using project.file(...).
-     * <p/>
-     * Mappings can be used to have completely different implementations in your Java
-     * jar vs. your Objective-C library.  This can be especially useful when compiling
-     * a third-party library and you need to provide non-trivial OCNI implementations
-     * in Objective-C.
-     */
-    Map<String, String> translateSourceMapping = [:]
-    Map<String, String> pathToTranslatedFileMap = new TreeMap<>()
-
-    // Private helper methods
-    // Should use instead of accessing client set 'dest' strings
-    File getDestLibDirFile() {
-        return project.file(destLibDir)
-    }
-
-
-    File getDestDopplDirFile(){
-        return project.file(destDopplFolder)
-    }
-
-    /**
-     * Add output path for objective c files
-     */
-    void copyMainOutput(String... paths) {
-        for (String p : paths) {
-            this.copyMainOutput.add(p)
-        }
-    }
-
-    /**
-     * Add output path for objective c test files
-     */
-    void copyTestOutput(String... paths) {
-        for (String p : paths) {
-            this.copyTestOutput.add(p)
-        }
-    }
-
     /**
      * Add generated source files directories, e.g. from dagger annotations.
      *
@@ -212,15 +120,6 @@ class DopplConfig {
      */
     void generatedSourceDirs(String... generatedSourceDirs) {
         Utils.appendArgs(this.generatedSourceDirs, 'generatedSourceDirs', true, generatedSourceDirs)
-    }
-
-    /**
-     * Add generated source files directories, e.g. from dagger annotations.
-     *
-     * @param generatedSourceDirs adds generated source directories for j2objc translate
-     */
-    void overlaySourceDirs(String... overlaySourceDirs) {
-        this.overlaySourceDirs.addAll(overlaySourceDirs)
     }
 
     /**
@@ -264,38 +163,9 @@ class DopplConfig {
         return translateArgs;
     }
 
-    private void addToHeaderMap(String inpFile) {
-        def properties = new Properties()
-
-        def reader = new FileReader(project.file(inpFile))
-        properties.load(reader)
-        reader.close()
-
-        properties.propertyNames().each { String key ->
-            pathToTranslatedFileMap.put(key, properties.getProperty(key))
-        }
-    }
-
-    void headerMappingFiles(String... f)
-    {
-        for (String filename : f) {
-            addToHeaderMap(filename)
-        }
-    }
-
     void translatedPathPrefix(String path, String prefix)
     {
         translatedPathPrefix.put(path, prefix)
-    }
-
-    /**
-     *  Local jars for translation e.g.: "lib/json-20140107.jar", "lib/somelib.jar".
-     *  This will be added to j2objc as a '-classpath' argument.
-     *
-     *  @param translateClasspaths add libraries for -classpath argument
-     */
-    void translateClasspaths(String... translateClasspaths) {
-        Utils.appendArgs(this.translateClasspaths, 'translateClasspaths', true, translateClasspaths)
     }
 
     /**
@@ -327,21 +197,5 @@ class DopplConfig {
             testIdentifier = new PatternSet()
         }
         return ConfigureUtil.configure(cl, testIdentifier)
-    }
-
-    /**
-     * Adds a new source mapping.
-     * @see #translateSourceMapping
-     */
-    void translateSourceMapping(String before, String after) {
-        translateSourceMapping.put(before, after)
-    }
-
-    @VisibleForTesting
-    void testingOnlyPrepConfigurations() {
-        // When testing we don't always want to apply the entire plugin
-        // before calling finalConfigure.
-        project.configurations.create(DependencyResolver.CONFIG_DOPPL)
-        project.configurations.create(DependencyResolver.CONFIG_TEST_DOPPL)
     }
 }

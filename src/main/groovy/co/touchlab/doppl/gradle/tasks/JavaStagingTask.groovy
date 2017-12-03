@@ -19,7 +19,6 @@ package co.touchlab.doppl.gradle.tasks
 import co.touchlab.doppl.gradle.DopplConfig
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
-import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.InputFiles
@@ -34,7 +33,6 @@ import org.gradle.api.tasks.incremental.InputFileDetails
 
 class JavaStagingTask extends DefaultTask {
 
-    public static final String DOPPL_MAPPINGS_FILENAME = "doppl.mappings"
     FileTree sourceFileTree
     File destDir
 

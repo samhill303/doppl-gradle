@@ -16,7 +16,6 @@
 
 package co.touchlab.doppl.gradle.tasks
 
-import co.touchlab.doppl.gradle.DopplDependency
 import com.google.common.annotations.VisibleForTesting
 import groovy.transform.CompileStatic
 import groovy.transform.TypeCheckingMode
@@ -30,10 +29,7 @@ import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.CopySpec
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
-import org.gradle.api.file.SourceDirectorySet
 import org.gradle.api.internal.file.collections.DefaultConfigurableFileTree
-import org.gradle.api.plugins.JavaPluginConvention
-import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.WorkResult
 import org.gradle.process.ExecResult
 import org.gradle.process.ExecSpec
@@ -41,6 +37,7 @@ import org.gradle.process.internal.ExecException
 import org.gradle.util.GradleVersion
 
 import java.util.regex.Matcher
+
 /**
  * Internal utilities supporting plugin implementation.
  */
@@ -49,10 +46,6 @@ import java.util.regex.Matcher
 @Slf4j
 //@CompileStatic
 class Utils {
-    // TODO: ideally bundle j2objc binaries with plugin jar and load at runtime with
-    // TODO: ClassLoader.getResourceAsStream(), extract, chmod and then execute
-
-    // Prevent construction of this class, confines usage to static methods
     private Utils() {}
 
     static boolean failGradleVersion(boolean throwIfUnsupported) {
@@ -315,23 +308,6 @@ class Utils {
         return false
     }
 
-    public static Properties findDopplLibraryPrefixes(File dopplDir) {
-
-        def files = dopplDir.listFiles()
-        for (File file : files) {
-            if (!file.isDirectory() && file.getName().endsWith("prefixes.properties")) {
-                def properties = new Properties()
-
-                def fileReader = new FileReader(file)
-                properties.load(fileReader)
-                fileReader.close()
-
-                return properties
-            }
-        }
-        return null
-    }
-
     // Convert FileCollection to joined path arg, e.g. "src/Some.java:src/Another.java"
     static String joinedPathArg(FileCollection files) {
         String[] paths = []
@@ -480,83 +456,11 @@ class Utils {
         }
     }
 
-    public static void copyFileRecursive(File from, File to, FileFilter filter)
-    {
-        if(!from.exists())
-            return
-
-        File[] fromFiles = from.listFiles(filter)
-        for (File ff : fromFiles) {
-
-            File targetFile = new File(to, ff.getName());
-
-            if(ff.isDirectory())
-            {
-                copyFileRecursive(ff, targetFile, filter)
-            }
-            else {
-                copyFileIfNewer(ff, targetFile)
-            }
-        }
-    }
-
-    public static void copyFileIfNewer(File inputFile, File targetFile) {
-
-        if(inputFile.isDirectory())
-            return
-
-        byte[] buf = copyBufferLocation.get()
-
-        if (!targetFile.exists()) {
-            targetFile.getParentFile().mkdirs();
-        }
-        else
-        {
-            if(inputFile.lastModified() <= targetFile.lastModified())
-                return
-        }
-
-
-        InputStream inp = new FileInputStream(inputFile)
-
-        //TODO: We should do a safer copy, in case process killed, but whatever
-        OutputStream outp = new FileOutputStream(targetFile)
-
-        try {
-            int read;
-
-            while ((read = inp.read(buf)) > -1) {
-                outp.write(buf, 0, read)
-            }
-        } finally {
-            outp.close()
-            inp.close()
-        }
-    }
-
     private static ThreadLocal<byte []> copyBufferLocation = new ThreadLocal<byte []>(){
         @Override
         protected byte [] initialValue() {
             return new byte[2048]
         }
-    }
-
-    /**
-     * Delete a directory and recreate it using project.delete(...) and project.mkdir(...)
-     *
-     * Must be called instead of project.delete(...) to allow mocking of project calls in testing.
-     * May fail in the case where the parent directory doesn't exist. This is because it uses
-     * Project.mkdir(...) instead of File.mkdirs(...). Note that if the parameter is an
-     * @OutputDirectory, then the directory is automatically created before the task runs.
-     *
-     * @param proj Calls proj.delete(...) method and then project.mkdir(...)
-     * @param paths Variable length list of paths to be deleted, can be String or File
-     */
-    // See projectExec for explanation of the code
-    @CompileStatic(TypeCheckingMode.SKIP)
-    static boolean projectClearDir(Project proj, File path) {
-        proj.delete(path)
-        proj.mkdir(path)
     }
 
     /**
@@ -623,18 +527,6 @@ class Utils {
         log.debug(projectExecLog(execSpec, stdout, stderr, execSucceeded, null))
 
         return execResult
-    }
-
-    static FileCollection mapSourceFiles(Project proj, FileCollection files,
-                                         Map<String, String> sourceMapping) {
-        for (String before : sourceMapping.keySet()) {
-            if (files.contains(proj.file(before))) {
-                // Replace the before file with the after file.
-                files = files.minus(proj.files(before)).plus(
-                        proj.files(sourceMapping.get(before)))
-            }
-        }
-        return files
     }
 
     // Max number of characters for OS command line

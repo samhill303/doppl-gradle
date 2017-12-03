@@ -57,7 +57,7 @@ class TestTranslateTask extends BaseChangesTask {
             resultCollection = resultCollection.matching(dopplConfig.translatePattern)
         }
 
-        return Utils.mapSourceFiles(project, resultCollection, dopplConfig.getTranslateSourceMapping())
+        return resultCollection
     }
 
     @TaskAction

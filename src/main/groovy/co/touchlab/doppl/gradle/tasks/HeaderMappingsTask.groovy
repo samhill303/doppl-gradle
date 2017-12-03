@@ -25,7 +25,7 @@ import org.gradle.api.tasks.TaskAction
 class HeaderMappingsTask extends DefaultTask{
     @TaskAction
     void writeHeaderMappings(){
-        File javaFolder = DopplInfo.sourceBuildJavaFileMain(project)
+        File javaFolder = DopplInfo.getInstance(project).sourceBuildJavaFileMain()
         ConfigurableFileTree tree = project.fileTree(dir: javaFolder, includes: ["**/*.java"])
         Iterator<File> fileIter = tree.iterator()
         while (fileIter.hasNext()) {

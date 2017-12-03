@@ -18,9 +18,7 @@ package co.touchlab.doppl.gradle.tasks
 
 import co.touchlab.doppl.gradle.BuildContext
 import co.touchlab.doppl.gradle.DopplConfig
-import co.touchlab.doppl.gradle.DopplDependency
 import co.touchlab.doppl.gradle.DopplInfo
-import co.touchlab.doppl.gradle.DopplPlugin
 import co.touchlab.doppl.gradle.FrameworkConfig
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
@@ -30,13 +28,6 @@ import org.gradle.api.tasks.TaskAction
 class FrameworkTask extends DefaultTask {
 
     public boolean test
-    public BuildContext _buildContext
-    public List<File> srcDirs = new ArrayList<>()
-
-    public void addSrdDir(File f)
-    {
-        srcDirs.add(f)
-    }
 
     static File podspecFile(Project project, boolean test)
     {
@@ -67,37 +58,46 @@ class FrameworkTask extends DefaultTask {
         String specName = podspecName(test)
         File podspecFile = podspecFile(project, test)
 
-        List<File> depFolders = new ArrayList<>()
-        List< FileTree> headerTrees = new ArrayList<>()
+        List<File> objcFolders = new ArrayList<>()
+        List<File> headerFolders = new ArrayList<>()
+        List<File> javaFolders = new ArrayList<>()
 
-        File jarBuildOutput = DopplInfo.dependencyBuildJarFileForPhase(project, "main")
-        depFolders.add(jarBuildOutput)
-        headerTrees.add(project.fileTree(dir: jarBuildOutput, includes: ["**/*.h"]))
+        DopplInfo dopplInfo = DopplInfo.getInstance(project)
 
-        depFolders.add(DopplInfo.dependencyExplodedDopplFile(project))
-        depFolders.add(DopplInfo.dependencyExplodedDopplOnlyFile(project))
+        //Fill dependencies
+        fillDependencyLists(dopplInfo.dependencyBuildJarFileForPhase(DopplInfo.MAIN), headerFolders, objcFolders, javaFolders)
 
-        List<File> srcFolders = new ArrayList<>()
-        srcFolders.add(DopplInfo.sourceBuildJavaFileMain(project))
-        for (File file : srcDirs) {
-            srcFolders.add(file)
-            headerTrees.add(project.fileTree(dir: file, includes: ["**/*.h"]))
-        }
+        objcFolders.add(dopplInfo.dependencyExplodedDopplFile())
+        objcFolders.add(dopplInfo.dependencyExplodedDopplOnlyFile())
 
         if(test)
         {
-            File testJarBuildOutput = DopplInfo.dependencyBuildJarFileForPhase(project, "test")
-            depFolders.add(testJarBuildOutput)
-            depFolders.add(DopplInfo.dependencyExplodedTestDopplFile(project))
-            headerTrees.add(project.fileTree(dir: testJarBuildOutput, includes: ["**/*.h"]))
-            srcFolders.add(DopplInfo.sourceBuildJavaFileTest(project))
+            fillDependencyLists(dopplInfo.dependencyBuildJarFileForPhase(DopplInfo.TEST), headerFolders, objcFolders, javaFolders)
+            objcFolders.add(dopplInfo.dependencyExplodedTestDopplFile())
+        }
+
+        //Fill source
+        fillSourceList(dopplInfo.sourceBuildJarFileMain(), objcFolders, headerFolders, javaFolders)
+
+        if(test)
+        {
+            fillSourceList(dopplInfo.sourceBuildJarFileTest(), objcFolders, headerFolders, javaFolders)
         }
 
         FrameworkConfig config = test ? FrameworkConfig.findTest(project) : FrameworkConfig.findMain(project)
 
-        def podspecTemplate = config.podspecTemplate(project, srcFolders, depFolders, specName, test)
-        BufferedWriter writer = null
         File headerFile = headerFile(project, test)
+
+        def podspecTemplate = config.podspecTemplate(
+                project,
+                headerFile,
+                objcFolders,
+                headerFolders,
+                javaFolders,
+                specName)
+
+        BufferedWriter writer = null
+
         if(headerFile.exists())
             headerFile.delete()
 
@@ -105,8 +105,9 @@ class FrameworkTask extends DefaultTask {
         try {
             writer = new BufferedWriter(new FileWriter(podspecFile))
             writer.write(podspecTemplate.toString())
-            for (FileTree tree : headerTrees) {
-                Set<File> files = tree.files
+            for (File folder : headerFolders) {
+                FileTree fileTree = project.fileTree(dir: folder, includes: ["**/*.h"])
+                Set<File> files = fileTree.files
                 for (File f : files) {
                     headerWriter.append("#include \"${f.getName()}\"\n")
                 }
@@ -117,5 +118,19 @@ class FrameworkTask extends DefaultTask {
             if(headerWriter != null)
                 headerWriter.close()
         }
+    }
+
+    private void fillSourceList(File sourceFolder, ArrayList<File> objcFolders, ArrayList<File> headerFolders,
+                                ArrayList<File> javaFolders) {
+        objcFolders.add(sourceFolder)
+        headerFolders.add(sourceFolder)
+        javaFolders.add(new File(sourceFolder, DopplInfo.JAVA_SOURCE))
+    }
+
+    private void fillDependencyLists(File jarBuildOutput, ArrayList<File> headerFolders, ArrayList<File> objcFolders,
+                                     ArrayList<File> javaFolders) {
+        headerFolders.add(jarBuildOutput)
+        objcFolders.add(jarBuildOutput)
+        javaFolders.add(new File(jarBuildOutput, DopplInfo.JAVA_SOURCE))
     }
 }
