@@ -87,11 +87,21 @@ class DopplConfigTest: BasicTestBase() {
         }))
     }
 
+    @Test
     fun testTranslatedPathPrefixDependencies()
     {
-        /*
-        TODO: Test that we can apply prefixes to dependencie
-         */
+        writeRunCustomConfig(config = "translatedPathPrefix 'com.google.code.gson', 'GG'")
+        assertTrue("Prefix incorrectly generated", validateFileContent(File(projectFolder, "build/prefixes.properties"), { s ->
+            return@validateFileContent s.contains("com.google.code.gson=GG")
+        }))
+
+        val rerunResult = buildResult()
+        assertEquals(rerunResult.task(":j2objcMainTranslate").outcome, TaskOutcome.UP_TO_DATE)
+
+        writeRunCustomConfig(config = "translatedPathPrefix 'com.google.code.gson', 'GG'")
+        assertTrue("Prefix incorrectly generated", validateFileContent(File(projectFolder, "build/prefixes.properties"), { s ->
+            return@validateFileContent s.contains("com.google.code.gson=GG")
+        }))
     }
 
     @Test
