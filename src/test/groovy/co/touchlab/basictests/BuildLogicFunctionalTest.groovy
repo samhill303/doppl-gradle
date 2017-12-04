@@ -16,8 +16,10 @@
 
 package co.touchlab.basictests
 
+import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.GradleRunner
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -57,14 +59,50 @@ class BuildLogicFunctionalTest {
 
     @Test
     void testBasicJava() throws IOException {
+        File projectFolder = testProjectDir.newFolder()
+        FileUtils.copyDirectory(new File("testprojects/basicjava"), projectFolder)
+
         BuildResult result = GradleRunner.create()
                 .withPluginClasspath()
-                .withProjectDir(new File("testprojects/basicjava"))
-                .withArguments("clean", "build")
+                .withProjectDir(projectFolder)
+                .withArguments("dopplBuild")
+                .build()
+
+        BuildResult rebuildResult = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(projectFolder)
+                .withArguments("build")
                 .build()
 
 //        assertTrue(result.getOutput().contains("Hello world!"));
-        assertEquals(result.task(":build").getOutcome(), SUCCESS);
+        assertEquals(result.task(":dopplBuild").getOutcome(), SUCCESS);
+//        assertEquals(rebuildResult.task(":build").getOutcome(), UP_TO_DATE);
+
+        File mainBuildDir = new File(projectFolder, "build/dopplBuild/source/jar/main")
+        File jarFile = new File(mainBuildDir, "dopplMain.jar")
+        Assert.assertTrue("Jar build failed", jarFile.exists())
+        File headerFile = new File(mainBuildDir, "dopplMain.h")
+
+        findObjcClassDefinition(headerFile, "CoTouchlabBasicjavaGoBasicJava")
+    }
+
+    static boolean findObjcClassDefinition(File headerFile, String classDefinition)throws IOException
+    {
+        BufferedReader reader = new BufferedReader(new FileReader(headerFile))
+        try {
+            String temp = null
+            while ((temp = reader.readLine()) != null)
+            {
+                if(temp.startsWith("@protocol ${classDefinition} ") || temp.startsWith("@interface ${classDefinition} "))
+                {
+                    return true
+                }
+            }
+        } finally {
+            reader.close()
+        }
+
+        return false
     }
 
     private void writeFile(File destination, String content) throws IOException {

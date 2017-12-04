@@ -28,8 +28,6 @@ import org.gradle.util.ConfigureUtil
  */
 @CompileStatic
 class DopplConfig {
-    public static final String TRANSLATE_ARC_ARG = '-use-arc'
-
     static DopplConfig from(Project project) {
         return project.extensions.findByType(DopplConfig)
     }
@@ -41,21 +39,28 @@ class DopplConfig {
         this.project = project
     }
 
-    boolean useArc = false
+    private DopplConfig(){}
+
     boolean skipTests = false
 
-    boolean emitLineDirectives = false;
+    boolean emitLineDirectives = false
+    boolean dependenciesEmitLineDirectives = false
 
     void javaDebug(boolean b)
     {
         emitLineDirectives = b
     }
 
+    void dependenciesJavaDebug(boolean b)
+    {
+        dependenciesEmitLineDirectives = b
+    }
+
     boolean skipDependsTasks = false
 
     String targetVariant = "debug"
 
-    boolean disableAnalytics = false;
+    boolean disableAnalytics = false
 
     /**
      * Additional generated source files directories
@@ -157,10 +162,7 @@ class DopplConfig {
 
     List<String> processedTranslateArgs()
     {
-        if(useArc && !(translateArgs.contains(TRANSLATE_ARC_ARG)))
-            translateArgs(TRANSLATE_ARC_ARG);
-
-        return translateArgs;
+        return translateArgs
     }
 
     void translatedPathPrefix(String path, String prefix)

@@ -37,7 +37,6 @@ public class AnalyticsPackage {
     @SerializedName("Host OS Version")
     String hostOsVersion;
 
-    boolean useArc = false;
     boolean emitLineDirectives = false;
     String targetVariant;
     boolean anyGeneratedSourceDirs;

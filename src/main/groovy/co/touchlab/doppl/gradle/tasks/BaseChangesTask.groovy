@@ -50,4 +50,8 @@ class BaseChangesTask extends DefaultTask{
     @Input boolean isEmitLineDirectives() {
         DopplConfig.from(project).emitLineDirectives
     }
+
+    @Input boolean isDependenciesEmitLineDirectives() {
+        DopplConfig.from(project).dependenciesEmitLineDirectives
+    }
 }

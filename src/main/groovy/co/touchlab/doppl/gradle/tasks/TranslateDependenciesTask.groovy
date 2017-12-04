@@ -32,7 +32,7 @@ import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 
-class TranslateDependenciesTask extends DefaultTask{
+class TranslateDependenciesTask extends BaseChangesTask{
 
     BuildContext _buildContext
     boolean testBuild
@@ -159,7 +159,10 @@ class TranslateDependenciesTask extends DefaultTask{
                 args "--swift-friendly", ''
                 args "--output-header-mapping", dependencyMappingsFile(project, testBuild).absolutePath
 
-                args "-g", ''
+                if(isDependenciesEmitLineDirectives())
+                {
+                    args "-g", ''
+                }
 
                 if (sourcepathList.size() > 0) {
                     args "-sourcepath", Utils.joinedPathArg(sourcepathList)

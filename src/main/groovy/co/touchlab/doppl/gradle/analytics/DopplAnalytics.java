@@ -106,7 +106,6 @@ public class DopplAnalytics {
         analyticsPackage.dopplVersion = findMyVersion();
         analyticsPackage.hostOs = System.getProperty("os.name");
         analyticsPackage.hostOsVersion = System.getProperty("os.version");
-        analyticsPackage.useArc = config.getUseArc();
         analyticsPackage.emitLineDirectives = config.getEmitLineDirectives();
         analyticsPackage.targetVariant = config.getTargetVariant();
         analyticsPackage.anyGeneratedSourceDirs = !config.getGeneratedSourceDirs().isEmpty();
