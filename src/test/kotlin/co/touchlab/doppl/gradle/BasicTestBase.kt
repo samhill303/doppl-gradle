@@ -25,7 +25,7 @@ import java.io.File
 abstract class BasicTestBase {
     @Rule
     @JvmField
-    val testProjectDir = TemporaryFolder()
+    var testProjectDir = TemporaryFolder()
 
     lateinit var projectFolder: File
 

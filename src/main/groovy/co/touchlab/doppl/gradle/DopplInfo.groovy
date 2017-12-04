@@ -47,6 +47,10 @@ class DopplInfo {
     private static DopplInfo instance;
     private final File buildDir;
 
+    DopplInfo(Project project){
+        this(project.buildDir)
+    }
+
     DopplInfo(File buildDir) {
         this.buildDir = buildDir
     }
@@ -56,14 +60,18 @@ class DopplInfo {
     {
         if(instance == null)
             instance = new DopplInfo(buildDir)
+
+        //Static value needs to be updated if changed. This whole class should not be static...
+        if(!instance.buildDir.equals(buildDir))
+            instance = new DopplInfo(buildDir)
         return instance
     }
-    
+
     static DopplInfo getInstance(Project project)
     {
         return getInstance(project.buildDir)
     }
-    
+
     @VisibleForTesting
     File rootBuildFile() {
         new File(buildDir, DOPPL_BUILD)

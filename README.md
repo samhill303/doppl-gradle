@@ -59,12 +59,12 @@ dopplConfig {
         include '**/BuildConfig.*'
     }
     
-    //Applies to 'dopplTest', which creates a list of tests to run based on path
+    //Applies to 'dopplTest' task, which creates a list of tests to run based on path
     //By default, the pattern is 'include "**/*Test.java"', but can be customized.
     testIdentifier {
         include "**/*Test.java"
         exclude "**/OneTest.java" //A file matches that we don't want
-        exclude "**/Abstract**.java"
+        exclude "**/Abstract**.java" //If we prefix your abstract classes with 'Abstract', exclude them
     }
     
     //The cocoapod framework definitions have some specific config options available. All have 
