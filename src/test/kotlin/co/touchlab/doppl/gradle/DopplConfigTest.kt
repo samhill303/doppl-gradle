@@ -72,12 +72,6 @@ class DopplConfigTest: BasicTestBase() {
     @Test
     fun testTranslatedPathPrefix()
     {
-        /*
-        TODO: Test that path prefixes are working. Test both class name output and that prefixes.properties
-        is written to the build dir, and that it contains whatever prefixes were defined.
-        Also test that changing prefix values will trigger a rerun of project, as well as output of classes
-        and prefixes.properties.
-         */
 
         writeRunCustomConfig(config = "translatedPathPrefix 'co.touchlab.basicjava', 'TBJ'")
         assertTrue("Prefix incorrectly generated", validateFileContent(File(projectFolder, "build/prefixes.properties"), { s ->
@@ -100,6 +94,26 @@ class DopplConfigTest: BasicTestBase() {
          */
     }
 
+    @Test
+    fun testIdentifier()
+    {
+        writeRunCustomConfig()
+        assertTrue("Test classes not found in dopplTests.txt", validateFileContent(File(projectFolder, "build/dopplTests.txt"), { s ->
+            return@validateFileContent s.contains("co.touchlab.basicjava.AnotherBasicTest") && s.contains("co.touchlab.basicjava.BasicJavaTest")
+        }))
+
+        val rerunResult = buildResult()
+        assertEquals(rerunResult.task(":j2objcTestTranslate").outcome, TaskOutcome.UP_TO_DATE)
+
+        writeRunCustomConfig(config = """
+            testIdentifier {
+                include 'co/touchlab/basicjava/BasicJavaTest.java'
+            }
+        """)
+        assertTrue("Incorrect number of test classes found in dopplTests.txt", validateFileContent(File(projectFolder, "build/dopplTests.txt"), { s ->
+            return@validateFileContent s.contains("co.touchlab.basicjava.BasicJavaTest")
+        }))
+    }
 
 
     fun writeRunCustomConfig(depends: String = "", config: String = "")
