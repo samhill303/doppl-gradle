@@ -18,12 +18,14 @@ package co.touchlab.doppl.gradle
 
 import co.touchlab.doppl.utils.replaceFile
 import co.touchlab.doppl.utils.validateFileContent
+import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.Assert
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import kotlin.test.assertEquals
 
 
 class DopplConfigTest: BasicTestBase() {
@@ -67,6 +69,7 @@ class DopplConfigTest: BasicTestBase() {
         }))
     }
 
+    @Test
     fun testTranslatedPathPrefix()
     {
         /*
@@ -75,6 +78,19 @@ class DopplConfigTest: BasicTestBase() {
         Also test that changing prefix values will trigger a rerun of project, as well as output of classes
         and prefixes.properties.
          */
+
+        writeRunCustomConfig(config = "translatedPathPrefix 'co.touchlab.basicjava', 'TBJ'")
+        assertTrue("Prefix incorrectly generated", validateFileContent(File(projectFolder, "build/prefixes.properties"), { s ->
+            return@validateFileContent s.contains("co.touchlab.basicjava=TBJ")
+        }))
+
+        val rerunResult = buildResult()
+        assertEquals(rerunResult.task(":j2objcMainTranslate").outcome, TaskOutcome.UP_TO_DATE)
+
+        writeRunCustomConfig(config = "translatedPathPrefix 'co.touchlab.basicjava', 'GBJ'")
+        assertTrue("Prefix incorrectly generated", validateFileContent(File(projectFolder, "build/prefixes.properties"), { s ->
+            return@validateFileContent s.contains("co.touchlab.basicjava=GBJ")
+        }))
     }
 
     fun testTranslatedPathPrefixDependencies()
@@ -90,13 +106,17 @@ class DopplConfigTest: BasicTestBase() {
     {
         writeCustomConfig(depends = depends, config = config)
 
-        val result = GradleRunner.create()
+        val result = buildResult()
+
+        Assert.assertEquals(result.task(":dopplBuild").getOutcome(), TaskOutcome.SUCCESS)
+    }
+
+    private fun buildResult(): BuildResult {
+        return GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(projectFolder)
                 .withArguments("dopplBuild")
                 .build()
-
-        Assert.assertEquals(result.task(":dopplBuild").getOutcome(), TaskOutcome.SUCCESS)
     }
 
     fun writeCustomConfig(depends: String = "", config: String = "")
