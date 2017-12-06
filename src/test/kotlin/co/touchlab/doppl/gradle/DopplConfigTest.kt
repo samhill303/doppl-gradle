@@ -22,10 +22,10 @@ import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.Assert
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
-import kotlin.test.assertEquals
 
 
 class DopplConfigTest: BasicTestBase() {
@@ -135,7 +135,8 @@ class DopplConfigTest: BasicTestBase() {
         Assert.assertEquals(result.task(":dopplBuild").getOutcome(), TaskOutcome.SUCCESS)
     }
 
-    private fun buildResult(): BuildResult {
+    private fun buildResult(): BuildResult
+    {
         return GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(projectFolder)

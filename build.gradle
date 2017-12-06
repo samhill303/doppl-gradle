@@ -116,6 +116,7 @@ File[] _dirs = _pdir.listFiles()
 Properties properties = new Properties()
 properties.load(project.rootProject.file('local.properties').newDataInputStream())
 def testJ2objcHome = properties.getProperty('j2objc.home')
+def androidSdk = properties.getProperty('sdk.dir')
 
 int count = _dirs.length
 for(int i=0; i<count; i++)
@@ -125,7 +126,7 @@ for(int i=0; i<count; i++)
     {
         File lprops = new File(d, "local.properties")
         lprops.delete()
-        lprops << "j2objc.home=${testJ2objcHome}"
+        lprops << "j2objc.home=${testJ2objcHome}\nsdk.dir=${androidSdk}"
     }
 }
 
