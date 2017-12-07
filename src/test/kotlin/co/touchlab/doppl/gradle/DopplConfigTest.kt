@@ -22,10 +22,10 @@ import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.Assert
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import kotlin.test.assertEquals
 
 
 class DopplConfigTest: BasicTestBase() {
@@ -87,20 +87,19 @@ class DopplConfigTest: BasicTestBase() {
         }))
     }
 
-    @Test
     fun testTranslatedPathPrefixDependencies()
     {
-        writeRunCustomConfig(config = "translatedPathPrefix 'com.google.code.gson', 'GG'")
+        writeRunCustomConfig(config = "translatedPathPrefix 'co.touchlab.basicjava', 'TBJ'")
         assertTrue("Prefix incorrectly generated", validateFileContent(File(projectFolder, "build/prefixes.properties"), { s ->
-            return@validateFileContent s.contains("com.google.code.gson=GG")
+            return@validateFileContent s.contains("co.touchlab.basicjava=TBJ")
         }))
 
         val rerunResult = buildResult()
         assertEquals(rerunResult.task(":j2objcMainTranslate").outcome, TaskOutcome.UP_TO_DATE)
 
-        writeRunCustomConfig(config = "translatedPathPrefix 'com.google.code.gson', 'GG'")
+        writeRunCustomConfig(config = "translatedPathPrefix 'co.touchlab.basicjava', 'GBJ'")
         assertTrue("Prefix incorrectly generated", validateFileContent(File(projectFolder, "build/prefixes.properties"), { s ->
-            return@validateFileContent s.contains("com.google.code.gson=GG")
+            return@validateFileContent s.contains("co.touchlab.basicjava=GBJ")
         }))
     }
 
@@ -135,8 +134,7 @@ class DopplConfigTest: BasicTestBase() {
         Assert.assertEquals(result.task(":dopplBuild").getOutcome(), TaskOutcome.SUCCESS)
     }
 
-    private fun buildResult(): BuildResult
-    {
+    private fun buildResult(): BuildResult {
         return GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(projectFolder)

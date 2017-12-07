@@ -14,7 +14,7 @@ import org.junit.rules.TemporaryFolder
 import java.io.File
 
 
-class AndroidProjectTest {
+class BasicAndroidProjectTest {
 
     @Rule
     @JvmField
@@ -59,7 +59,8 @@ class AndroidProjectTest {
         assertEquals(result.task(":app:dopplBuild").outcome, TaskOutcome.SUCCESS)
     }
 
-    private fun buildResult(): BuildResult {
+    private fun buildResult(): BuildResult
+    {
         return GradleRunner.create()
                 .withPluginClasspath()
                 .withProjectDir(projectFolder)

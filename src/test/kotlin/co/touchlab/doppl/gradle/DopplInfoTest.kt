@@ -16,10 +16,8 @@
 
 package co.touchlab.doppl.gradle
 
-import org.gradle.api.Project
 import org.junit.Assert
 import org.junit.Test
-import org.mockito.Mockito
 import java.io.File
 import java.lang.IllegalArgumentException
 import kotlin.test.fail
