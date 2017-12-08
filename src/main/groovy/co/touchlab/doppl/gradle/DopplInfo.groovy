@@ -219,4 +219,24 @@ class DopplInfo {
     {
         return sourceBuildJarFileForPhase(TEST)
     }
+
+    File sourceBuildJarFileMainJar()
+    {
+        return new File(sourceBuildJarFileMain(), OUT_JAR_MAIN)
+    }
+
+    File sourceBuildJarFileTestJar()
+    {
+        return new File(sourceBuildJarFileTest(), OUT_JAR_TEST)
+    }
+
+    File sourceBuildJarFileMainMappings()
+    {
+        return new File(sourceBuildJarFileMain(), OUT_JAR_MAIN + ".mappings")
+    }
+
+    File sourceBuildJarFileTestMappings()
+    {
+        return new File(sourceBuildJarFileTest(), OUT_JAR_TEST + ".mappings")
+    }
 }

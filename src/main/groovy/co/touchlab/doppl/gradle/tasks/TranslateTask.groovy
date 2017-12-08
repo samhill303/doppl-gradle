@@ -39,21 +39,28 @@ class TranslateTask extends BaseChangesTask {
     File getSourceJar() {
         DopplInfo dopplInfo = DopplInfo.getInstance(project)
         if(testBuild)
-            return new File(dopplInfo.sourceBuildJarFileTest(), DopplInfo.OUT_JAR_TEST)
+            return dopplInfo.sourceBuildJarFileTestJar()
         else
-            return new File(dopplInfo.sourceBuildJarFileMain(), DopplInfo.OUT_JAR_MAIN)
+            return dopplInfo.sourceBuildJarFileMainJar()
     }
 
     File getMappingsFile()
     {
-        File jar = getSourceJar()
-        return new File(jar.getParentFile(), jar.name + ".mappings")
+        DopplInfo dopplInfo = DopplInfo.getInstance(project)
+        if(testBuild)
+            return dopplInfo.sourceBuildJarFileTestMappings()
+        else
+            return dopplInfo.sourceBuildJarFileMainMappings()
     }
 
     @Input
     String getDependencyList()
     {
         return PodManagerTask.getDependencyList(_buildContext, testBuild)
+    }
+
+    @Input boolean isEmitLineDirectives() {
+        DopplConfig.from(project).emitLineDirectives
     }
 
     boolean testBuild
@@ -134,6 +141,7 @@ class TranslateTask extends BaseChangesTask {
         if(testBuild)
         {
             addMappings(TranslateDependenciesTask.dependencyMappingsFile(project, true), mappingFiles)
+            addMappings(DopplInfo.getInstance(project).sourceBuildJarFileMainMappings(), mappingFiles)
         }
 
         try {
