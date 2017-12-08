@@ -42,14 +42,15 @@ class CycleFinderTask extends DefaultTask {
 
     List<String> getCycleFinderArgs() { return DopplConfig.from(project).cycleFinderArgs }
 
-    List<String> getTranslateClasspaths() { return DopplConfig.from(project).translateClasspaths }
-
     List<String> getTranslateJ2objcLibs() { return DopplConfig.from(project).translateJ2objcLibs }
 
     File getReportFile() { project.file("${project.buildDir}/reports/${name}.out") }
 
     @TaskAction
     void cycleFinder() {
+
+        File tempDir = File.createTempDir()
+        tempDir.mkdirs()
 
         String cycleFinderExec = Utils.j2objcHome(project) + File.separator + 'cycle_finder'
         String jreWhitelist = Utils.j2objcHome(project) + File.separator + 'cycle_whitelist.txt'
@@ -64,7 +65,6 @@ class CycleFinderTask extends DefaultTask {
 
         //Classpath arg for translation. Includes user specified jars, j2objc 'standard' jars, and doppl dependency libs
         UnionFileCollection classpathFiles = new UnionFileCollection([
-                project.files(getTranslateClasspaths()),
                 project.files(Utils.j2objcLibs(Utils.j2objcHome(project), getTranslateJ2objcLibs()))
         ])
 
@@ -86,6 +86,8 @@ class CycleFinderTask extends DefaultTask {
                 // Arguments
                 args "-sourcepath", sourcepathArg
                 args "-classpath", classpathArg
+                //TODO: Need access to manifest file to properly remove jre noise
+//                args "-s", manifestFile.path
                 args "-w", jreWhitelist
                 getCycleFinderArgs().each { String cycleFinderArg ->
                     args cycleFinderArg

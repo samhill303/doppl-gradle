@@ -46,12 +46,4 @@ class BaseChangesTask extends DefaultTask{
 
     @Input
     List<String> getTranslateJ2objcLibs() { return DopplConfig.from(project).translateJ2objcLibs }
-
-    @Input boolean isEmitLineDirectives() {
-        DopplConfig.from(project).emitLineDirectives
-    }
-
-    @Input boolean isDependenciesEmitLineDirectives() {
-        DopplConfig.from(project).dependenciesEmitLineDirectives
-    }
 }

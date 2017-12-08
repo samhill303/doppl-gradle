@@ -81,6 +81,12 @@ class DopplInfoTest {
             fail("Shouldn't be allowed")
         } catch (e: IllegalArgumentException) {
         }
+
+        checkPath(dopplInfo.sourceBuildJarFileMainJar(), "dopplBuild/source/jar/main/dopplMain.jar")
+        checkPath(dopplInfo.sourceBuildJarFileTestJar(), "dopplBuild/source/jar/test/dopplTest.jar")
+        checkPath(dopplInfo.sourceBuildJarFileMainMappings(), "dopplBuild/source/jar/main/dopplMain.jar.mappings")
+        checkPath(dopplInfo.sourceBuildJarFileTestMappings(), "dopplBuild/source/jar/test/dopplTest.jar.mappings")
+
     }
 
     fun checkPath(f: File, path: String)

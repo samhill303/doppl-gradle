@@ -39,6 +39,10 @@ class TranslateDependenciesTask extends BaseChangesTask{
 
     List<File> allJars = new ArrayList<>()
 
+    @Input boolean isDependenciesEmitLineDirectives() {
+        DopplConfig.from(project).dependenciesEmitLineDirectives
+    }
+
     @Input
     String getDependencyVersions()
     {
@@ -169,7 +173,10 @@ class TranslateDependenciesTask extends BaseChangesTask{
                 }
 
                 if(testBuild){
-                    args "--header-mapping", dependencyMappingsFile(project, false).path
+                    File mappingsFile = dependencyMappingsFile(project, false)
+                    if(mappingsFile.exists()) {
+                        args "--header-mapping", mappingsFile.path
+                    }
                 }
 
                 args "-classpath", classpathArg
