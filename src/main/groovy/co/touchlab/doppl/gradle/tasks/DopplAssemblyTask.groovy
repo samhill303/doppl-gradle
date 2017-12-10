@@ -16,10 +16,14 @@
 
 package co.touchlab.doppl.gradle.tasks
 
+import co.touchlab.doppl.gradle.BuildContext
+import co.touchlab.doppl.gradle.BuildTypeProvider
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplInfo
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
+import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
@@ -33,11 +37,37 @@ import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 
 class DopplAssemblyTask extends DefaultTask {
 
-//    @InputDirectory
-    File dopplJavaDirFile
+    BuildContext _buildContext
 
-//    @InputDirectory @Optional
-    File dopplObjcDirFile
+    @InputFiles
+    FileCollection getInputFiles()
+    {
+        FileTree fileTree = new UnionFileTree("DopplAssemblyTask")
+
+        BuildTypeProvider buildTypeProvider = _buildContext.getBuildTypeProvider()
+
+        List<FileTree> sets = buildTypeProvider.sourceSets(project)
+        for (FileTree set : sets) {
+            fileTree.add(set)
+        }
+
+        DopplConfig dopplConfig = DopplConfig.from(project)
+        if(dopplConfig.translatePattern != null) {
+            fileTree = fileTree.matching(dopplConfig.translatePattern)
+        }
+
+        fileTree = fileTree.matching(TranslateTask.javaPattern {
+            include "**/*.java"
+        })
+
+        return fileTree
+    }
+
+    @InputDirectory @Optional
+    File getObjcDir(){
+        File f = project.file(DopplInfo.SOURCEPATH_OBJC_MAIN)
+        return f.exists() ? f : null
+    }
 
     @OutputDirectory
     File getDestDopplDirFile() {
@@ -47,18 +77,19 @@ class DopplAssemblyTask extends DefaultTask {
     @TaskAction
     void dopplDeploy(IncrementalTaskInputs inputs) {
 
-//        Utils.projectCopy(project, {
-//            from dopplJavaDirFile
-//            into getDestDopplDirFile().absolutePath + "/java"
-//            include '**/*.java'
-//        })
-//
-//        if (dopplObjcDirFile != null) {
-//            Utils.projectCopy(project, {
-//                from dopplObjcDirFile
-//                into getDestDopplDirFile().absolutePath + "/src"
-//            })
-//        }
+        Utils.projectCopy(project, {
+            from getInputFiles()
+            into new File(getDestDopplDirFile(), "java")
+            include '**/*.java'
+        })
+
+        File objcDir = getObjcDir()
+        if (objcDir != null) {
+            Utils.projectCopy(project, {
+                from objcDir
+                into new File(getDestDopplDirFile(), "src")
+            })
+        }
 
     }
 }

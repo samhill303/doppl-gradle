@@ -141,22 +141,22 @@ class FrameworkConfig {
         List<String> sourceLines = new ArrayList<>()
         List<String> headerLines = new ArrayList<>()
 
-        String allHeadersInclude = Utils.relativePath(project.buildDir, globalHeaderFile)
+        String allHeadersInclude = Utils.relativePath(project.projectDir, globalHeaderFile)
 
         sourceLines.add("${allHeadersInclude}")
         headerLines.add("${allHeadersInclude}")
 
         //Get loose Objc and c/c++ source into project
         for (File folder : objcFolders) {
-            sourceLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.{${SOURCE_EXTENSIONS}}")
+            sourceLines.add("${Utils.relativePath(project.projectDir, folder)}/**/*.{${SOURCE_EXTENSIONS}}")
         }
 
         for (File folder : headerFolders) {
-            headerLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.h")
+            headerLines.add("${Utils.relativePath(project.projectDir, folder)}/**/*.h")
         }
 
         for (File folder : javaFolders) {
-            sourceLines.add("${Utils.relativePath(project.buildDir, folder)}/**/*.java")
+            sourceLines.add("${Utils.relativePath(project.projectDir, folder)}/**/*.java")
         }
 
         String sourceFiles = makePodFileList(sourceLines)

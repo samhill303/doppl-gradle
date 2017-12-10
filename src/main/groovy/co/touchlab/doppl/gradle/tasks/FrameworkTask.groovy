@@ -41,13 +41,15 @@ class FrameworkTask extends DefaultTask {
 
     static File headerFile(Project project, boolean test)
     {
-        return configFile(project, test, "h")
+        String specName = podspecName(test)
+        File podspecFile = new File(project.buildDir, "${specName}.h")
+        return podspecFile
     }
 
     static File configFile(Project project, boolean test, String extension)
     {
         String specName = podspecName(test)
-        File podspecFile = new File(project.buildDir, "${specName}.${extension}")
+        File podspecFile = new File(project.projectDir, "${specName}.${extension}")
         return podspecFile
     }
 
@@ -89,7 +91,7 @@ class FrameworkTask extends DefaultTask {
 
         DopplInfo dopplInfo = DopplInfo.getInstance(project)
 
-        addSourceLinks(false, javaFolders)
+        javaFolders.addAll(getJavaSourceFolders(false))
 
         objcFolders.add(dopplInfo.dependencyOutFileMain())
         objcFolders.add(dopplInfo.sourceBuildOutFileMain())
@@ -100,7 +102,7 @@ class FrameworkTask extends DefaultTask {
 
         if(test)
         {
-            addSourceLinks(true, javaFolders)
+            javaFolders.addAll(getJavaSourceFolders(true))
 
             objcFolders.add(dopplInfo.dependencyOutFileTest())
             objcFolders.add(dopplInfo.sourceBuildOutFileTest())
@@ -114,7 +116,7 @@ class FrameworkTask extends DefaultTask {
 
         File headerFile = headerFile(project, test)
 
-        def podspecTemplate = config.podspecTemplate(
+        String podspecTemplate = config.podspecTemplate(
                 project,
                 headerFile,
                 objcFolders,
@@ -147,23 +149,8 @@ class FrameworkTask extends DefaultTask {
     }
 
     private void addSourceLinks(boolean testBuild, ArrayList<File> javaFolders) {
-        DopplInfo dopplInfo = DopplInfo.getInstance(project)
         List<File> sourceFolders = getJavaSourceFolders(testBuild)
-        File srcLink = new File(testBuild ? dopplInfo.sourceBuildOutFileTest() : dopplInfo.sourceBuildOutFileMain(), "sourceLink")
-        srcLink.mkdirs()
-
-        int linkCount = 0
-        for (File folder : sourceFolders) {
-            File link = new File(srcLink, "src_${linkCount}")
-
-            if (!link.exists() && folder.exists()) {
-                Files.createSymbolicLink(link.toPath(), folder.toPath())
-            }
-
-            javaFolders.add(link)
-
-            linkCount++
-        }
+        javaFolders.addAll(sourceFolders)
     }
 
     private void fillDependenciesFromList(List<DopplDependency> mainDependencies, ArrayList<File> objcFolders,

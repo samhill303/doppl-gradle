@@ -20,7 +20,6 @@ package co.touchlab.doppl.gradle
 import co.touchlab.doppl.gradle.tasks.CycleFinderTask
 import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
 import co.touchlab.doppl.gradle.tasks.FrameworkTask
-import co.touchlab.doppl.gradle.tasks.HeaderMappingsTask
 import co.touchlab.doppl.gradle.tasks.PodManagerTask
 import co.touchlab.doppl.gradle.tasks.TestTranslateTask
 import co.touchlab.doppl.gradle.tasks.TranslateDependenciesTask
@@ -40,14 +39,10 @@ import org.gradle.api.tasks.bundling.Jar
  */
 class DopplPlugin implements Plugin<Project> {
 
-    public static final String TASK_DOPPL_DEPLOY_MAIN = 'dopplDeployMain'
-    public static final String TASK_DOPPL_DEPLOY_TEST = 'dopplDeployTest'
-    public static final String TASK_DOPPL_DEPLOY = 'dopplDeploy'
     public static final String TASK_DOPPL_TEST_TRANSLATE = 'dopplTest'
 
     public static final String TASK_DOPPL_ASSEMBLY = 'dopplAssembly'
     public static final String TASK_DOPPL_ARCHIVE = 'dopplArchive'
-    public static final String TASK_DOPPL_JAVA_STAGING_MAIN = 'dopplJavaStagingMain'
 
     public static final String TASK_DOPPL_DEPENDENCY_TRANSLATE_MAIN = 'dopplDependencyTranslateMain'
     public static final String TASK_DOPPL_DEPENDENCY_TRANSLATE_TEST = 'dopplDependencyTranslateTest'
@@ -63,7 +58,6 @@ class DopplPlugin implements Plugin<Project> {
 
     public static final String TASK_J2OBJC_PRE_BUILD = 'j2objcPreBuild'
     public static final String TASK_DOPPL_CONTEXT_BUILD = 'dopplContextBuild'
-    public static final String TASK_DOPPL_HEADER_MAPPINGS = "dopplHeaderMappings"
 
     @Override
     void apply(Project project) {
@@ -195,16 +189,7 @@ class DopplPlugin implements Plugin<Project> {
                 group 'doppl'
                 description 'Pull together doppl pieces for library projects'
 
-//                dopplJavaDirFile = dopplInfo.sourceBuildJavaFileMain()
-
-                try {
-                    //TODO: This should probably be more configurable
-                    File file = dopplInfo.sourceBuildObjcFileMain()
-                    if (file.exists())
-                        dopplObjcDirFile = file
-                } catch (Exception e) {
-                    //Ugh
-                }
+                _buildContext = buildContext
             }
 
             tasks.create(name: TASK_DOPPL_ARCHIVE, type: Jar, dependsOn: TASK_DOPPL_ASSEMBLY) {
@@ -247,17 +232,13 @@ class DopplPlugin implements Plugin<Project> {
             }
 
             // j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder
-           /*tasks.create(name: TASK_J2OBJC_CYCLE_FINDER, type: CycleFinderTask,
-                   dependsOn: TASK_DOPPL_JAVA_STAGING_MAIN) {
+           tasks.create(name: TASK_J2OBJC_CYCLE_FINDER, type: CycleFinderTask,
+                   dependsOn: TASK_DOPPL_CONTEXT_BUILD) {
                group 'doppl'
                description "Run the cycle_finder tool on all Java source files"
 
-               dopplJavaDirFile = dopplInfo.sourceBuildJavaFileMain()
                _buildContext = buildContext
-           }*/
-
-            //Convenience task. Will probably go away.
-            tasks.create(name: TASK_DOPPL_HEADER_MAPPINGS, type: HeaderMappingsTask, dependsOn: TASK_DOPPL_JAVA_STAGING_MAIN)
+           }
         }
     }
 

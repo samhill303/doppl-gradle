@@ -70,7 +70,7 @@ class TranslateTask extends BaseChangesTask {
         return fileTree
     }
 
-    PatternSet javaPattern(@DelegatesTo(strategy = Closure.DELEGATE_FIRST, value = PatternSet) Closure cl) {
+    static PatternSet javaPattern(@DelegatesTo(strategy = Closure.DELEGATE_FIRST, value = PatternSet) Closure cl) {
         PatternSet translatePattern = new PatternSet()
         return ConfigureUtil.configure(cl, translatePattern)
     }

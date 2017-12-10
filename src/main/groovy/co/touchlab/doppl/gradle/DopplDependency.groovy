@@ -86,11 +86,29 @@ class DopplDependency {
 
     void expandDop(Project project)
     {
-        if(dopFile != null && !dependencyFolderLocation().exists())
+        File folderLocation = dependencyFolderLocation()
+        if(dopFile != null && !folderLocation.exists())
         {
             project.copy { CopySpec cp ->
                 cp.from project.zipTree(dopFile)
-                cp.into dependencyFolderLocation()
+                cp.into folderLocation
+            }
+
+            markReadOnlyRecursive(folderLocation)
+        }
+    }
+
+    void markReadOnlyRecursive(File dir)
+    {
+        File[] files = dir.listFiles()
+        for (File file : files) {
+            if(file.isDirectory())
+            {
+                markReadOnlyRecursive(file)
+            }
+            else if(file.getName().endsWith(".java"))
+            {
+                file.setReadOnly()
             }
         }
     }

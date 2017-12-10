@@ -22,8 +22,14 @@ import co.touchlab.doppl.gradle.DopplDependency
 import org.gradle.api.DefaultTask
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.file.FileCollection
+import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileCollection
+import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.util.PatternSet
+import org.gradle.util.ConfigureUtil
+
+import java.util.zip.ZipFile
 
 /**
  * CycleFinder task checks for memory cycles that can cause memory leaks
@@ -31,12 +37,15 @@ import org.gradle.api.tasks.TaskAction
  */
 class CycleFinderTask extends DefaultTask {
 
-    File dopplJavaDirFile
     BuildContext _buildContext
 
     FileCollection getSrcInputFiles() {
-        return project.fileTree(dopplJavaDirFile, {
-            include '**/*.java'
+        UnionFileTree fileTree = new UnionFileTree("All Source")
+        for (FileTree tree : _buildContext.getBuildTypeProvider().sourceSets(project)) {
+            fileTree.add(tree)
+        }
+        return fileTree.matching(TranslateTask.javaPattern {
+            include "**/*.java"
         })
     }
 
@@ -54,6 +63,9 @@ class CycleFinderTask extends DefaultTask {
 
         String cycleFinderExec = Utils.j2objcHome(project) + File.separator + 'cycle_finder'
         String jreWhitelist = Utils.j2objcHome(project) + File.separator + 'cycle_whitelist.txt'
+        String jreSourceManifest = Utils.j2objcHome(project) + File.separator + 'jre_sources.mf'
+
+        prepJreWhitelist(jreWhitelist, jreSourceManifest)
 
         FileCollection fullSrcFiles = getSrcInputFiles()
 
@@ -86,8 +98,7 @@ class CycleFinderTask extends DefaultTask {
                 // Arguments
                 args "-sourcepath", sourcepathArg
                 args "-classpath", classpathArg
-                //TODO: Need access to manifest file to properly remove jre noise
-//                args "-s", manifestFile.path
+                args "-s", jreSourceManifest
                 args "-w", jreWhitelist
                 getCycleFinderArgs().each { String cycleFinderArg ->
                     args cycleFinderArg
@@ -135,4 +146,55 @@ class CycleFinderTask extends DefaultTask {
             logger.debug("CycleFinder Output: ${reportFile.path}")
         }
     }
+
+    private void prepJreWhitelist(String jreWhitelist, String jreSourceManifest) {
+        File whiteListFile = new File(jreWhitelist)
+        if (!whiteListFile.exists()) {
+            InputStream resourceAsStream = getClass().getResourceAsStream("/cycle_whitelist.txt")
+            whiteListFile.append(resourceAsStream.getBytes())
+        }
+
+        File jreSourceManifestFile = new File(jreSourceManifest)
+        if (!jreSourceManifestFile.exists()) {
+            String jreSourceJar = Utils.j2objcHome(project) + File.separator + 'lib/jre_emul-src.jar'
+            String jreSourcePath = Utils.j2objcHome(project) + File.separator + 'lib/jre_emul-src'
+
+            File outputDir = new File(jreSourcePath)
+
+            File zipFileName = new File(jreSourceJar)
+
+            def zip = new ZipFile(zipFileName)
+            zip.entries().each {
+                if (!it.isDirectory()) {
+                    def fOut = new File(outputDir, it.name)
+
+                    new File(fOut.parent).mkdirs()
+
+                    def fos = new FileOutputStream(fOut)
+                    byte[] allBytes = zip.getInputStream(it).getBytes()
+                    fos.write(allBytes)
+                    fos.close()
+                }
+            }
+            zip.close()
+
+            List<String> sourceFiles = new ArrayList<>()
+            fillSources(outputDir, sourceFiles)
+
+            jreSourceManifestFile.write(sourceFiles.join("\n"))
+        }
+    }
+
+    void fillSources(File dir, List<String> lines)
+    {
+        File[] files = dir.listFiles()
+        for (File file : files) {
+            if(file.isDirectory())
+                fillSources(file, lines)
+            else if(file.getName().endsWith(".java"))
+                lines.add(file.getPath())
+        }
+    }
+
+
 }

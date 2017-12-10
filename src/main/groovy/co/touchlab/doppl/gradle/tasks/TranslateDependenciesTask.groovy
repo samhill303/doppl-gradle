@@ -178,5 +178,7 @@ class TranslateDependenciesTask extends BaseChangesTask{
             // TODO: match on common failures and provide useful help
             throw exception
         }
+
+        javaBatch.delete()
     }
 }
