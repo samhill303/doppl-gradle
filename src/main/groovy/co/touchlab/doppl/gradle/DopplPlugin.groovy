@@ -21,8 +21,6 @@ import co.touchlab.doppl.gradle.tasks.CycleFinderTask
 import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
 import co.touchlab.doppl.gradle.tasks.FrameworkTask
 import co.touchlab.doppl.gradle.tasks.HeaderMappingsTask
-import co.touchlab.doppl.gradle.tasks.JavaStagingTask
-import co.touchlab.doppl.gradle.tasks.ObjcStagingTask
 import co.touchlab.doppl.gradle.tasks.PodManagerTask
 import co.touchlab.doppl.gradle.tasks.TestTranslateTask
 import co.touchlab.doppl.gradle.tasks.TranslateDependenciesTask
@@ -33,7 +31,6 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.ProjectConfigurationException
 import org.gradle.api.Task
-import org.gradle.api.file.FileTree
 import org.gradle.api.logging.LogLevel
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.bundling.Jar
@@ -51,9 +48,7 @@ class DopplPlugin implements Plugin<Project> {
     public static final String TASK_DOPPL_ASSEMBLY = 'dopplAssembly'
     public static final String TASK_DOPPL_ARCHIVE = 'dopplArchive'
     public static final String TASK_DOPPL_JAVA_STAGING_MAIN = 'dopplJavaStagingMain'
-    public static final String TASK_DOPPL_JAVA_STAGING_TEST = 'dopplJavaStagingTest'
-    public static final String TASK_DOPPL_OBJC_STAGING_MAIN = 'dopplObjcStagingMain'
-    public static final String TASK_DOPPL_OBJC_STAGING_TEST = 'dopplObjcStagingTest'
+
     public static final String TASK_DOPPL_DEPENDENCY_TRANSLATE_MAIN = 'dopplDependencyTranslateMain'
     public static final String TASK_DOPPL_DEPENDENCY_TRANSLATE_TEST = 'dopplDependencyTranslateTest'
     public static final String TASK_J2OBJC_MAIN_TRANSLATE = 'j2objcMainTranslate'
@@ -141,41 +136,25 @@ class DopplPlugin implements Plugin<Project> {
                 description "Marker task for all tasks after the underlying Java build system runs"
             }
 
-            Task mainStagingTask = tasks.create(name: TASK_DOPPL_JAVA_STAGING_MAIN, type: Jar) {
-                group 'doppl'
-                description "Produces source jar for main java"
-                from dopplInfo.sourceBuildJavaFileMain()
-                destinationDir = dopplInfo.sourceBuildJarFileMain()
-                archiveName = DopplInfo.OUT_JAR_MAIN
-            }
-
-            Task testStagingTask = tasks.create(name: TASK_DOPPL_JAVA_STAGING_TEST, type: Jar) {
-                group 'doppl'
-                description "Produces source jar for test java"
-                from dopplInfo.sourceBuildJavaFileTest()
-                destinationDir = dopplInfo.sourceBuildJarFileTest()
-                archiveName = DopplInfo.OUT_JAR_TEST
-            }
-
-            TranslateDependenciesTask mainDepJar = (TranslateDependenciesTask)tasks.create(name: TASK_DOPPL_DEPENDENCY_TRANSLATE_MAIN, type: TranslateDependenciesTask, dependsOn: TASK_J2OBJC_PRE_BUILD){
+            tasks.create(name: TASK_DOPPL_DEPENDENCY_TRANSLATE_MAIN, type: TranslateDependenciesTask, dependsOn: TASK_DOPPL_CONTEXT_BUILD){
                 _buildContext = buildContext
                 testBuild = false
             }
 
-            TranslateDependenciesTask testDepJar = (TranslateDependenciesTask)tasks.create(name: TASK_DOPPL_DEPENDENCY_TRANSLATE_TEST, type: TranslateDependenciesTask, dependsOn: TASK_J2OBJC_PRE_BUILD){
+            tasks.create(name: TASK_DOPPL_DEPENDENCY_TRANSLATE_TEST, type: TranslateDependenciesTask, dependsOn: TASK_DOPPL_CONTEXT_BUILD){
                 _buildContext = buildContext
                 testBuild = true
             }
 
             tasks.create(name: TASK_J2OBJC_MAIN_TRANSLATE, type: TranslateTask,
-                    dependsOn: [TASK_DOPPL_DEPENDENCY_TRANSLATE_MAIN, TASK_DOPPL_JAVA_STAGING_MAIN]) {
+                    dependsOn: TASK_DOPPL_DEPENDENCY_TRANSLATE_MAIN) {
                 group 'doppl'
                 description "Translates main java source files to Objective-C"
                 _buildContext = buildContext
             }
 
             tasks.create(name: TASK_J2OBJC_TEST_TRANSLATE, type: TranslateTask,
-                    dependsOn: [TASK_DOPPL_DEPENDENCY_TRANSLATE_TEST, TASK_DOPPL_JAVA_STAGING_TEST]) {
+                    dependsOn: TASK_DOPPL_DEPENDENCY_TRANSLATE_TEST) {
                 group 'doppl'
                 description "Translates test java source files to Objective-C"
                 _buildContext = buildContext
@@ -188,25 +167,6 @@ class DopplPlugin implements Plugin<Project> {
 
                 dependencyResolver.configureAll()
 
-                mainDepJar.initJarTasks(project, tasks, j2objcPreBuildTask)
-                testDepJar.initJarTasks(project, tasks, j2objcPreBuildTask)
-
-                prepStagingTasks(
-                        tasks,
-                        buildContext.getBuildTypeProvider().sourceSets(project),
-                        TASK_DOPPL_JAVA_STAGING_MAIN,
-                        dopplInfo.sourceBuildJavaFileMain(),
-                        mainStagingTask,
-                        dopplContextBuildTask
-                )
-
-                prepObjcStagingTask(
-                        tasks,
-                        project,
-                        false,
-                        mainStagingTask,
-                        dopplContextBuildTask)
-
                 addManagedPods(
                         tasks,
                         FrameworkConfig.findMain(project),
@@ -217,22 +177,6 @@ class DopplPlugin implements Plugin<Project> {
 
                 boolean skipTests = DopplConfig.from(project).skipTests
                 if(!skipTests) {
-                    prepStagingTasks(
-                            tasks,
-                            buildContext.getBuildTypeProvider().testSourceSets(project),
-                            TASK_DOPPL_JAVA_STAGING_TEST,
-                            dopplInfo.sourceBuildJavaFileTest(),
-                            testStagingTask,
-                            dopplContextBuildTask
-                    )
-
-                    prepObjcStagingTask(
-                            tasks,
-                            project,
-                            true,
-                            mainStagingTask,
-                            dopplContextBuildTask)
-
                     addManagedPods(
                             tasks,
                             FrameworkConfig.findTest(project),
@@ -244,7 +188,6 @@ class DopplPlugin implements Plugin<Project> {
 
                 buildContext.getBuildTypeProvider().configureDependsOn(project, j2objcPreBuildTask, dopplContextBuildTask)
                 buildContext.getBuildTypeProvider().configureTestDependsOn(project, j2objcPreBuildTask, dopplContextBuildTask)
-
             }
 
             tasks.create(name: TASK_DOPPL_ASSEMBLY, type: DopplAssemblyTask,
@@ -252,7 +195,7 @@ class DopplPlugin implements Plugin<Project> {
                 group 'doppl'
                 description 'Pull together doppl pieces for library projects'
 
-                dopplJavaDirFile = dopplInfo.sourceBuildJavaFileMain()
+//                dopplJavaDirFile = dopplInfo.sourceBuildJavaFileMain()
 
                 try {
                     //TODO: This should probably be more configurable
@@ -286,6 +229,7 @@ class DopplPlugin implements Plugin<Project> {
                 group 'doppl'
                 description 'Create framework podspec'
                 test = false
+                _buildContext = buildContext
             }
 
             tasks.create(name: TASK_DOPPL_FRAMEWORK_TEST, type: FrameworkTask,
@@ -293,6 +237,7 @@ class DopplPlugin implements Plugin<Project> {
                 group 'doppl'
                 description 'Create framework podspec'
                 test = true
+                _buildContext = buildContext
             }
 
             tasks.create(name: TASK_DOPPL_BUILD, type: DefaultTask,
@@ -302,14 +247,14 @@ class DopplPlugin implements Plugin<Project> {
             }
 
             // j2objcCycleFinder must be run manually with ./gradlew j2objcCycleFinder
-           tasks.create(name: TASK_J2OBJC_CYCLE_FINDER, type: CycleFinderTask,
+           /*tasks.create(name: TASK_J2OBJC_CYCLE_FINDER, type: CycleFinderTask,
                    dependsOn: TASK_DOPPL_JAVA_STAGING_MAIN) {
                group 'doppl'
                description "Run the cycle_finder tool on all Java source files"
 
                dopplJavaDirFile = dopplInfo.sourceBuildJavaFileMain()
                _buildContext = buildContext
-           }
+           }*/
 
             //Convenience task. Will probably go away.
             tasks.create(name: TASK_DOPPL_HEADER_MAPPINGS, type: HeaderMappingsTask, dependsOn: TASK_DOPPL_JAVA_STAGING_MAIN)
@@ -328,39 +273,5 @@ class DopplPlugin implements Plugin<Project> {
                     count++
             )
         }
-    }
-
-    void prepStagingTasks(TaskContainer tasks, List<FileTree> sets, String wrapperTaskName, File dest, Task wrapperTask, Task upstreamTask)
-    {
-        int count = 0
-        for (FileTree tree : sets) {
-            Task t = tasks.create(
-                    name: wrapperTaskName + "_" + (count++),
-                    type: JavaStagingTask,
-                    description: "JavaStagingTask ${tree.toString()}") {
-                sourceFileTree = tree
-                destDir = dest
-            }
-            wrapperTask.dependsOn t
-            t.dependsOn(upstreamTask)
-        }
-    }
-
-    void prepObjcStagingTask(TaskContainer tasks, Project project, boolean test, Task wrapperTask, Task upstreamTask)
-    {
-        DopplInfo dopplInfo = DopplInfo.getInstance(project)
-        String taskName = test ? TASK_DOPPL_OBJC_STAGING_TEST : TASK_DOPPL_OBJC_STAGING_MAIN
-        String sourcePath = test ? DopplInfo.SOURCEPATH_OBJC_TEST : DopplInfo.SOURCEPATH_OBJC_MAIN
-        File destFile = test ? dopplInfo.sourceBuildObjcFileTest() : dopplInfo.sourceBuildObjcFileMain()
-        Task t = tasks.create(
-                name: taskName,
-                type: ObjcStagingTask,
-                description: "ObjcStagingTask ${test ? "test" : "main"}") {
-            sourceFileTree = project.fileTree(sourcePath)
-            destDir = destFile
-        }
-
-        wrapperTask.dependsOn t
-        t.dependsOn(upstreamTask)
     }
 }

@@ -21,23 +21,19 @@ import co.touchlab.doppl.gradle.DependencyResolver
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
 import co.touchlab.doppl.gradle.DopplInfo
-import org.gradle.api.DefaultTask
-import org.gradle.api.Project
-import org.gradle.api.Task
+import org.gradle.api.file.ConfigurableFileTree
+import org.gradle.api.file.FileCollection
+import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileCollection
+import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-import org.gradle.api.tasks.TaskContainer
-import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 
 class TranslateDependenciesTask extends BaseChangesTask{
 
-    BuildContext _buildContext
     boolean testBuild
-
-    List<File> allJars = new ArrayList<>()
 
     @Input boolean isDependenciesEmitLineDirectives() {
         DopplConfig.from(project).dependenciesEmitLineDirectives
@@ -53,51 +49,15 @@ class TranslateDependenciesTask extends BaseChangesTask{
     }
 
     @OutputDirectory
-    File getBuildJarOut() {
-        return getBuildJarOut(project, testBuild)
-    }
-
-    static File getBuildJarOut(Project project, boolean testBuild)
-    {
-        return DopplInfo.getInstance(project).dependencyBuildJarFileForPhase(testBuild ? "test" : "main")
-    }
-
-    static File getObjcOutDir(Project project)
-    {
-        return DopplInfo.getInstance(project).dependencyExplodedFile()
-    }
-
-    Map<String, String> getPrefixes() {
-        return DopplConfig.from(project).translatedPathPrefix
+    File getBuildOut() {
+        if(testBuild)
+            return DopplInfo.getInstance(project).dependencyOutFileTest()
+        else
+            return DopplInfo.getInstance(project).dependencyOutFileMain()
     }
 
     private List<DopplDependency> dependencyList(DependencyResolver resolver) {
         return testBuild ? resolver.translateDopplTestLibs : resolver.translateDopplLibs
-    }
-
-    public void initJarTasks(Project project, TaskContainer tasks, Task forwardDependes)
-    {
-        List<DopplDependency> dependencies = dependencyList(_buildContext.getDependencyResolver())
-        int count = 0
-        String phase = testBuild ? "test" : "main"
-        File dependencySourceJarFolder = DopplInfo.getInstance(project).dependencyBuildJarFileForPhase(phase)
-
-        for (DopplDependency dep : dependencies) {
-            String taskName = "depJar_" + phase + "_" + (count++)
-            String jarName = taskName + ".jar"
-
-            Task t = tasks.create(name: taskName, type: Jar){
-                from dep.dependencyJavaFolder()
-                destinationDir = dependencySourceJarFolder
-                archiveName = jarName
-            }
-
-            allJars.add(new File(dependencySourceJarFolder, jarName))
-
-            this.dependsOn(t)
-
-            t.dependsOn(forwardDependes)
-        }
     }
 
     //TODO: This assumes the folders are distinct. Need a better solution.
@@ -111,17 +71,13 @@ class TranslateDependenciesTask extends BaseChangesTask{
         return parts.join("|")
     }
 
-    String getJ2objcHome() { return Utils.j2objcHome(project) }
-
-    List<String> getTranslateJ2objcLibs() { return DopplConfig.from(project).translateJ2objcLibs }
-
-    List<String> getTranslateArgs() {
-        return DopplConfig.from(project).processedTranslateArgs()
-    }
-
-    static File dependencyMappingsFile(Project project, boolean test)
+    File getMappingsFile()
     {
-        return new File(getObjcOutDir(project), "doppl_${test ? "test" : "main"}.mappings")
+        DopplInfo dopplInfo = DopplInfo.getInstance(project)
+        if(testBuild)
+            return dopplInfo.dependencyOutTestMappings()
+        else
+            return dopplInfo.dependencyOutMainMappings()
     }
 
     @TaskAction
@@ -129,10 +85,12 @@ class TranslateDependenciesTask extends BaseChangesTask{
 
         String j2objcExecutable = "${getJ2objcHome()}/j2objc"
 
-        ByteArrayOutputStream stdout = new ByteArrayOutputStream()
-        ByteArrayOutputStream stderr = new ByteArrayOutputStream()
+        DopplInfo dopplInfo = DopplInfo.getInstance(project)
 
-        if (allJars.size() == 0)
+
+        List<DopplDependency> dependencies = dependencyList(_buildContext.getDependencyResolver())
+
+        if (dependencies.size() == 0)
             return
 
         UnionFileCollection classpathFiles = new UnionFileCollection([
@@ -153,18 +111,38 @@ class TranslateDependenciesTask extends BaseChangesTask{
 
         Map<String, String> allPrefixes = getPrefixes()
 
+        runTranslate(j2objcExecutable, dopplInfo, sourcepathList, classpathArg, allPrefixes, dependencies)
+    }
+
+    private void runTranslate(String j2objcExecutable, dopplInfo, List<File> sourcepathList, String classpathArg,
+                              allPrefixes, List<DopplDependency> dependencies) {
+        ByteArrayOutputStream stdout = new ByteArrayOutputStream()
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream()
+
+        UnionFileTree fileTree = new UnionFileTree("All Dependency Java")
+
+        for (DopplDependency dep : dependencies) {
+            fileTree.add(project.fileTree(dir: dep.dependencyJavaFolder(), includes: ["**/*.java"]))
+        }
+
+        File buildOut = getBuildOut()
+        buildOut.mkdirs()
+        File javaBatch = new File(buildOut, "javabatch.in")
+
+        javaBatch.write(fileTree.files.join("\n"))
+
         try {
             Utils.projectExec(project, stdout, stderr, null, {
                 executable j2objcExecutable
 
                 // Arguments
+                args "-d", Utils.relativePath(project.projectDir, buildOut)
                 args "-XcombineJars", ''
-                args "-XupzipJarDir", DopplInfo.JAVA_SOURCE
+                args "-XglobalCombinedOutput", "${testBuild ? 'test' : 'main'}DependencyOut"
                 args "--swift-friendly", ''
-                args "--output-header-mapping", dependencyMappingsFile(project, testBuild).absolutePath
+                args "--output-header-mapping", getMappingsFile().path
 
-                if(isDependenciesEmitLineDirectives())
-                {
+                if (isDependenciesEmitLineDirectives()) {
                     args "-g", ''
                 }
 
@@ -172,9 +150,9 @@ class TranslateDependenciesTask extends BaseChangesTask{
                     args "-sourcepath", Utils.joinedPathArg(sourcepathList)
                 }
 
-                if(testBuild){
-                    File mappingsFile = dependencyMappingsFile(project, false)
-                    if(mappingsFile.exists()) {
+                if (testBuild) {
+                    File mappingsFile = dopplInfo.sourceBuildOutMainMappings()
+                    if (mappingsFile.exists()) {
                         args "--header-mapping", mappingsFile.path
                     }
                 }
@@ -188,14 +166,12 @@ class TranslateDependenciesTask extends BaseChangesTask{
                     args "--prefix", packageString + "=" + allPrefixes.get(packageString)
                 }
 
-                allJars.each { File f ->
-                    args f.getName()
-                }
+                args "@${Utils.relativePath(project.projectDir, javaBatch)}"
 
                 setStandardOutput stdout
                 setErrorOutput stderr
 
-                setWorkingDir getBuildJarOut()
+                setWorkingDir project.projectDir
             })
 
         } catch (Exception exception) {  // NOSONAR

@@ -34,17 +34,16 @@ class DopplInfo {
     public static final String JAVA = "java"
     public static final String OBJC = "objc"
     public static final String FOLDER_EXPLODED = 'exploded'
+    public static final String FOLDER_OUT = 'out'
     public static final String FOLDER_DOPPL_DEP_EXPLODED = 'doppl'
     public static final String FOLDER_DOPPL_ONLY_DEP_EXPLODED = 'dopplOnly'
     public static final String FOLDER_TEST_DOPPL_DEP_EXPLODED = 'testDoppl'
-
-    public static final String OUT_JAR_MAIN = "dopplMain.jar"
-    public static final String OUT_JAR_TEST = "dopplTest.jar"
 
     public static final String SOURCEPATH_OBJC_MAIN = "src/main/objc"
     public static final String SOURCEPATH_OBJC_TEST = "src/test/objc"
 
     private static DopplInfo instance;
+    public static final String J2OBJC_MAPPINGS = "j2objc.mappings"
     private final File buildDir;
 
     DopplInfo(Project project){
@@ -127,24 +126,25 @@ class DopplInfo {
         return new File(dependencyExplodedFile(), FOLDER_TEST_DOPPL_DEP_EXPLODED)
     }
 
-    File dependencyBuildJarFile()
+    File dependencyOutFile()
     {
-        return new File(dependencyBuildFile(), JAR)
+        return new File(dependencyBuildFile(), FOLDER_OUT)
     }
 
-    /**
-     * Source jars for main and test. Also output for dependency translation.
-     *
-     * dopplBuild/dependencies/jar/main
-     * dopplBuild/dependencies/jar/test
-     *
-     * @param phase
-     * @return
-     */
-    File dependencyBuildJarFileForPhase( String phase)
+    private File dependencyOutFileForPhase( String phase)
     {
         checkPhase(phase)
-        return new File(dependencyBuildJarFile(), phase)
+        return new File(dependencyOutFile(), phase)
+    }
+
+    File dependencyOutFileMain()
+    {
+        return dependencyOutFileForPhase(MAIN)
+    }
+
+    File dependencyOutFileTest()
+    {
+        return dependencyOutFileForPhase(TEST)
     }
 
     private void checkPhase(String phase) {
@@ -155,27 +155,6 @@ class DopplInfo {
     File sourceBuildFile()
     {
         return new File(rootBuildFile(), SOURCE)
-    }
-
-     File sourceBuildJavaFile()
-    {
-        return new File(sourceBuildFile(), JAVA)
-    }
-
-     File sourceBuildJavaFileForPhase( String phase)
-    {
-        checkPhase(phase)
-        return new File(sourceBuildJavaFile(), phase)
-    }
-
-     File sourceBuildJavaFileMain()
-    {
-        return sourceBuildJavaFileForPhase(MAIN)
-    }
-
-     File sourceBuildJavaFileTest()
-    {
-        return sourceBuildJavaFileForPhase(TEST)
     }
 
     File sourceBuildObjcFile()
@@ -199,44 +178,44 @@ class DopplInfo {
         return sourceBuildObjcFileForPhase(TEST)
     }
 
-    File sourceBuildJarFile()
+    File sourceBuildOutFile()
     {
-        return new File(sourceBuildFile(), JAR)
+        return new File(sourceBuildFile(), FOLDER_OUT)
     }
 
-     File sourceBuildJarFileForPhase( String phase)
+    private File sourceBuildOutFileForPhase( String phase)
     {
         checkPhase(phase)
-        return new File(sourceBuildJarFile(), phase)
+        return new File(sourceBuildOutFile(), phase)
     }
 
-     File sourceBuildJarFileMain()
+    File sourceBuildOutFileMain()
     {
-        return sourceBuildJarFileForPhase(MAIN)
+        return sourceBuildOutFileForPhase(MAIN)
     }
 
-     File sourceBuildJarFileTest()
+    File sourceBuildOutFileTest()
     {
-        return sourceBuildJarFileForPhase(TEST)
+        return sourceBuildOutFileForPhase(TEST)
     }
 
-    File sourceBuildJarFileMainJar()
+    File dependencyOutMainMappings()
     {
-        return new File(sourceBuildJarFileMain(), OUT_JAR_MAIN)
+        return new File(dependencyOutFileMain(), J2OBJC_MAPPINGS)
     }
 
-    File sourceBuildJarFileTestJar()
+    File dependencyOutTestMappings()
     {
-        return new File(sourceBuildJarFileTest(), OUT_JAR_TEST)
+        return new File(dependencyOutFileTest(), J2OBJC_MAPPINGS)
     }
 
-    File sourceBuildJarFileMainMappings()
+    File sourceBuildOutMainMappings()
     {
-        return new File(sourceBuildJarFileMain(), OUT_JAR_MAIN + ".mappings")
+        return new File(sourceBuildOutFileMain(), J2OBJC_MAPPINGS)
     }
 
-    File sourceBuildJarFileTestMappings()
+    File sourceBuildOutTestMappings()
     {
-        return new File(sourceBuildJarFileTest(), OUT_JAR_TEST + ".mappings")
+        return new File(sourceBuildOutFileTest(), J2OBJC_MAPPINGS)
     }
 }

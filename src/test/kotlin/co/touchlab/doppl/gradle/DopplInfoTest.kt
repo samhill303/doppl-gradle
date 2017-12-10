@@ -34,27 +34,13 @@ class DopplInfoTest {
         checkPath(dopplInfo.dependencyExplodedDopplOnlyFile(), "dopplBuild/dependencies/exploded/dopplOnly")
         checkPath(dopplInfo.dependencyExplodedTestDopplFile(), "dopplBuild/dependencies/exploded/testDoppl")
 
-        checkPath(dopplInfo.dependencyBuildJarFile(), "dopplBuild/dependencies/jar")
-        checkPath(dopplInfo.dependencyBuildJarFileForPhase("main"), "dopplBuild/dependencies/jar/main")
-        checkPath(dopplInfo.dependencyBuildJarFileForPhase("test"), "dopplBuild/dependencies/jar/test")
-        try {
-            checkPath(dopplInfo.dependencyBuildJarFileForPhase("asdf"), "dopplBuild/dependencies/jar/asdf")
-            fail("Shouldn't be allowed")
-        } catch (e: IllegalArgumentException) {
-        }
+        checkPath(dopplInfo.dependencyOutFile(), "dopplBuild/dependencies/out")
+        checkPath(dopplInfo.dependencyOutFileMain(), "dopplBuild/dependencies/out/main")
+        checkPath(dopplInfo.dependencyOutFileTest(), "dopplBuild/dependencies/out/test")
+        checkPath(dopplInfo.dependencyOutMainMappings(), "dopplBuild/dependencies/out/main/j2objc.mappings")
+        checkPath(dopplInfo.dependencyOutTestMappings(), "dopplBuild/dependencies/out/test/j2objc.mappings")
 
         checkPath(dopplInfo.sourceBuildFile(), "dopplBuild/source")
-        checkPath(dopplInfo.sourceBuildJavaFile(), "dopplBuild/source/java")
-        checkPath(dopplInfo.sourceBuildJavaFileForPhase("main"), "dopplBuild/source/java/main")
-        checkPath(dopplInfo.sourceBuildJavaFileMain(), "dopplBuild/source/java/main")
-        checkPath(dopplInfo.sourceBuildJavaFileForPhase("test"), "dopplBuild/source/java/test")
-        checkPath(dopplInfo.sourceBuildJavaFileTest(), "dopplBuild/source/java/test")
-
-        try {
-            checkPath(dopplInfo.sourceBuildJavaFileForPhase("asdf"), "dopplBuild/source/java/asdf")
-            fail("Shouldn't be allowed")
-        } catch (e: IllegalArgumentException) {
-        }
 
         checkPath(dopplInfo.sourceBuildObjcFile(), "dopplBuild/source/objc")
         checkPath(dopplInfo.sourceBuildObjcFileForPhase("main"), "dopplBuild/source/objc/main")
@@ -68,23 +54,11 @@ class DopplInfoTest {
         } catch (e: IllegalArgumentException) {
         }
 
-        checkPath(dopplInfo.sourceBuildJarFile(), "dopplBuild/source/jar")
-        checkPath(dopplInfo.sourceBuildJarFileForPhase("main"), "dopplBuild/source/jar/main")
-        checkPath(dopplInfo.sourceBuildJarFileMain(), "dopplBuild/source/jar/main")
-        checkPath(dopplInfo.sourceBuildJarFileForPhase("test"), "dopplBuild/source/jar/test")
-        checkPath(dopplInfo.sourceBuildJarFileTest(), "dopplBuild/source/jar/test")
-
-        try {
-            checkPath(dopplInfo.sourceBuildJarFileForPhase("asdf"), "dopplBuild/source/jar/asdf")
-            fail("Shouldn't be allowed")
-        } catch (e: IllegalArgumentException) {
-        }
-
-        checkPath(dopplInfo.sourceBuildJarFileMainJar(), "dopplBuild/source/jar/main/dopplMain.jar")
-        checkPath(dopplInfo.sourceBuildJarFileTestJar(), "dopplBuild/source/jar/test/dopplTest.jar")
-        checkPath(dopplInfo.sourceBuildJarFileMainMappings(), "dopplBuild/source/jar/main/dopplMain.jar.mappings")
-        checkPath(dopplInfo.sourceBuildJarFileTestMappings(), "dopplBuild/source/jar/test/dopplTest.jar.mappings")
-
+        checkPath(dopplInfo.sourceBuildOutFile(), "dopplBuild/source/out")
+        checkPath(dopplInfo.sourceBuildOutFileMain(), "dopplBuild/source/out/main")
+        checkPath(dopplInfo.sourceBuildOutFileTest(), "dopplBuild/source/out/test")
+        checkPath(dopplInfo.sourceBuildOutMainMappings(), "dopplBuild/source/out/main/j2objc.mappings")
+        checkPath(dopplInfo.sourceBuildOutTestMappings(), "dopplBuild/source/out/test/j2objc.mappings")
     }
 
     fun checkPath(f: File, path: String)

@@ -33,10 +33,10 @@ import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 
 class DopplAssemblyTask extends DefaultTask {
 
-    @InputDirectory
+//    @InputDirectory
     File dopplJavaDirFile
 
-    @InputDirectory @Optional
+//    @InputDirectory @Optional
     File dopplObjcDirFile
 
     @OutputDirectory
@@ -47,18 +47,18 @@ class DopplAssemblyTask extends DefaultTask {
     @TaskAction
     void dopplDeploy(IncrementalTaskInputs inputs) {
 
-        Utils.projectCopy(project, {
-            from dopplJavaDirFile
-            into getDestDopplDirFile().absolutePath + "/java"
-            include '**/*.java'
-        })
-
-        if (dopplObjcDirFile != null) {
-            Utils.projectCopy(project, {
-                from dopplObjcDirFile
-                into getDestDopplDirFile().absolutePath + "/src"
-            })
-        }
+//        Utils.projectCopy(project, {
+//            from dopplJavaDirFile
+//            into getDestDopplDirFile().absolutePath + "/java"
+//            include '**/*.java'
+//        })
+//
+//        if (dopplObjcDirFile != null) {
+//            Utils.projectCopy(project, {
+//                from dopplObjcDirFile
+//                into getDestDopplDirFile().absolutePath + "/src"
+//            })
+//        }
 
     }
 }

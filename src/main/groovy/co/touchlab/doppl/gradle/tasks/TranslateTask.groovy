@@ -17,17 +17,27 @@
 package co.touchlab.doppl.gradle.tasks
 
 import co.touchlab.doppl.gradle.BuildContext
+import co.touchlab.doppl.gradle.BuildTypeProvider
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
 import co.touchlab.doppl.gradle.DopplInfo
 import co.touchlab.doppl.gradle.analytics.DopplAnalytics
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
+import org.gradle.api.file.FileCollection
+import org.gradle.api.file.FileTree
 import org.gradle.api.internal.file.UnionFileCollection
+import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
+import org.gradle.api.tasks.util.PatternSet
+import org.gradle.util.ConfigureUtil
 
 /**
  * Translation task for Java to Objective-C using j2objc tool.
@@ -35,22 +45,43 @@ import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 @CompileStatic
 class TranslateTask extends BaseChangesTask {
 
-    @InputFile
-    File getSourceJar() {
-        DopplInfo dopplInfo = DopplInfo.getInstance(project)
-        if(testBuild)
-            return dopplInfo.sourceBuildJarFileTestJar()
-        else
-            return dopplInfo.sourceBuildJarFileMainJar()
+    boolean testBuild
+
+    @InputFiles
+    FileCollection getInputFiles()
+    {
+        FileTree fileTree = new UnionFileTree("TranslateTask - ${(testBuild ? "test" : "main")}")
+
+        BuildTypeProvider buildTypeProvider = _buildContext.getBuildTypeProvider()
+        List<FileTree> sets = testBuild ? buildTypeProvider.testSourceSets(project) : buildTypeProvider.sourceSets(project)
+        for (FileTree set : sets) {
+            fileTree.add(set)
+        }
+
+        DopplConfig dopplConfig = DopplConfig.from(project)
+        if(dopplConfig.translatePattern != null) {
+            fileTree = fileTree.matching(dopplConfig.translatePattern)
+        }
+
+        fileTree = fileTree.matching(javaPattern {
+            include "**/*.java"
+        })
+
+        return fileTree
+    }
+
+    PatternSet javaPattern(@DelegatesTo(strategy = Closure.DELEGATE_FIRST, value = PatternSet) Closure cl) {
+        PatternSet translatePattern = new PatternSet()
+        return ConfigureUtil.configure(cl, translatePattern)
     }
 
     File getMappingsFile()
     {
         DopplInfo dopplInfo = DopplInfo.getInstance(project)
         if(testBuild)
-            return dopplInfo.sourceBuildJarFileTestMappings()
+            return dopplInfo.sourceBuildOutTestMappings()
         else
-            return dopplInfo.sourceBuildJarFileMainMappings()
+            return dopplInfo.sourceBuildOutMainMappings()
     }
 
     @Input
@@ -63,7 +94,21 @@ class TranslateTask extends BaseChangesTask {
         DopplConfig.from(project).emitLineDirectives
     }
 
-    boolean testBuild
+    @InputDirectory @Optional
+    File getObjcDir(){
+        File f = testBuild ? project.file(DopplInfo.SOURCEPATH_OBJC_TEST) : project.file(DopplInfo.SOURCEPATH_OBJC_MAIN)
+        return f.exists() ? f : null
+    }
+
+    @OutputDirectory
+    File getBuildOut() {
+        if(testBuild)
+            return DopplInfo.getInstance(project).sourceBuildOutFileTest()
+        else
+            return DopplInfo.getInstance(project).sourceBuildOutFileMain()
+    }
+
+
 
     @TaskAction
     void translate(IncrementalTaskInputs inputs) {
@@ -74,6 +119,16 @@ class TranslateTask extends BaseChangesTask {
 
         if(!dopplConfig.disableAnalytics) {
             new DopplAnalytics(dopplConfig, Utils.findVersionString(project, Utils.j2objcHome(project))).execute()
+        }
+
+        File objcDir = getObjcDir()
+        if(objcDir != null)
+        {
+            Utils.projectCopy(project, {
+                from objcDir
+                into getBuildOut()
+                includeEmptyDirs = false
+            })
         }
 
         List<String> translateArgs = getTranslateArgs()
@@ -117,6 +172,7 @@ class TranslateTask extends BaseChangesTask {
             Map<String, String> prefixMap,
             boolean emitLineDirectives) {
 
+        DopplInfo dopplInfo = DopplInfo.getInstance(project)
         String j2objcExecutable = "${getJ2objcHome()}/j2objc"
 
         String sourcepathArg = Utils.joinedPathArg(sourcepathDirs)
@@ -136,23 +192,27 @@ class TranslateTask extends BaseChangesTask {
         List<String> mappingFiles = new ArrayList<>()
         Map<String, String> allPrefixes = new HashMap<>(prefixMap)
 
-        addMappings(TranslateDependenciesTask.dependencyMappingsFile(project, false), mappingFiles)
+        addMappings(dopplInfo.dependencyOutMainMappings(), mappingFiles)
 
         if(testBuild)
         {
-            addMappings(TranslateDependenciesTask.dependencyMappingsFile(project, true), mappingFiles)
-            addMappings(DopplInfo.getInstance(project).sourceBuildJarFileMainMappings(), mappingFiles)
+            addMappings(dopplInfo.dependencyOutTestMappings(), mappingFiles)
+            addMappings(dopplInfo.sourceBuildOutMainMappings(), mappingFiles)
         }
+
+        File buildOut = getBuildOut()
+        buildOut.mkdirs()
+        File javaBatch = new File(buildOut, "javabatch.in")
+
+        javaBatch.write(getInputFiles().files.join("\n"))
 
         try {
             Utils.projectExec(project, stdout, stderr, null, {
                 executable j2objcExecutable
 
-                File sourceJar = getSourceJar()
-                File workingDir = sourceJar.parentFile
-
+                args "-d", Utils.relativePath(project.projectDir, buildOut)
                 args "-XcombineJars", ''
-                args "-XupzipJarDir", DopplInfo.JAVA_SOURCE
+                args "-XglobalCombinedOutput", "${testBuild ? 'test' : 'main'}SourceOut"
                 args "--swift-friendly", ''
                 args "--output-header-mapping", getMappingsFile().path
 
@@ -175,18 +235,20 @@ class TranslateTask extends BaseChangesTask {
                     args "--prefix", packageString + "=" + allPrefixes.get(packageString)
                 }
 
-                args Utils.relativePath(workingDir, sourceJar)
+                args "@${Utils.relativePath(project.projectDir, javaBatch)}"
 
                 setStandardOutput stdout
                 setErrorOutput stderr
 
-                setWorkingDir workingDir
+                setWorkingDir project.projectDir
             })
 
         } catch (Exception exception) {  // NOSONAR
             // TODO: match on common failures and provide useful help
             throw exception
         }
+
+        javaBatch.delete()
     }
 
     private void addMappings(File mapFile, List<String> mappingFiles) {
@@ -227,11 +289,31 @@ class TranslateTask extends BaseChangesTask {
         Set<File> allFiles = new HashSet<>()
         allFiles.addAll(depJavaFolders(_buildContext, testBuild))
 
-        allFiles.add(DopplInfo.getInstance(project).sourceBuildJavaFileMain())
+        allFiles.addAll(mainSourceDirs(project, _buildContext))
         if(testBuild){
-            allFiles.add(DopplInfo.getInstance(project).sourceBuildJavaFileTest())
+            allFiles.addAll(testSourceDirs(project, _buildContext))
         }
         return allFiles
+    }
+
+    static Set<File> mainSourceDirs(Project project, BuildContext _buildContext)
+    {
+        Set<File> files = new HashSet<>()
+        fillDirsFromTrees(_buildContext.getBuildTypeProvider().sourceSets(project), files)
+        return files
+    }
+
+    static Set<File> testSourceDirs(Project project, BuildContext _buildContext)
+    {
+        Set<File> files = new HashSet<>()
+        fillDirsFromTrees(_buildContext.getBuildTypeProvider().testSourceSets(project), files)
+        return files
+    }
+
+    private static void fillDirsFromTrees(List<FileTree> mainSourceSets, Set<File> allFiles) {
+        for (FileTree fileTree : mainSourceSets) {
+            allFiles.add(Utils.dirFromFileTree(fileTree))
+        }
     }
 
     //All the java source dirs we're going to try to translate

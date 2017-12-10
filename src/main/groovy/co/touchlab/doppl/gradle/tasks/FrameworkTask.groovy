@@ -17,7 +17,9 @@
 package co.touchlab.doppl.gradle.tasks
 
 import co.touchlab.doppl.gradle.BuildContext
+import co.touchlab.doppl.gradle.DependencyResolver
 import co.touchlab.doppl.gradle.DopplConfig
+import co.touchlab.doppl.gradle.DopplDependency
 import co.touchlab.doppl.gradle.DopplInfo
 import co.touchlab.doppl.gradle.FrameworkConfig
 import org.gradle.api.DefaultTask
@@ -25,9 +27,12 @@ import org.gradle.api.Project
 import org.gradle.api.file.FileTree
 import org.gradle.api.tasks.TaskAction
 
+import java.nio.file.Files
+
 class FrameworkTask extends DefaultTask {
 
     public boolean test
+    BuildContext _buildContext
 
     static File podspecFile(Project project, boolean test)
     {
@@ -50,6 +55,26 @@ class FrameworkTask extends DefaultTask {
         test ? "testdoppllib" : "doppllib"
     }
 
+    private List<DopplDependency> dependencyList(boolean testBuild) {
+        DependencyResolver resolver = _buildContext.getDependencyResolver()
+        return testBuild ? resolver.translateDopplTestLibs : resolver.translateDopplLibs
+    }
+
+    List<File> getJavaSourceFolders(boolean testBuild)
+    {
+        List<File> allFiles = new ArrayList<>()
+
+        if(testBuild){
+            allFiles.addAll(TranslateTask.testSourceDirs(project, _buildContext))
+        }else{
+            allFiles.addAll(TranslateTask.mainSourceDirs(project, _buildContext))
+        }
+
+        Collections.sort(allFiles)
+
+        return allFiles
+    }
+
     @TaskAction
     public void writePodspec() {
         if(test && DopplConfig.from(project).skipTests)
@@ -64,24 +89,25 @@ class FrameworkTask extends DefaultTask {
 
         DopplInfo dopplInfo = DopplInfo.getInstance(project)
 
-        //Fill dependencies
-        fillDependencyLists(dopplInfo.dependencyBuildJarFileForPhase(DopplInfo.MAIN), headerFolders, objcFolders, javaFolders)
+        addSourceLinks(false, javaFolders)
 
-        objcFolders.add(dopplInfo.dependencyExplodedDopplFile())
-        objcFolders.add(dopplInfo.dependencyExplodedDopplOnlyFile())
+        objcFolders.add(dopplInfo.dependencyOutFileMain())
+        objcFolders.add(dopplInfo.sourceBuildOutFileMain())
+        headerFolders.add(dopplInfo.dependencyOutFileMain())
+        headerFolders.add(dopplInfo.sourceBuildOutFileMain())
 
-        if(test)
-        {
-            fillDependencyLists(dopplInfo.dependencyBuildJarFileForPhase(DopplInfo.TEST), headerFolders, objcFolders, javaFolders)
-            objcFolders.add(dopplInfo.dependencyExplodedTestDopplFile())
-        }
-
-        //Fill source
-        fillSourceList(dopplInfo.sourceBuildJarFileMain(), objcFolders, headerFolders, javaFolders)
+        fillDependenciesFromList(dependencyList(false), objcFolders, javaFolders)
 
         if(test)
         {
-            fillSourceList(dopplInfo.sourceBuildJarFileTest(), objcFolders, headerFolders, javaFolders)
+            addSourceLinks(true, javaFolders)
+
+            objcFolders.add(dopplInfo.dependencyOutFileTest())
+            objcFolders.add(dopplInfo.sourceBuildOutFileTest())
+            headerFolders.add(dopplInfo.dependencyOutFileTest())
+            headerFolders.add(dopplInfo.sourceBuildOutFileTest())
+
+            fillDependenciesFromList(dependencyList(true), objcFolders, javaFolders)
         }
 
         FrameworkConfig config = test ? FrameworkConfig.findTest(project) : FrameworkConfig.findMain(project)
@@ -120,17 +146,36 @@ class FrameworkTask extends DefaultTask {
         }
     }
 
-    private void fillSourceList(File sourceFolder, ArrayList<File> objcFolders, ArrayList<File> headerFolders,
-                                ArrayList<File> javaFolders) {
-        objcFolders.add(sourceFolder)
-        headerFolders.add(sourceFolder)
-        javaFolders.add(new File(sourceFolder, DopplInfo.JAVA_SOURCE))
+    private void addSourceLinks(boolean testBuild, ArrayList<File> javaFolders) {
+        DopplInfo dopplInfo = DopplInfo.getInstance(project)
+        List<File> sourceFolders = getJavaSourceFolders(testBuild)
+        File srcLink = new File(testBuild ? dopplInfo.sourceBuildOutFileTest() : dopplInfo.sourceBuildOutFileMain(), "sourceLink")
+        srcLink.mkdirs()
+
+        int linkCount = 0
+        for (File folder : sourceFolders) {
+            File link = new File(srcLink, "src_${linkCount}")
+
+            if (!link.exists() && folder.exists()) {
+                Files.createSymbolicLink(link.toPath(), folder.toPath())
+            }
+
+            javaFolders.add(link)
+
+            linkCount++
+        }
     }
 
-    private void fillDependencyLists(File jarBuildOutput, ArrayList<File> headerFolders, ArrayList<File> objcFolders,
-                                     ArrayList<File> javaFolders) {
-        headerFolders.add(jarBuildOutput)
-        objcFolders.add(jarBuildOutput)
-        javaFolders.add(new File(jarBuildOutput, DopplInfo.JAVA_SOURCE))
+    private void fillDependenciesFromList(List<DopplDependency> mainDependencies, ArrayList<File> objcFolders,
+                                          ArrayList<File> javaFolders) {
+        for (DopplDependency dep : mainDependencies) {
+            File sourceFolder = new File(dep.dependencyFolderLocation(), "src")
+            if (sourceFolder.exists()) {
+                objcFolders.add(sourceFolder)
+            }
+            if (dep.dependencyJavaFolder().exists()) {
+                javaFolders.add(dep.dependencyJavaFolder())
+            }
+        }
     }
 }
