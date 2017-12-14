@@ -1,5 +1,6 @@
 package co.touchlab.doppl.gradle
 
+import co.touchlab.doppl.utils.replaceFile
 import co.touchlab.doppl.utils.validateFileContent
 import org.apache.commons.io.FileUtils
 import org.gradle.testkit.runner.BuildResult
@@ -32,7 +33,25 @@ class BasicAndroidProjectTest {
     @Test
     fun translatedPathPrefix()
     {
-        writeRunCustomConfig()
+        writeRunCustomConfig(depends = """
+            compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.android.support:appcompat-v7:25.1.0'
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    testCompile 'junit:junit:4.12'
+    """, config = """
+    translatePattern {
+        include 'co/touchlab/basicandroid/shared/**'
+        include 'co/touchlab/basicandroid/BasicAndroidTest.java'
+        include 'co/touchlab/basicandroid/ExampleUnitTest.java'
+    }
+
+    translatedPathPrefix 'co.touchlab.basicandroid', 'BA'
+    translatedPathPrefix 'co.touchlab.basicandroid.shared', 'BAS'
+
+    testIdentifier {
+        include 'co/touchlab/basicandroid/**Test.java'
+    }
+        """)
         assertTrue("Prefix incorrectly generated", validateFileContent(File(projectFolder, "app/build/prefixes.properties"), { s ->
             return@validateFileContent s.contains("co.touchlab.basicandroid.shared=BAS")
         }))
@@ -44,7 +63,25 @@ class BasicAndroidProjectTest {
     @Test
     fun testIdentifier()
     {
-        writeRunCustomConfig()
+        writeRunCustomConfig(depends = """
+            compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.android.support:appcompat-v7:25.1.0'
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    testCompile 'junit:junit:4.12'
+    """, config = """
+    translatePattern {
+        include 'co/touchlab/basicandroid/shared/**'
+        include 'co/touchlab/basicandroid/BasicAndroidTest.java'
+        include 'co/touchlab/basicandroid/ExampleUnitTest.java'
+    }
+
+    translatedPathPrefix 'co.touchlab.basicandroid', 'BA'
+    translatedPathPrefix 'co.touchlab.basicandroid.shared', 'BAS'
+
+    testIdentifier {
+        include 'co/touchlab/basicandroid/**Test.java'
+    }
+        """)
         assertTrue("Test classes not found in dopplTests.txt", validateFileContent(File(projectFolder, "app/build/dopplTests.txt"), { s ->
             return@validateFileContent s.contains("co.touchlab.basicandroid.BasicAndroidTest") && s.contains("co.touchlab.basicandroid.ExampleUnitTest")
         }))
@@ -55,6 +92,44 @@ class BasicAndroidProjectTest {
 
     private fun writeRunCustomConfig(depends: String = "", config: String = "")
     {
+        replaceFile(projectFolder, "app/build.gradle", """
+    //apply plugin: 'com.android.application'
+    //apply plugin: 'co.doppl.gradle'
+
+    plugins {
+        id 'com.android.application'
+        id 'co.doppl.gradle'
+    }
+
+    android {
+        compileSdkVersion 25
+        buildToolsVersion "25.0.1"
+        defaultConfig {
+            applicationId "co.touchlab.basicandroid"
+            minSdkVersion 23
+            targetSdkVersion 25
+            versionCode 1
+            versionName "1.0"
+            testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        }
+        buildTypes {
+            release {
+                minifyEnabled false
+                proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            }
+        }
+    }
+
+    dependencies {
+
+        $depends
+    }
+
+    dopplConfig {
+        $config
+    }
+
+                """)
         val result = buildResult()
         assertEquals(result.task(":app:dopplBuild").outcome, TaskOutcome.SUCCESS)
     }

@@ -17,12 +17,17 @@
 package co.touchlab.doppl.gradle.tasks
 
 import co.touchlab.doppl.gradle.BuildContext
+import co.touchlab.doppl.gradle.BuildTypeProvider
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
 import co.touchlab.doppl.gradle.DopplInfo
 import org.gradle.api.DefaultTask
 import org.gradle.api.Task
+import org.gradle.api.file.FileCollection
+import org.gradle.api.file.FileTree
+import org.gradle.api.internal.file.UnionFileTree
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
@@ -62,38 +67,37 @@ class PodManagerTask extends DefaultTask{
     }
 
     @Input
-    String getJavaFileList()
+    String getInputFiles()
     {
-        File javaDir
+        FileTree fileTree = new UnionFileTree("TranslateTask - ${(testBuild ? "test" : "main")}")
+
+        BuildTypeProvider buildTypeProvider = _buildContext.getBuildTypeProvider()
+        List<File> allFiles = new ArrayList<File>()
+
+        for (FileTree tree : buildTypeProvider.sourceSets(project)) {
+            fileTree.add(tree)
+        }
+
         if(testBuild)
-            javaDir = DopplInfo.getInstance(project).sourceBuildJavaFileTest()
-        else
-            javaDir = DopplInfo.getInstance(project).sourceBuildJavaFileMain()
-
-        return pathFileCollection(javaDir)
-    }
-
-    private String pathFileCollection(File javaDir) {
-        List<String> fileList = new ArrayList<>()
-        pathCollection(fileList, javaDir, javaDir)
-        Collections.sort(fileList)
-
-        return fileList.join(File.pathSeparator)
-    }
-
-    void pathCollection(List<String> paths, File rootDir, File thisDir)
-    {
-        File[] files = thisDir.listFiles()
-        for (File f : files) {
-            if(f.isDirectory())
-            {
-                pathCollection(paths, rootDir, f)
-            }
-            else
-            {
-                paths.add(Utils.relativePath(rootDir, f))
+        {
+            for (FileTree tree : buildTypeProvider.testSourceSets(project)) {
+                fileTree.add(tree)
             }
         }
+
+        DopplConfig dopplConfig = DopplConfig.from(project)
+        if(dopplConfig.translatePattern != null) {
+            fileTree = fileTree.matching(dopplConfig.translatePattern)
+        }
+
+        fileTree = fileTree.matching(TranslateTask.javaPattern {
+            include "**/*.java"
+        })
+
+        allFiles.addAll(fileTree.getFiles())
+        Collections.sort(allFiles)
+
+        return allFiles.join(File.pathSeparator)
     }
 
     @TaskAction
@@ -112,42 +116,21 @@ class PodManagerTask extends DefaultTask{
 
                 setWorkingDir podfilePath
             })
-
-            /*
-            File podsDir = new File(project.projectDir, podfilePath)// + "Pods")
-            String podspecName = FrameworkTask.podspecName(testBuild)
-            File umbrellaFile = new File(podsDir, "Pods/Target Support Files/${podspecName}/${podspecName}-umbrella.h")
-
-            if(umbrellaFile.exists())
-            {
-                BufferedReader reader = new BufferedReader(new FileReader(umbrellaFile))
-                File outFile = new File(umbrellaFile.getParentFile(),
-                        umbrellaFile.getName() + ".new")
-                BufferedWriter writer = new BufferedWriter(new FileWriter(outFile))
-                String line = null
-                while((line = reader.readLine()) != null)
-                {
-                    if(line.startsWith("#import \""))
-                    {
-                        writer.append(line.replace("#import", "#include"))
-                    }
-                    else
-                    {
-                        writer.append(line)
-                    }
-                    writer.append("\n")
-                }
-                reader.close()
-                writer.close()
-                umbrellaFile.delete()
-                outFile.renameTo(umbrellaFile)
-            }
-            else {
-                logger.warn("Umbrella header file not found. Check config.")
-            }*/
         } catch (Exception exception) {  // NOSONAR
             // TODO: match on common failures and provide useful help
             throw exception
+            stderr.close()
+            stdout.close()
+            if(stdout.size() > 0)
+            {
+                println("********* STDOUT *********")
+                println new String(stdout.toByteArray())
+            }
+            if(stderr.size() > 0)
+            {
+                println("********* STDERR *********")
+                println new String(stderr.toByteArray())
+            }
         }
     }
 

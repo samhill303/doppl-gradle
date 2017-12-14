@@ -124,6 +124,16 @@ class DopplConfigTest: BasicTestBase() {
         }))
     }
 
+    @Test
+    fun testManagePod()
+    {
+        writeRunCustomConfig(config = """
+    mainFramework{
+        managePod "ios"
+    }
+        """)
+    }
+
 
     fun writeRunCustomConfig(depends: String = "", config: String = "")
     {

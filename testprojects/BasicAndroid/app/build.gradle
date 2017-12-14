@@ -1,5 +1,10 @@
-apply plugin: 'com.android.application'
-apply plugin: 'co.doppl.gradle'
+//apply plugin: 'com.android.application'
+//apply plugin: 'co.doppl.gradle'
+
+plugins {
+    id 'com.android.application'
+    id 'co.doppl.gradle'
+}
 
 android {
     compileSdkVersion 25
