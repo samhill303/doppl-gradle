@@ -42,6 +42,7 @@ class DependencyResolver extends DefaultTask{
     @TaskAction
     void inflateAll()
     {
+        configureAll()
         for (DopplDependency dep : translateDopplLibs) {
             dep.expandDop(project)
         }
@@ -64,19 +65,37 @@ class DependencyResolver extends DefaultTask{
                          List<DopplDependency> dopplDependencyList,
                          File explodedPath,
                          Map<String, DopplDependency> dependencyMap){
-        def dopplConfig = project.configurations.getByName(configName)
+        Project localProject = project
+        configForProject(localProject, configName, dopplDependencyList, dependencyMap, explodedPath)
+    }
+
+    private void configForProject(Project localProject,
+                                  String configName,
+                                  List<DopplDependency> dopplDependencyList,
+                                  Map<String, DopplDependency> dependencyMap,
+                                  File explodedPath) {
+        def dopplConfig = localProject.configurations.getByName(configName)
 
         //Add project dependencies
         dopplConfig.dependencies.each {
             if (it instanceof ProjectDependency) {
 
                 Project beforeProject = it.dependencyProject
-                dopplDependencyList.add(
-                        new DopplDependency(
-                                beforeProject.name,
-                                DopplInfo.getInstance(beforeProject).rootAssemblyFile()
-                        )
-                )
+                String projectDependencyKey = beforeProject.getPath()
+                if(!dependencyMap.containsKey(projectDependencyKey)) {
+                    DopplDependency dependency = new DopplDependency(
+                            beforeProject.name,
+                            new File(beforeProject.projectDir, "src/main")
+//                            DopplInfo.getInstance(beforeProject).rootAssemblyFile()
+                    )
+
+                    dopplDependencyList.add(
+                            dependency
+                    )
+
+                    dependencyMap.put(projectDependencyKey, dependency)
+                    configForProject(beforeProject, configName, dopplDependencyList, dependencyMap, explodedPath)
+                }
             }
         }
 
@@ -84,13 +103,13 @@ class DependencyResolver extends DefaultTask{
         dopplConfig.resolvedConfiguration.resolvedArtifacts.each { ResolvedArtifact ra ->
 
             def extension = ra.extension
-            if(extension != null && extension.equals("dop")) {
+            if (extension != null && extension.equals("dop")) {
                 def group = ra.moduleVersion.id.group
                 def name = ra.moduleVersion.id.name
                 def version = ra.moduleVersion.id.version
 
-                String mapKey = group + "_" + name +"_"+ version
-                if(!dependencyMap.containsKey(mapKey)) {
+                String mapKey = group + "_" + name + "_" + version
+                if (!dependencyMap.containsKey(mapKey)) {
 
                     def dependency = new DopplDependency(
                             group,
@@ -106,4 +125,6 @@ class DependencyResolver extends DefaultTask{
             }
         }
     }
+
+
 }

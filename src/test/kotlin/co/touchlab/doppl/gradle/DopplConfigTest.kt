@@ -32,15 +32,14 @@ class DopplConfigTest: BasicTestBase() {
 
     @Test
     fun testJavaDebug()
-    {
+    {///Users/kgalligan/devel/j2objc-gradle/testprojects/basicjava/src/main/java/co/touchlab/basicjava/GoBasicJava.java
         writeRunCustomConfig(config = "javaDebug true")
-
-        assertTrue("Line directive not found", validateFileContent(File(projectFolder, "build/dopplBuild/source/jar/main/dopplMain.m"), {s ->
-            return@validateFileContent s.lines().any { it.startsWith("#line") && it.endsWith("/build/dopplBuild/source/jar/main/javasource/jar_0/co/touchlab/basicjava/GoBasicJava.java\"") }
+        assertTrue("Line directive not found", validateFileContent(File(projectFolder, "build/dopplBuild/source/out/main/mainSourceOut.m"), {s ->
+            return@validateFileContent s.lines().any { it.startsWith("#line") && it.endsWith("src/main/java/co/touchlab/basicjava/GoBasicJava.java\"") }
         }))
 
         writeRunCustomConfig(config = "//javaDebug true")
-        assertTrue("Line directives still there", validateFileContent(File(projectFolder, "build/dopplBuild/source/jar/main/dopplMain.m"), { s ->
+        assertTrue("Line directives still there", validateFileContent(File(projectFolder, "build/dopplBuild/source/out/main/mainSourceOut.m"), { s ->
             return@validateFileContent !s.contains("#line")
         }))
     }
@@ -54,7 +53,7 @@ class DopplConfigTest: BasicTestBase() {
             doppl "co.doppl.com.google.code.gson:gson:2.6.2.7"
         """)
 
-        val objcPath = "build/dopplBuild/dependencies/jar/main/depJar_main_0.m"
+        val objcPath = "build/dopplBuild/dependencies/out/main/mainDependencyOut.m"
         assertTrue("Line directive not found", validateFileContent(File(projectFolder, objcPath), { s ->
             return@validateFileContent s.lines().any { it.startsWith("#line") && it.endsWith(".java\"") }
         }))

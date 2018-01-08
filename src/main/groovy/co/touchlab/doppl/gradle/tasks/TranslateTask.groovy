@@ -172,6 +172,11 @@ class TranslateTask extends BaseChangesTask {
             Map<String, String> prefixMap,
             boolean emitLineDirectives) {
 
+        Set<File> allTranslateFiles = getInputFiles().files
+
+        if(allTranslateFiles.size() == 0)
+            return
+
         DopplInfo dopplInfo = DopplInfo.getInstance(project)
         String j2objcExecutable = "${getJ2objcHome()}/j2objc"
 
@@ -204,7 +209,8 @@ class TranslateTask extends BaseChangesTask {
         buildOut.mkdirs()
         File javaBatch = new File(buildOut, "javabatch.in")
 
-        javaBatch.write(getInputFiles().files.join("\n"))
+
+        javaBatch.write(allTranslateFiles.join("\n"))
 
         try {
             Utils.projectExec(project, stdout, stderr, null, {
@@ -248,7 +254,7 @@ class TranslateTask extends BaseChangesTask {
             throw exception
         }
 
-        javaBatch.delete()
+//        javaBatch.delete()
     }
 
     private void addMappings(File mapFile, List<String> mappingFiles) {

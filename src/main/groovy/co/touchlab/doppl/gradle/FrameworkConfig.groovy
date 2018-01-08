@@ -130,6 +130,20 @@ class FrameworkConfig {
         return sourceFileIncludes.toString()
     }
 
+    String relativeOrNull(File parent, File target, boolean failOnAbsolute) {
+        String path = Utils.relativePath(parent, target)
+        if (path.startsWith("/"))
+        {
+            if(failOnAbsolute)
+                throw new IllegalArgumentException("Absolute path for ${target.getPath()}")
+            else
+                return null
+        }
+        else {
+            return path
+        }
+    }
+
     String podspecTemplate (
             Project project,
             File globalHeaderFile,
@@ -141,22 +155,25 @@ class FrameworkConfig {
         List<String> sourceLines = new ArrayList<>()
         List<String> headerLines = new ArrayList<>()
 
-        String allHeadersInclude = Utils.relativePath(project.projectDir, globalHeaderFile)
+        String allHeadersInclude = relativeOrNull(project.projectDir, globalHeaderFile, true)
 
         sourceLines.add("${allHeadersInclude}")
         headerLines.add("${allHeadersInclude}")
 
         //Get loose Objc and c/c++ source into project
         for (File folder : objcFolders) {
-            sourceLines.add("${Utils.relativePath(project.projectDir, folder)}/**/*.{${SOURCE_EXTENSIONS}}")
+            sourceLines.add("${relativeOrNull(project.projectDir, folder, true)}/**/*.{${SOURCE_EXTENSIONS}}")
         }
 
         for (File folder : headerFolders) {
-            headerLines.add("${Utils.relativePath(project.projectDir, folder)}/**/*.h")
+            headerLines.add("${relativeOrNull(project.projectDir, folder, true)}/**/*.h")
         }
 
         for (File folder : javaFolders) {
-            sourceLines.add("${Utils.relativePath(project.projectDir, folder)}/**/*.java")
+            String javaPath = relativeOrNull(project.projectDir, folder, false)
+            if(javaPath != null) {
+                sourceLines.add("${javaPath}/**/*.java")
+            }
         }
 
         String sourceFiles = makePodFileList(sourceLines)

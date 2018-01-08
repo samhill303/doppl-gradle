@@ -35,10 +35,9 @@ class BasicDopplProjectTest: BasicTestBase() {
     fun dopplBuildWritesClassTest()
     {
         runValidateDopplBuild()
-        val mainBuildDir = File(projectFolder, "build/dopplBuild/source/jar/main")
-        val jarFile = File(mainBuildDir, "dopplMain.jar")
-        Assert.assertTrue("Jar build failed", jarFile.exists())
-        val headerFile = File(mainBuildDir, "dopplMain.h")
+
+        val mainBuildDir = File(projectFolder, "build/dopplBuild/source/out/main")
+        val headerFile = File(mainBuildDir, "mainSourceOut.h")
 
         findObjcClassDefinition(headerFile, "CoTouchlabBasicjavaGoBasicJava")
     }
@@ -51,9 +50,8 @@ class BasicDopplProjectTest: BasicTestBase() {
 
         assertTrue { File(projectFolder, "build/dopplBuild/dependencies/exploded/doppl/co_doppl_com_google_code_gson_gson_2_6_2_7").exists() }
         assertTrue { File(projectFolder, "build/dopplBuild/dependencies/exploded/doppl/co_doppl_com_google_code_gson_gson_2_6_2_7/java/com/google/gson/Gson.java").exists() }
-        assertTrue { File(projectFolder, "build/dopplBuild/dependencies/jar/main/javasource/jar_0/com/google/gson/Gson.java").exists() }
 
-        val headerFile = File(projectFolder, "build/dopplBuild/dependencies/jar/main/depJar_main_0.h")
+        val headerFile = File(projectFolder, "build/dopplBuild/dependencies/out/main/mainDependencyOut.h")
         findObjcClassDefinition(headerFile, "ComGoogleGsonGson")
     }
 

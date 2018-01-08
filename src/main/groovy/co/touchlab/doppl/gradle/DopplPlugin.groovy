@@ -159,7 +159,7 @@ class DopplPlugin implements Plugin<Project> {
 
             afterEvaluate {
 
-                dependencyResolver.configureAll()
+//                dependencyResolver.configureAll()
 
                 addManagedPods(
                         tasks,
