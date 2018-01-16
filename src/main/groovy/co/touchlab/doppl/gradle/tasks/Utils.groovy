@@ -295,7 +295,14 @@ class Utils {
     }
 
     public static boolean isAndroidTypeProject(Project project){
-        return hasOneOfTheFollowingPlugins(project, "com.android.application", "android", "com.android.test", "android-library", "com.android.library");
+        return hasOneOfTheFollowingPlugins(
+                project,
+                "com.android.application",
+                "com.android.feature",
+                "android",
+                "com.android.test",
+                "android-library",
+                "com.android.library");
     }
 
     public static boolean hasOneOfTheFollowingPlugins(Project project, String... pluginIds)

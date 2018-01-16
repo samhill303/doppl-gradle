@@ -35,10 +35,13 @@ class AndroidBuildTypeProvider implements BuildTypeProvider{
 
     AndroidBuildTypeProvider(Project project) {
         dopplConfig = DopplConfig.from(project)
-        if (project.plugins.findPlugin("com.android.application") || project.plugins.findPlugin("android") ||
+        if (project.plugins.findPlugin("com.android.application") ||
+            project.plugins.findPlugin("android") ||
             project.plugins.findPlugin("com.android.test")) {
             variants = "applicationVariants";
-        } else if (project.plugins.findPlugin("com.android.library") || project.plugins.findPlugin("android-library")) {
+        } else if (project.plugins.findPlugin("com.android.library") ||
+                   project.plugins.findPlugin("android-library") ||
+                   project.plugins.findPlugin("com.android.feature")) {
             variants = "libraryVariants";
         } else {
             throw new ProjectConfigurationException("The android or android-library plugin must be applied to the project", null)

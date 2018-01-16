@@ -79,7 +79,8 @@ class FrameworkTask extends DefaultTask {
 
     @TaskAction
     public void writePodspec() {
-        if(test && DopplConfig.from(project).skipTests)
+        def dopplConfig = DopplConfig.from(project)
+        if(test && dopplConfig.skipTests)
             return
 
         String specName = podspecName(test)
@@ -91,25 +92,27 @@ class FrameworkTask extends DefaultTask {
 
         DopplInfo dopplInfo = DopplInfo.getInstance(project)
 
-        javaFolders.addAll(getJavaSourceFolders(false))
+        if(dopplConfig.emitLineDirectives)
+            javaFolders.addAll(getJavaSourceFolders(false))
 
         objcFolders.add(dopplInfo.dependencyOutFileMain())
         objcFolders.add(dopplInfo.sourceBuildOutFileMain())
         headerFolders.add(dopplInfo.dependencyOutFileMain())
         headerFolders.add(dopplInfo.sourceBuildOutFileMain())
 
-        fillDependenciesFromList(dependencyList(false), objcFolders, javaFolders)
+        fillDependenciesFromList(dependencyList(false), objcFolders, dopplConfig.dependenciesEmitLineDirectives ? javaFolders : null)
 
         if(test)
         {
-            javaFolders.addAll(getJavaSourceFolders(true))
+            if(dopplConfig.emitLineDirectives)
+                javaFolders.addAll(getJavaSourceFolders(true))
 
             objcFolders.add(dopplInfo.dependencyOutFileTest())
             objcFolders.add(dopplInfo.sourceBuildOutFileTest())
             headerFolders.add(dopplInfo.dependencyOutFileTest())
             headerFolders.add(dopplInfo.sourceBuildOutFileTest())
 
-            fillDependenciesFromList(dependencyList(true), objcFolders, javaFolders)
+            fillDependenciesFromList(dependencyList(true), objcFolders, dopplConfig.dependenciesEmitLineDirectives ? javaFolders : null)
         }
 
         FrameworkConfig config = test ? FrameworkConfig.findTest(project) : FrameworkConfig.findMain(project)
@@ -160,7 +163,7 @@ class FrameworkTask extends DefaultTask {
             if (sourceFolder.exists()) {
                 objcFolders.add(sourceFolder)
             }
-            if (dep.dependencyJavaFolder().exists()) {
+            if (javaFolders != null && dep.dependencyJavaFolder().exists()) {
                 javaFolders.add(dep.dependencyJavaFolder())
             }
         }

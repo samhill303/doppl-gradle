@@ -212,7 +212,9 @@ Pod::Spec.new do |s|
     s.frameworks = ${writeFrameworks()}
 
     s.pod_target_xcconfig = {
-     'HEADER_SEARCH_PATHS' => '${j2objcPath}/include','LIBRARY_SEARCH_PATHS' => '${j2objcPath}/lib'${objcFlagString}
+     'HEADER_SEARCH_PATHS' => '${j2objcPath}/include','LIBRARY_SEARCH_PATHS' => '${j2objcPath}/lib'${objcFlagString},
+'CLANG_WARN_DOCUMENTATION_COMMENTS' => 'NO',
+'GCC_WARN_64_TO_32_BIT_CONVERSION' => 'NO'
     }
     
     s.user_target_xcconfig = {

@@ -61,6 +61,18 @@ class PodManagerTask extends DefaultTask{
     }
 
     @Input
+    boolean getJavaDebug()
+    {
+        return DopplConfig.from(project).emitLineDirectives
+    }
+
+    @Input
+    boolean getDependencyJavaDebug()
+    {
+        return DopplConfig.from(project).dependenciesEmitLineDirectives
+    }
+
+    @Input
     String getDependencyList()
     {
         return getDependencyList(_buildContext, testBuild)
