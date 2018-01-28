@@ -73,7 +73,7 @@ doppl "io.reactivex.rxjava2:rxandroid:2.0.1:sources"
 
 ```
 
-The rxjava2 dependency will probably transpile, but you'll have some memory issue. The rxandroid dependency will probably not transpile on its own.
+The rxjava2 dependency will probably transpile, but you'll have some memory issues. The rxandroid dependency will probably not transpile on its own.
 
 ### Configurations
 
@@ -103,22 +103,25 @@ which can cause issues with the project dependencies if you're building a librar
 ### Our dependency conventions
 
 Most forked dependencies that we publish have 2 distinct differences in their publishing info. We prefix the package with 'co.doppl' and add an extra number suffix to the 
-version. The prefix is to make it absolutely clear that this library isn't managed by the original author. The suffix is to allow J2objc specific changes but still 
-associated with the same source release.
+version. The prefix is to make it absolutely clear that this library isn't managed by the original author. The suffix is 
+to version and publish J2objc-related changes while still tracking the original Java version.
 
 ### What about annotation processing?
 
-The annotation processing runs against your Java code and (generally) produces more Java output. As long as those output source directories are available, they 
-are included in the Objective-C generation. So, usually, you don't need to do anything!
+Annotation processing generally generates more Java and puts that in the 'generated' subfolder of build. Assuming 
+things are configured correctly, the Doppl plugin should find that and send it through J2objc just like your source. So,
+usually, you don't need to do anything! 
 
 ## Plugin Design
 
 The plugin collects your dependencies, then attempts to transpile your code and dependencies to Objective C output. The plugin will also generate cocoapod
 definition files which make integrating the transpiled code simpler. Using Cocoapods is optional but suggested.
 
-In the past, each input Java file would generated both an 'h' and an 'm' file on output. For a number of reasons, the way the Doppl plugin runs j2objc is different. 
+In the past, each input Java file would generate both an 'h' and an 'm' file on output. For a number of reasons, the way the Doppl plugin runs j2objc is different. 
 For all main Java input files, there is one large 'h' and 'm' output. Same for all dependencies, all test Java files, and all test dependencies. If you have 
 both main and test Java and some set of depdendencies for each, that means 4 sets of 'h' and 'm' files total.
+
+![Source file output](docs/sourcetypes.png "Source file output")
 
 There are reasons for outputing fewer, larger files, and pros and cons. If you edit some of your Java, you won't get incremental builds. The plugin will output new Objective-C, 
 Xcode will recompile. Also, especially for dependencies, the Objective-C file can become quite large. On the plus side, Xcode seems to be able to build fewer larger files
