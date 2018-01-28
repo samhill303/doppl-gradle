@@ -89,9 +89,18 @@ class DopplDependency {
         File folderLocation = dependencyFolderLocation()
         if(dopFile != null && !folderLocation.exists())
         {
+            File unzipFolder = folderLocation
+
+            //Assume this is a sources jar
+            if(dopFile.getName().endsWith(".jar"))
+            {
+                folderLocation.mkdirs()
+                unzipFolder = dependencyJavaFolder()
+            }
+
             project.copy { CopySpec cp ->
                 cp.from project.zipTree(dopFile)
-                cp.into folderLocation
+                cp.into unzipFolder
             }
 
             markReadOnlyRecursive(folderLocation)

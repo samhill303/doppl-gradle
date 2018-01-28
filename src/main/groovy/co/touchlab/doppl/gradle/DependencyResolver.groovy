@@ -103,7 +103,11 @@ class DependencyResolver extends DefaultTask{
         dopplConfig.resolvedConfiguration.resolvedArtifacts.each { ResolvedArtifact ra ->
 
             def extension = ra.extension
-            if (extension != null && extension.equals("dop")) {
+            def classifier = ra.classifier
+            if ((extension != null && extension.equals("dop"))
+                    ||
+                (classifier != null && classifier.equals("sources")))
+              {
                 def group = ra.moduleVersion.id.group
                 def name = ra.moduleVersion.id.name
                 def version = ra.moduleVersion.id.version

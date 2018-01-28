@@ -3,18 +3,15 @@
 This the Doppl framework Gradle plugin. Doppl is a build and dependency system intended to facilitate Android and iOS
 code sharing using J2ojbc.
 
+You can read below for more plugin detail, but its highly recommended that you check out the higher level docs and quickstart first.
+
 [What is Doppl?](http://doppl.co/overview.html)
 
 [Quick Start](http://doppl.co/docs/quicktutorial.html)
 
-[Doppl Gradle Plugin](http://doppl.co/docs/gradleplugin.html)
-
-This plugin started as a fork of the [J2objc-gradle](https://github.com/j2objc-contrib/j2objc-gradle) project. It has morphed
-significantly, but the general DNA in the translate pipeline is still there.
-
 ## Tasks
 
-This is the task dependency tree. The referenced constants can be found in DopplPlugin.groovy. For users, the important 
+This is the task dependency tree. The referenced constants can be found in DopplPlugin.groovy. For most users, the important 
 ones to note are:
 
 * TASK_DOPPL_BUILD - 'dopplBuild' This will stage and translate dependencies and source for both main and test paths,
@@ -29,6 +26,107 @@ this if you're creating a library.
 including annotation processing.
 
 ![Task dependency tree](docs/dopplgradletree.png "Task dependency tree")
+
+## Dependencies
+
+One of the core features of the Doppl plugin is dependency management. The basic concept is to have compatible dependencies that will allow you to share 
+code to Objective-C. J2objc is fairly implementation agnostic, Doppl is focused around sharing code and architecture between Android and iOS.
+
+### Archive Type
+
+There are basically 2 archive types available: the 'dop' type and a standard Java sources jar.
+
+#### Dop Archive
+
+The dop archive is a regular zip archive with the '.dop' extension. The purpose of the special archive type are somewhat historical, but there are still a few important reasons 
+to have a custom archive type. 
+
+1. You can include C/C++/ObjC/Swift code directly in your dependency
+2. There is no confusion that this Java source is intended for J2objc. Most open source Java project deploy a sources jar, but they would be unlikely to transpile out of the box.
+3. Sources jars are generally co-published with regular jars, and maven doesn't do a good job of transitive dependencies with classifiers.
+
+Inside the archive, the Java sources are in a 'java' folder. Native code is in the 'src' folder, although most dependencies won't have native code included.
+
+Here's an exmaple dependency declaration for rxjava2 and rxandroid2
+
+```gradle
+implementation "io.reactivex.rxjava2:rxjava:2.1.5"
+doppl "co.doppl.io.reactivex.rxjava2:rxjava:2.1.5.3"
+implementation "io.reactivex.rxjava2:rxandroid:2.0.1"
+doppl "co.doppl.io.reactivex.rxjava2:rxandroid:2.0.1.7"
+
+```
+
+#### Sources Jar
+
+You can simply reference source jars for some projects, but in general its better to fork these projects to create your own Doppl dependencies. It's good practice 
+to run the unit tests in translated Objective-C, and many projects will have their own dependency hierarchy that you'll need to fill. For Android related dependencies
+you'll often need to remove UI related code.
+
+Summary, most source jars aren't going to work well out of the box, but you can reference them.
+
+```gradle
+implementation "io.reactivex.rxjava2:rxjava:2.1.5"
+doppl "io.reactivex.rxjava2:rxjava:2.1.5:sources"
+implementation "io.reactivex.rxjava2:rxandroid:2.0.1"
+doppl "io.reactivex.rxjava2:rxandroid:2.0.1:sources"
+
+```
+
+The rxjava2 dependency will probably transpile, but you'll have some memory issue. The rxandroid dependency will probably not transpile on its own.
+
+### Configurations
+
+There are 3 configurations for Doppl dependencies
+
+* doppl: Main source compile configuration. Will be included in downstream dependencies.
+* dopplOnly: Main source compile configuration. Will *not* be included in downstream dependencies.
+* testDoppl: Test source compile configuration.
+
+They're roughly equivalent to compile, provided, and testCompile. In newer builds, implementation, compileOnly, and testImplementation.
+
+```gradle
+implementation "com.google.code.gson:gson:2.6.2"
+doppl "co.doppl.com.google.code.gson:gson:2.6.2.7"
+compileOnly project(":paging:common")
+dopplOnly project(":paging:common")
+testImplementation "junit:junit:4.12"
+testDoppl "co.doppl.junit:junit:4.12.0"
+
+```
+
+### Project Dependencies
+
+Project dependencies generally work, but there have been some issues in certain configurations. Also, the maven publishing plugin cannot deploy more than one artifact,
+which can cause issues with the project dependencies if you're building a library. This is an open issue and will hopefully be resolved.
+
+### Our dependency conventions
+
+Most forked dependencies that we publish have 2 distinct differences in their publishing info. We prefix the package with 'co.doppl' and add an extra number suffix to the 
+version. The prefix is to make it absolutely clear that this library isn't managed by the original author. The suffix is to allow J2objc specific changes but still 
+associated with the same source release.
+
+### What about annotation processing?
+
+The annotation processing runs against your Java code and (generally) produces more Java output. As long as those output source directories are available, they 
+are included in the Objective-C generation. So, usually, you don't need to do anything!
+
+## Plugin Design
+
+The plugin collects your dependencies, then attempts to transpile your code and dependencies to Objective C output. The plugin will also generate cocoapod
+definition files which make integrating the transpiled code simpler. Using Cocoapods is optional but suggested.
+
+In the past, each input Java file would generated both an 'h' and an 'm' file on output. For a number of reasons, the way the Doppl plugin runs j2objc is different. 
+For all main Java input files, there is one large 'h' and 'm' output. Same for all dependencies, all test Java files, and all test dependencies. If you have 
+both main and test Java and some set of depdendencies for each, that means 4 sets of 'h' and 'm' files total.
+
+There are reasons for outputing fewer, larger files, and pros and cons. If you edit some of your Java, you won't get incremental builds. The plugin will output new Objective-C, 
+Xcode will recompile. Also, especially for dependencies, the Objective-C file can become quite large. On the plus side, Xcode seems to be able to build fewer larger files
+much faster than many smaller ones.
+
+The original purpose for the change was that J2objc out of the box uses folders for packages, like Java does, but Xcode doesn't really deal well with folders. If two files
+have the same name, even if they're in different folders, Xcode will simply compile both but only link to one. It doesn't work, basically. We had a solution that output 
+long filenames instead, but single files is much simpler internally. We *may* add individual files in the future.
 
 ## Config
 
@@ -159,4 +257,22 @@ dopplConfig {
 
 This library is distributed under the Apache 2.0 license found in the [LICENSE](./LICENSE) file.
 J2ObjC and libraries distributed with J2ObjC are under their own licenses.
+
+## History
+
+The Doppl plugin started as a fork of the earlier [j2objc-gradle](https://github.com/j2objc-contrib/j2objc-gradle) plugin. Although ideologically similar, 
+the two plugins differ significantly at this point in scope.
+
+Many thanks to the [developers](https://github.com/doppllib/doppl-gradle/blob/master/NOTICE#L19) of j2objc-gradle.
+
+### Main Contributors
+
+* Advay Mengle @advayDev1 <source@madvay.com>
+* Bruno Bowden @brunobowden <github@brunobowden.com>
+* Michael Gorski @confile <mail@michaelgorski.de>
+
+### Thanks
+
+* Peter Niederweiser @pniederw <peter@pniederw.com>
+* Sterling Greene @big-guy <sterling.greene@gradleware.com>
 

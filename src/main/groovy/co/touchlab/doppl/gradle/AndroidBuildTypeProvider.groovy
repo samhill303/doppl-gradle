@@ -59,11 +59,9 @@ class AndroidBuildTypeProvider implements BuildTypeProvider{
     }
 
     private void insertTaskDependency(Project project, String taskName, Task upstreamTask, Task downstreamTask) {
-        if(!dopplConfig.skipDependsTasks) {
-            Task foundTask = project.tasks.getByName(taskName)
-            foundTask.dependsOn upstreamTask
-            downstreamTask.dependsOn foundTask
-        }
+        Task foundTask = project.tasks.getByName(taskName)
+        foundTask.dependsOn upstreamTask
+        downstreamTask.dependsOn foundTask
     }
 
     @Override

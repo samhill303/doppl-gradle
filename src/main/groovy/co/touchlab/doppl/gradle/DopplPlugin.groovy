@@ -180,8 +180,10 @@ class DopplPlugin implements Plugin<Project> {
                     )
                 }
 
-                buildContext.getBuildTypeProvider().configureDependsOn(project, j2objcPreBuildTask, dopplContextBuildTask)
-                buildContext.getBuildTypeProvider().configureTestDependsOn(project, j2objcPreBuildTask, dopplContextBuildTask)
+                if(!DopplConfig.from(project).skipDependsTasks) {
+                    buildContext.getBuildTypeProvider().configureDependsOn(project, j2objcPreBuildTask, dopplContextBuildTask)
+                    buildContext.getBuildTypeProvider().configureTestDependsOn(project, j2objcPreBuildTask, dopplContextBuildTask)
+                }
             }
 
             tasks.create(name: TASK_DOPPL_ASSEMBLY, type: DopplAssemblyTask,
