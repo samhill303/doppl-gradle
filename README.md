@@ -129,7 +129,9 @@ much faster than many smaller ones.
 
 The original purpose for the change was that J2objc out of the box uses folders for packages, like Java does, but Xcode doesn't really deal well with folders. If two files
 have the same name, even if they're in different folders, Xcode will simply compile both but only link to one. It doesn't work, basically. We had a solution that output 
-long filenames instead, but single files is much simpler internally. We *may* add individual files in the future.
+long filenames instead, but single files is much simpler internally. We *may* add individual files in the future. However, 
+one of the near term goals is to get rid of our custom J2objc fork. This output method is far less custom, although we'll
+still need to get a pull request accepted upstream.
 
 ## Config
 
