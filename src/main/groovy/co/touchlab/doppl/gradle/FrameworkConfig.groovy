@@ -54,12 +54,7 @@ class FrameworkConfig {
     boolean libZ = true
     boolean libSqlite3 = true
     boolean libIconv = true
-    boolean libJavax_inject = true
     boolean libJre_emul = true
-    boolean libJsr305 = true
-    boolean libGuava = test
-    boolean libMockito = false
-    boolean libJunit = false
 
     List<String> managedPodsList = new ArrayList<>()
 
@@ -96,12 +91,7 @@ class FrameworkConfig {
         if(libZ)allLibs.add("z")
         if(libSqlite3)allLibs.add("sqlite3")
         if(libIconv)allLibs.add("iconv")
-        if(libJavax_inject)allLibs.add("javax_inject")
         if(libJre_emul)allLibs.add("jre_emul")
-        if(libJsr305)allLibs.add("jsr305")
-        if(libGuava)allLibs.add("guava")
-        if(libMockito)allLibs.add("mockito")
-        if(libJunit)allLibs.add("junit")
 
         return "'"+ allLibs.join("', '") +"'"
     }
@@ -149,11 +139,15 @@ class FrameworkConfig {
             File globalHeaderFile,
             List<File> objcFolders,
             List<File> headerFolders,
+            List<File> srcHeaderFolders,
             List<File> javaFolders,
             String podname){
 
+        String j2objcPath = writeActualJ2objcPath ? Utils.j2objcHome(project) : "\$(J2OBJC_LOCAL_PATH)"
+
         List<String> sourceLines = new ArrayList<>()
         List<String> headerLines = new ArrayList<>()
+        List<String> srcHeaderLines = new ArrayList<>()
 
         String allHeadersInclude = relativeOrNull(project.projectDir, globalHeaderFile, true)
 
@@ -169,6 +163,12 @@ class FrameworkConfig {
             headerLines.add("${relativeOrNull(project.projectDir, folder, true)}/**/*.h")
         }
 
+        srcHeaderLines.add("${j2objcPath}/include")
+
+        for (File folder : srcHeaderFolders) {
+            srcHeaderLines.add("${folder.absolutePath}")
+        }
+
         for (File folder : javaFolders) {
             String javaPath = relativeOrNull(project.projectDir, folder, false)
             if(javaPath != null) {
@@ -182,7 +182,7 @@ class FrameworkConfig {
 
         String objcFlagString = flagObjc ? ",\n     'OTHER_LDFLAGS' => '-ObjC'" : ""
 
-        String j2objcPath = writeActualJ2objcPath ? Utils.j2objcHome(project) : "\$(J2OBJC_LOCAL_PATH)"
+
         return """require 'rake'
 FileList = Rake::FileList
 
@@ -212,13 +212,13 @@ Pod::Spec.new do |s|
     s.frameworks = ${writeFrameworks()}
 
     s.pod_target_xcconfig = {
-     'HEADER_SEARCH_PATHS' => '${j2objcPath}/include','LIBRARY_SEARCH_PATHS' => '${j2objcPath}/lib'${objcFlagString},
+     'HEADER_SEARCH_PATHS' => '${srcHeaderLines.join(" ")}','LIBRARY_SEARCH_PATHS' => '${j2objcPath}/lib'${objcFlagString},
 'CLANG_WARN_DOCUMENTATION_COMMENTS' => 'NO',
 'GCC_WARN_64_TO_32_BIT_CONVERSION' => 'NO'
     }
     
     s.user_target_xcconfig = {
-     'HEADER_SEARCH_PATHS' => '${j2objcPath}/frameworks/JRE.framework/Headers ${j2objcPath}/frameworks/JavaxInject.framework/Headers ${j2objcPath}/frameworks/JSR305.framework/Headers ${j2objcPath}/frameworks/JUnit.framework/Headers ${j2objcPath}/frameworks/Mockito.framework/Headers ${j2objcPath}/frameworks/Xalan.framework/Headers ${j2objcPath}/frameworks/Guava.framework/Headers'
+     'HEADER_SEARCH_PATHS' => '${j2objcPath}/frameworks/JRE.framework/Headers'
     }
     
     

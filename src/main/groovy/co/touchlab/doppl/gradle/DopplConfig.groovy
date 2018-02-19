@@ -57,6 +57,7 @@ class DopplConfig {
     }
 
     boolean skipDependsTasks = false
+    boolean skipDefaultDependencies = false
 
     String targetVariant = "debug"
 
@@ -94,16 +95,11 @@ class DopplConfig {
      * translateJ2objcLibs = ["j2objc_junit.jar", "jre_emul.jar"]
      * </pre>
      */
+    // Issue with j2objc process. It needs package level annotations as jars, so
+    // we include jsr305 here
     // J2objc default libraries, from $J2OBJC_HOME/lib/...
     // TODO: auto add libraries based on java dependencies, warn on version differences
-    List<String> translateJ2objcLibs = [
-            // Comments indicate difference compared to standard libraries...
-            // Memory annotations, e.g. @Weak, @AutoreleasePool
-            "j2objc_annotations.jar",
-            // Libraries that have CycleFinder fixes, e.g. @Weak and code removal
-            "guava-19.0.jar", "j2objc_junit.jar", "jre_emul.jar",
-            // Libraries that don't need CycleFinder fixes
-            "javax.inject-1.jar", "jsr305-3.0.0.jar",/*, "protobuf_runtime.jar"*/]
+    List<String> translateJ2objcLibs = ["jre_emul.jar","jsr305-3.0.0.jar"]
 
     /**
      * Sets the filter on files to translate.

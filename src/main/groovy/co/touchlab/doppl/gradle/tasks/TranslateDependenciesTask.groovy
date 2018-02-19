@@ -97,8 +97,7 @@ class TranslateDependenciesTask extends BaseChangesTask{
                 project.files(Utils.j2objcLibs(getJ2objcHome(), getTranslateJ2objcLibs()))
         ])
 
-        String classpathArg = Utils.joinedPathArg(classpathFiles) +
-                              File.pathSeparator + "${project.buildDir}/classes"
+        String classpathArg = Utils.joinedPathArg(classpathFiles)
 
         List<File> sourcepathList = new ArrayList<>()
 
@@ -157,7 +156,10 @@ class TranslateDependenciesTask extends BaseChangesTask{
                     }
                 }
 
-                args "-classpath", classpathArg
+                if(!classpathArg.isEmpty()) {
+                    args "-classpath", classpathArg
+                }
+
                 getTranslateArgs().each { String translateArg ->
                     args translateArg
                 }
@@ -179,6 +181,6 @@ class TranslateDependenciesTask extends BaseChangesTask{
             throw exception
         }
 
-        javaBatch.delete()
+//        javaBatch.delete()
     }
 }

@@ -84,6 +84,14 @@ class Utils {
         })
     }
 
+    static boolean stringEquals(String a, String b)
+    {
+        if(a != null && b != null)
+            return a.equals(b)
+
+        return a == null && b == null
+    }
+
     static boolean isAtLeastVersion(String version, String minVersion) {
         List<Integer> minVersionComponents = parseVersionComponents(minVersion)
         List<Integer> versionComponents = parseVersionComponents(version)

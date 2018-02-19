@@ -88,6 +88,7 @@ class FrameworkTask extends DefaultTask {
 
         List<File> objcFolders = new ArrayList<>()
         List<File> headerFolders = new ArrayList<>()
+        List<File> srcHeaderFolders = new ArrayList<>()
         List<File> javaFolders = new ArrayList<>()
 
         DopplInfo dopplInfo = DopplInfo.getInstance(project)
@@ -100,7 +101,7 @@ class FrameworkTask extends DefaultTask {
         headerFolders.add(dopplInfo.dependencyOutFileMain())
         headerFolders.add(dopplInfo.sourceBuildOutFileMain())
 
-        fillDependenciesFromList(dependencyList(false), objcFolders, dopplConfig.dependenciesEmitLineDirectives ? javaFolders : null)
+        fillDependenciesFromList(dependencyList(false), objcFolders, srcHeaderFolders, dopplConfig.dependenciesEmitLineDirectives ? javaFolders : null)
 
         if(test)
         {
@@ -112,7 +113,7 @@ class FrameworkTask extends DefaultTask {
             headerFolders.add(dopplInfo.dependencyOutFileTest())
             headerFolders.add(dopplInfo.sourceBuildOutFileTest())
 
-            fillDependenciesFromList(dependencyList(true), objcFolders, dopplConfig.dependenciesEmitLineDirectives ? javaFolders : null)
+            fillDependenciesFromList(dependencyList(true), objcFolders, srcHeaderFolders, dopplConfig.dependenciesEmitLineDirectives ? javaFolders : null)
         }
 
         FrameworkConfig config = test ? FrameworkConfig.findTest(project) : FrameworkConfig.findMain(project)
@@ -124,6 +125,7 @@ class FrameworkTask extends DefaultTask {
                 headerFile,
                 objcFolders,
                 headerFolders,
+                srcHeaderFolders,
                 javaFolders,
                 specName)
 
@@ -156,12 +158,15 @@ class FrameworkTask extends DefaultTask {
         javaFolders.addAll(sourceFolders)
     }
 
-    private void fillDependenciesFromList(List<DopplDependency> mainDependencies, ArrayList<File> objcFolders,
+    private void fillDependenciesFromList(List<DopplDependency> mainDependencies,
+                                          ArrayList<File> objcFolders,
+                                          ArrayList<File> headerFolders,
                                           ArrayList<File> javaFolders) {
         for (DopplDependency dep : mainDependencies) {
             File sourceFolder = new File(dep.dependencyFolderLocation(), "src")
             if (sourceFolder.exists()) {
                 objcFolders.add(sourceFolder)
+                headerFolders.add(sourceFolder)
             }
             if (javaFolders != null && dep.dependencyJavaFolder().exists()) {
                 javaFolders.add(dep.dependencyJavaFolder())

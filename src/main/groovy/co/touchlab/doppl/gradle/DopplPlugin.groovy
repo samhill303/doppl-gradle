@@ -97,16 +97,22 @@ class DopplPlugin implements Plugin<Project> {
                 }
             }
 
-            if(Utils.j2objcHomeOrNull(project) != null) {
+            if(!DopplConfig.from(project).skipDefaultDependencies) {
                 dependencies {
                     if (javaTypeProject) {
                         compileOnly project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
                         testCompile project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
-                        compileOnly project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
-                        testCompile project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
-                    } else {
-                        compile project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
                     }
+
+                    implementation project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
+
+                    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+                    testImplementation 'com.google.code.findbugs:jsr305:3.0.2'
+                    dopplOnly 'com.google.code.findbugs:jsr305:3.0.2:sources'
+
+                    compileOnly 'javax.inject:javax.inject:1'
+                    testImplementation 'javax.inject:javax.inject:1'
+                    dopplOnly 'javax.inject:javax.inject:1:sources'
                 }
             }
 

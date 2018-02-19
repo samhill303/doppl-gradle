@@ -232,7 +232,11 @@ class TranslateTask extends BaseChangesTask {
                 }
 
                 args "-sourcepath", sourcepathArg
-                args "-classpath", classpathArg
+
+                if(!classpathArg.isEmpty()) {
+                    args "-classpath", classpathArg
+                }
+
                 translateArgs.each { String translateArg ->
                     args translateArg
                 }
