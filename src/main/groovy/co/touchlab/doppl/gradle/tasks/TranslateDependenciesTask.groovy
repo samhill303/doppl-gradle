@@ -21,6 +21,7 @@ import co.touchlab.doppl.gradle.DependencyResolver
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
 import co.touchlab.doppl.gradle.DopplInfo
+import co.touchlab.doppl.gradle.DopplVersionManager
 import org.gradle.api.file.ConfigurableFileTree
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.FileTree
@@ -82,6 +83,8 @@ class TranslateDependenciesTask extends BaseChangesTask{
 
     @TaskAction
     void translateDependencies(IncrementalTaskInputs inputs) {
+
+        DopplVersionManager.checkJ2objcConfig(project, true)
 
         String j2objcExecutable = "${getJ2objcHome()}/j2objc"
 

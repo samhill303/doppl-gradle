@@ -16,6 +16,8 @@
 
 package co.touchlab.doppl.gradle.tasks
 
+import co.touchlab.doppl.gradle.DopplConfig
+import co.touchlab.doppl.gradle.helper.J2objcRuntimeHelper
 import com.google.common.annotations.VisibleForTesting
 import groovy.transform.CompileStatic
 import groovy.transform.TypeCheckingMode
@@ -187,29 +189,35 @@ class Utils {
         return result == null ? defaultValue : result
     }
 
-    static String j2objcHome(Project proj) {
-        return new File(j2objcHomeOrNull(proj)).absolutePath
+    static String j2objcDeclaredVersion(Project project)
+    {
+        if(project.hasProperty("doppl_j2objc"))
+        {
+            return project.findProperty("doppl_j2objc").toString()
+        }
+        else
+        {
+            return null
+        }
     }
 
-    static String j2objcHomeOrNull(Project proj)
+    static String j2objcHome(Project proj) {
+
+        String version = Utils.j2objcDeclaredVersion(proj)
+        if (version != null) {
+            return J2objcRuntimeHelper.runtimeDir(version).canonicalPath
+        } else {
+            return new File(j2objcLocalHomeOrNull(proj)).absolutePath
+        }
+    }
+
+    static String j2objcLocalHomeOrNull(Project proj)
     {
         String j2objcHome = getLocalProperty(proj, 'home')
         if (j2objcHome == null) {
             j2objcHome = System.getenv("J2OBJC_HOME")
         }
         return j2objcHome
-    }
-
-    static File j2objcJar(Project proj) {
-        return proj.file("${j2objcHome(proj)}/lib/j2objc.jar")
-    }
-
-    static void throwJ2objcConfigFailure(String preamble) {
-        String message = ">>>>>>>>>>>>>>>> Doppl Tool Configuration Error <<<<<<<<<<<<<<<<\n" +
-                         "$preamble\n" +
-                         "\n" +
-                         "See 'Getting Started' at http://doppl.co\n"
-        throw new InvalidUserDataException(message)
     }
 
     public static String findVersionString(Project project, String j2objcHome) {

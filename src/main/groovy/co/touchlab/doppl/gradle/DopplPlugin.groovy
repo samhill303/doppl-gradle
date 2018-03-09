@@ -17,6 +17,7 @@
 
 package co.touchlab.doppl.gradle
 
+import co.touchlab.doppl.gradle.tasks.CleanJ2objcRuntimeTask
 import co.touchlab.doppl.gradle.tasks.CycleFinderTask
 import co.touchlab.doppl.gradle.tasks.DopplAssemblyTask
 import co.touchlab.doppl.gradle.tasks.FrameworkTask
@@ -48,6 +49,7 @@ class DopplPlugin implements Plugin<Project> {
     public static final String TASK_DOPPL_DEPENDENCY_TRANSLATE_TEST = 'dopplDependencyTranslateTest'
     public static final String TASK_J2OBJC_MAIN_TRANSLATE = 'j2objcMainTranslate'
     public static final String TASK_J2OBJC_TEST_TRANSLATE = 'j2objcTestTranslate'
+    public static final String TASK_J2OBJC_CLEAN_RUNTIME = 'j2objcCleanRuntime'
     public static final String TASK_DOPPL_FRAMEWORK_MAIN = 'dopplFrameworkMain'
     public static final String TASK_DOPPL_FRAMEWORK_TEST = 'dopplFrameworkTest'
     public static final String TASK_DOPPL_BUILD = 'dopplBuild'
@@ -61,8 +63,6 @@ class DopplPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-
-        DopplVersionManager.verifyJ2objcRequirements(project)
 
         boolean javaTypeProject = Utils.isJavaTypeProject(project);
 
@@ -100,11 +100,12 @@ class DopplPlugin implements Plugin<Project> {
             if(!DopplConfig.from(project).skipDefaultDependencies) {
                 dependencies {
                     if (javaTypeProject) {
+                        DopplVersionManager.checkJ2objcConfig(project, true)
                         compileOnly project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
                         testCompile project.files(Utils.j2objcHome(project) + "/lib/jre_emul.jar")
                     }
 
-                    implementation project.files(Utils.j2objcHome(project) + "/lib/j2objc_annotations.jar")
+                    implementation 'com.google.j2objc:j2objc-annotations:1.3'
 
                     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
                     testImplementation 'com.google.code.findbugs:jsr305:3.0.2'
@@ -164,6 +165,8 @@ class DopplPlugin implements Plugin<Project> {
             }
 
             afterEvaluate {
+
+                DopplVersionManager.checkJ2objcConfig(project, false)
 
 //                dependencyResolver.configureAll()
 
@@ -247,6 +250,8 @@ class DopplPlugin implements Plugin<Project> {
 
                _buildContext = buildContext
            }
+
+            tasks.create(name: TASK_J2OBJC_CLEAN_RUNTIME, type: CleanJ2objcRuntimeTask)
         }
     }
 

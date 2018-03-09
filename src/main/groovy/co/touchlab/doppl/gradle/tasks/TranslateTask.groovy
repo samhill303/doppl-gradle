@@ -21,6 +21,7 @@ import co.touchlab.doppl.gradle.BuildTypeProvider
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
 import co.touchlab.doppl.gradle.DopplInfo
+import co.touchlab.doppl.gradle.DopplVersionManager
 import co.touchlab.doppl.gradle.analytics.DopplAnalytics
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
@@ -108,8 +109,6 @@ class TranslateTask extends BaseChangesTask {
             return DopplInfo.getInstance(project).sourceBuildOutFileMain()
     }
 
-
-
     @TaskAction
     void translate(IncrementalTaskInputs inputs) {
 
@@ -117,9 +116,11 @@ class TranslateTask extends BaseChangesTask {
         if(testBuild && dopplConfig.skipTests)
             return
 
-        if(!dopplConfig.disableAnalytics) {
+        DopplVersionManager.checkJ2objcConfig(project, true)
+
+        /*if(!dopplConfig.disableAnalytics) {
             new DopplAnalytics(dopplConfig, Utils.findVersionString(project, Utils.j2objcHome(project))).execute()
-        }
+        }*/
 
         File objcDir = getObjcDir()
         if(objcDir != null)

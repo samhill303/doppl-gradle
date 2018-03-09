@@ -19,6 +19,7 @@ package co.touchlab.doppl.gradle.tasks
 import co.touchlab.doppl.gradle.BuildContext
 import co.touchlab.doppl.gradle.DopplConfig
 import co.touchlab.doppl.gradle.DopplDependency
+import co.touchlab.doppl.gradle.DopplVersionManager
 import org.gradle.api.DefaultTask
 import org.gradle.api.InvalidUserDataException
 import org.gradle.api.file.FileCollection
@@ -57,6 +58,8 @@ class CycleFinderTask extends DefaultTask {
 
     @TaskAction
     void cycleFinder() {
+
+        DopplVersionManager.checkJ2objcConfig(project, true)
 
         File tempDir = File.createTempDir()
         tempDir.mkdirs()
