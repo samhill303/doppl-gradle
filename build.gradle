@@ -29,7 +29,6 @@ buildscript {
 }
 
 apply plugin: 'groovy'
-//apply plugin: 'kotlin'
 apply plugin: 'java-gradle-plugin'
 //apply from: "$rootDir/gradle/functional-test.gradle"
 
@@ -55,11 +54,11 @@ dependencies {
     compile 'org.codehaus.groovy:groovy-android-gradle-plugin:1.1.0'
     compile 'com.google.code.gson:gson:2.7'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
     compile 'net.lingala.zip4j:zip4j:1.3.2'
 
-    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    testCompile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    testCompile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     testCompile "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
     testCompile "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
 
@@ -71,7 +70,7 @@ dependencies {
 
 group = 'co.doppl'
 //Changed this a whole number to differentiate it from the core stuff. Confusing.
-version = '0.11.1'
+version = '0.11.2'
 
 project.tasks.all {
     if (it.name == 'publishPluginGroovyDocsJar' || it.name == 'publishPluginJavaDocsJar') {
